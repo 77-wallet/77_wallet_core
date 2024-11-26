@@ -1,0 +1,19 @@
+[package]
+name = "wallet-types"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+test = []
+
+[dependencies]
+wallet-utils = { workspace = true }
+rust_decimal = { workspace = true }
+
+# serde
+serde.workspace = true
+serde_json.workspace = true
+
+thiserror.workspace = true
+bitcoin = { workspace = true }
+once_cell = { workspace = true }

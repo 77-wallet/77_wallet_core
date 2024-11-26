@@ -1,0 +1,37 @@
+[package]
+name = "wallet-chain-instance"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = { workspace = true }
+wallet-core = { workspace = true }
+wallet-utils = { workspace = true }
+wallet-types = { workspace = true }
+
+alloy = { workspace = true }
+
+anychain-core = "0.1.6"
+anychain-tron = "0.2.3"
+solana-sdk = { workspace = true }
+bitcoin = { workspace = true }
+
+libsecp256k1 = { workspace = true }
+secp256k1 = { version = "0.29" }
+
+tracing = { workspace = true }
+
+hex = { workspace = true }
+sha3 = { workspace = true }
+bs58 = { workspace = true }
+bech32 = { workspace = true }
+
+coins-bip32 = { workspace = true }
+coins-bip39 = { workspace = true }
+
+# serde
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+ripemd160 = "0.9"
+hdpath = "0.6.3"

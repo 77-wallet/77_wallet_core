@@ -1,0 +1,51 @@
+[package]
+name = "wallet-chain-interact"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true }
+bincode = { workspace = true }
+
+# member
+wallet-utils = { workspace = true }
+wallet-transport = { workspace = true }
+wallet-types = { workspace = true }
+
+# workspace
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+
+hex = { workspace = true }
+
+mpl-token-metadata = "4.1.2"
+base64 = { workspace = true }
+sha2 = { workspace = true }
+
+
+bitcoin = { workspace = true }
+alloy = { workspace = true }
+solana-sdk = { workspace = true }
+anychain-tron = "0.2.3"
+anychain-core = "0.1.6"
+
+# 链
+protobuf = { version = "3.3.0" }
+spl-associated-token-account = "4"
+spl-token-2022 = "4"
+solana-program = "^2"
+borsh = "1.5.1"
+
+[dev-dependencies]
+libsecp256k1 = "0.6"
+coins-bip39 = "0.8.7"
+coins-bip32 = { workspace = true }
+
+
+# tracing-subscriber = { workspace = true }
+# sha3 = { workspace = true }
+# reqwest = { workspace = true }

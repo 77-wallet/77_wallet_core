@@ -1,0 +1,56 @@
+[package]
+name = "wallet-keystore"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wallet-core = { workspace = true }
+wallet-types = { workspace = true }
+wallet-utils = { workspace = true }
+wallet-tree = { workspace = true }
+
+wallet-chain-instance = { workspace = true }
+
+alloy = { workspace = true }
+bitcoin = { workspace = true }
+
+# secp256k1 = "0.21"
+ripemd160 = "0.9"
+
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+ctr.workspace = true
+aes.workspace = true
+digest.workspace = true
+hex.workspace = true
+hmac.workspace = true
+pbkdf2.workspace = true
+scrypt.workspace = true
+sha2.workspace = true
+sha3.workspace = true
+uuid.workspace = true
+
+# serde
+serde.workspace = true
+serde_json.workspace = true
+
+rand = { workspace = true }
+
+# error
+thiserror.workspace = true
+
+coins-bip32 = { workspace = true }
+coins-bip39 = { workspace = true }
+
+# tempfile = "3.10.1"
+async-trait = { workspace = true }
+
+# keystore
+elliptic-curve = "0.13.8"
+
+# tokio
+tokio = { workspace = true }
+url = "2.5.0"
+auto_impl = "1.2"
+# assert_matches = "1.5"
