@@ -82,7 +82,7 @@ impl Provider {
                 Ok(UtxoList(utxo))
             }
             _ => {
-                let url = format!("v2/utxo/{}", address);
+                let url = format!("utxo/{}", address);
 
                 let mut params = HashMap::new();
                 params.insert("confirmed", "true");
@@ -231,12 +231,12 @@ impl Provider {
     }
 
     pub async fn get_transaction_from_api(&self, hash: &str) -> crate::Result<ApiTransaction> {
-        let url = format!("v2/tx/{}", hash);
+        let url = format!("tx/{}", hash);
         let res = self.http_client.get_request::<ApiTransaction>(&url).await?;
         Ok(res)
     }
     pub async fn get_block_from_api(&self, hash: &str, page: u32) -> crate::Result<ApiBlock> {
-        let url = format!("v2/block/{}?page={}", hash, page);
+        let url = format!("block/{}?page={}", hash, page);
         let res = self.http_client.get_request::<ApiBlock>(&url).await?;
         Ok(res)
     }
