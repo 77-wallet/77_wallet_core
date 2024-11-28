@@ -135,17 +135,6 @@ impl TronChain {
         resp.raw_data_hex = Raw::raw_data_hex(&bytes);
         resp.raw_data = raw_data.to_json_string()?;
 
-        // let mut raw = Raw::parse_from_bytes(&hex::decode(resp.raw_data_hex).unwrap()).unwrap();
-        // raw.expiration = new_time as i64;
-        // let bytes = raw
-        //     .write_to_bytes()
-        //     .map_err(|e| crate::Error::Other(format!("protobuf error: {:?}", e)))?;
-
-        // // 重新计算交易的原始hex以及id
-        // resp.tx_id = hex::encode(sha256(&bytes));
-        // resp.raw_data_hex = hex::encode(bytes);
-        // resp.raw_data = serde_func::serde_to_string(&raw_data)?;
-
         Ok(MultisigTxResp {
             tx_hash: resp.tx_id.clone(),
             raw_data: resp.to_string()?,
@@ -244,6 +233,14 @@ impl TronChain {
             status,
             transaction.block_number,
         )))
+    }
+
+    pub async fn account_resource(&self, account: &str) -> crate::Result<AccountResourceDetail> {
+        self.provider.account_resource(account).await
+    }
+
+    pub async fn account_info(&self, account: &str) -> crate::Result<TronAccount> {
+        self.provider.account_info(account).await
     }
 }
 
