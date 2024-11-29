@@ -41,7 +41,6 @@ fn _init_log(level: &str, path: &str) -> WorkerGuard {
         .with(fmt::layer())
         .with(formatting_layer)
         .init();
-    tracing::info!("[init log] Init log success");
     guard
 }
 

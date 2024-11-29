@@ -69,7 +69,6 @@ impl WalletTree {
     /// ```no_run
     /// let base_path = PathBuf::from("/path/to/wallets");
     /// let structure = traverse_directory_structure(base_path);
-    /// tracing::info!("{:?}", structure);
     /// ```
     pub fn traverse_directory_structure(
         wallet_dir: &std::path::PathBuf,
@@ -77,10 +76,8 @@ impl WalletTree {
         let mut wallet_tree = WalletTree::default();
 
         let root = wallet_dir;
-        tracing::info!("[traverse_directory_structure] root: {:?}", root);
         for entry in wallet_utils::file_func::read_dir(root)? {
             let mut wallet_branch = WalletBranch::default();
-            tracing::info!("[traverse_directory_structure] entry: {entry:?}");
             let entry = entry.map_err(|e| crate::Error::Utils(e.into()))?;
             let path = entry.path();
 
@@ -91,8 +88,6 @@ impl WalletTree {
 
                 wallet_utils::file_func::create_dir_all(&root_dir)?;
                 wallet_utils::file_func::create_dir_all(&subs_dir)?;
-
-                tracing::info!("root_dir: {root_dir:?}");
 
                 let Some(root_dir) = wallet_utils::file_func::read_dir(root_dir)?
                     .filter_map(Result::ok)

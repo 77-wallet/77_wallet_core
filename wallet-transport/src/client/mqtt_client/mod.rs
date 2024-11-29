@@ -112,19 +112,11 @@ pub async fn _mqtt_connect(username: &str, password: &str, content: &str, client
     let (_client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
 
     while let Ok(event) = eventloop.poll().await {
-        tracing::info!("{event:?}");
-
         if let rumqttc::v5::Event::Incoming(packet) = event {
             let _publish = match packet {
                 rumqttc::v5::mqttbytes::v5::Packet::Publish(publish) => publish,
                 _ => continue,
             };
-            // this time we will ack incoming publishes.
-            // Its important not to block notifier as this can cause deadlock.
-            // let c = client.clone();
-            // tokio::spawn(async move {
-            //     c.ack(&publish).await.unwrap();
-            // });
         }
     }
 }

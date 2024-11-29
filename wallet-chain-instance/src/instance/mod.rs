@@ -89,7 +89,6 @@ impl ChainObject {
             }
             ChainObject::Trx(i) => {
                 let derivation_path = TronInstance::generate(&None, input_index)?;
-                tracing::info!("derivation_path: {}", derivation_path);
                 let res = i.derive_with_derivation_path(seed.to_vec(), &derivation_path)?;
                 let res = Box::new(res);
                 Ok(res)

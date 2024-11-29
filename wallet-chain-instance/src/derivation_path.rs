@@ -58,10 +58,6 @@ impl HDPath {
 pub fn get_account_hd_path_from_path(derivation_path: &str) -> Result<HDPath, crate::Error> {
     let derivation_path = derivation_path.to_uppercase();
     let custom_hd_path = hdpath::CustomHDPath::from_str(&derivation_path).unwrap();
-    tracing::info!("custom_hd_path: {:?}", custom_hd_path);
-    // let account_hd_path = hdpath::AccountHDPath::from_str(&derivation_path)
-    //     .map_err(|e| Into::<crate::Error>::into(e))?;
-    // tracing::info!("account_hd_path: {:?}", account_hd_path);
 
     let coin_type = if let Some(hdpath::PathValue::Hardened(coin_type)) = custom_hd_path.0.get(1) {
         *coin_type
