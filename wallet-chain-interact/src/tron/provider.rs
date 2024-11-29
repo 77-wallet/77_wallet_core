@@ -93,7 +93,8 @@ impl Provider {
     }
 
     pub async fn get_block(&self) -> crate::Result<TronBlock> {
-        self.do_request::<_, TronBlock>("wallet/getnowblock", None::<()>)
+        let params = Some(json!({"detail":false}));
+        self.do_request::<_, TronBlock>("wallet/getblock", params)
             .await
     }
 
