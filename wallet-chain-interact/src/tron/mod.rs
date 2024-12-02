@@ -8,4 +8,4 @@ mod provider;
 pub use provider::{Provider, TronProvider};
 pub mod consts;
 pub mod operations;
-mod tx_build;
+pub mod tx_build;

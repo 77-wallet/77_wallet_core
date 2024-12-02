@@ -245,7 +245,7 @@ impl TronChain {
 }
 
 pub struct TronBlockChain {
-    provider: TronProvider,
+    pub provider: TronProvider,
 }
 impl TronBlockChain {
     pub fn new(provider: TronProvider) -> crate::Result<Self> {

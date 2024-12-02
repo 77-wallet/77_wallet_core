@@ -7,7 +7,7 @@ use serde::Serialize;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wallet_utils::sha256;
 
-pub(super) struct TransactionBuilder;
+pub struct TransactionBuilder;
 
 impl TransactionBuilder {
     pub fn build_raw_transaction_v2<T: Serialize>(
