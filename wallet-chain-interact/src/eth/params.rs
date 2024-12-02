@@ -1,7 +1,5 @@
 use alloy::primitives::U256;
 
-use super::consts::ETH_GWEI_VALUE;
-
 #[derive(Default, Debug)]
 pub struct FeeSetting {
     pub base_fee: U256,
@@ -13,7 +11,6 @@ pub struct FeeSetting {
 impl FeeSetting {
     pub fn transaction_fee(&self) -> U256 {
         let price = self.base_fee + self.max_priority_fee_per_gas;
-        let price = price / U256::from(ETH_GWEI_VALUE);
         self.gas_limit * price
     }
 }
