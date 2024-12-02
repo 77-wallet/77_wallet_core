@@ -7,8 +7,9 @@ use super::{
     params::{self, ResourceConsumer, ResourceType},
     protocol::{
         account::{
-            AccountResourceDetail, CanWithdrawUnfreezeAmount, DelegateResp, FreezeBalanceResp,
-            TronAccount, UnDelegateResp, UnFreezeBalanceResp, WithdrawExpire,
+            AccountResourceDetail, CanWithdrawUnfreezeAmount, DelegateOther, DelegateResp,
+            DelegatedResource, FreezeBalanceResp, TronAccount, UnDelegateResp, UnFreezeBalanceResp,
+            WithdrawExpire,
         },
         block::TronBlock,
         chain_parameter::ChainParameter,
@@ -360,7 +361,7 @@ impl TronProvider {
 
         let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
         params.insert("owner_address", json!(owner_address));
-        params.insert("type", json!(0));
+        params.insert("type", json!(1));
         // params.insert("type", resource.to_int_str());
 
         let result = self
@@ -459,6 +460,33 @@ impl TronProvider {
         let res = self
             .client
             .post_request("wallet/getcanwithdrawunfreezeamount", args)
+            .await?;
+        Ok(res)
+    }
+
+    pub async fn delegate_others_list(&self, owner: &str) -> crate::Result<DelegateOther> {
+        let mut args = HashMap::new();
+        args.insert("value", json!(owner));
+        args.insert("visible", json!(true));
+        let res = self
+            .client
+            .post_request("wallet/getdelegatedresourceaccountindexv2", args)
+            .await?;
+        Ok(res)
+    }
+
+    pub async fn delegated_resource(
+        &self,
+        owner: &str,
+        to: &str,
+    ) -> crate::Result<DelegatedResource> {
+        let mut args = HashMap::new();
+        args.insert("fromAddress", json!(owner));
+        args.insert("toAddress", json!(to));
+        args.insert("visible", json!(true));
+        let res = self
+            .client
+            .post_request("wallet/getdelegatedresourcev2", args)
             .await?;
         Ok(res)
     }

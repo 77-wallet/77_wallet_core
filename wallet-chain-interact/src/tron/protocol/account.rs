@@ -228,3 +228,33 @@ pub struct CanWithdrawUnfreezeAmount {
 pub struct WithdrawExpire {
     owner_address: String,
 }
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DelegateOther {
+    pub account: String,
+    #[serde(default)]
+    pub from_accounts: Vec<String>,
+    #[serde(default)]
+    pub to_accounts: Vec<String>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct DelegatedResource {
+    #[serde(rename = "delegatedResource")]
+    pub delegated_resource: Vec<DelegateResouce>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct DelegateResouce {
+    pub from: String,
+    pub to: String,
+    #[serde(default)]
+    pub frozen_balance_for_bandwidth: i64,
+    #[serde(default)]
+    pub frozen_balance_for_energy: i64,
+    #[serde(default)]
+    pub expire_time_for_bandwidth: i64,
+    #[serde(default)]
+    pub expire_time_for_energy: i64,
+}
