@@ -75,7 +75,7 @@ impl ReqBuilder {
             .text()
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
-        // tracing::info!("[rpc response] = {}", response_str);
+        tracing::info!("[rpc response] = {}", response_str);
 
         let rpc_result = wallet_utils::serde_func::serde_from_str::<RpcResult<T>>(&response_str)?;
         if let Some(err) = rpc_result.error {

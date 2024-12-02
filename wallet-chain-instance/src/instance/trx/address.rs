@@ -24,22 +24,22 @@ mod test {
     #[test]
     fn test_() {
         let language = 1;
-        let phrase = "fan swamp loop mesh enact tennis priority artefact canal hour skull joy";
-        let password = "123";
+        let phrase =
+            "member diesel marine culture boat differ spirit patient drum fix chunk sadness";
+        let password = "1234qwer";
         let (key, _) =
             wallet_core::xpriv::phrase_to_master_key(language, &phrase, password).unwrap();
 
-        let i: i32 = -1221;
-        let index = if i < 0 {
-            i.strict_add_unsigned(coins_bip32::BIP32_HARDEN) as u32
-        } else {
-            i as u32
-        };
-        println!("index: {index}");
+        // let i: i32 = -1221;
+        // let index = if i < 0 {
+        //     i.strict_add_unsigned(coins_bip32::BIP32_HARDEN) as u32
+        // } else {
+        //     i as u32
+        // };
+        // println!("index: {index}");
+        let index = 0;
+        let path = "m/44h/195h/0h/0/0";
 
-        let path = "m/44h/195h/0h/0/2147482427h";
-
-        // let derive = key.derive_child(index).unwrap();
         let derive = key.derive_path(path).unwrap();
 
         let signingkey: &coins_bip32::ecdsa::SigningKey = derive.as_ref();
