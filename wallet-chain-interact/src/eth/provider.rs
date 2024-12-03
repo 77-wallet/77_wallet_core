@@ -350,7 +350,7 @@ impl Provider {
     pub async fn nonce(&self, addr: &str) -> crate::Result<u64> {
         let params = JsonRpcParams::default()
             .method("eth_getTransactionCount")
-            .params(vec![addr, "latest"]);
+            .params(vec![addr, "pending"]);
 
         let rs = self
             .client
