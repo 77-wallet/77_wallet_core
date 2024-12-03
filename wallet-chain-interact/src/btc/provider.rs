@@ -36,17 +36,15 @@ impl Provider {
         let client = if let Some(auth) = config.rpc_auth {
             RpcClient::new_with_base_auth(&config.rpc_url, &auth.user, &auth.password)?
         } else {
-            RpcClient::new(&config.rpc_url, header_opt)?
+            RpcClient::new(&config.rpc_url, header_opt.clone())?
         };
 
-        let header_map = if let Some(api_key) = config.http_api_key {
-            let mut header_map = HashMap::new();
+        let mut header_map = header_opt.unwrap_or_else(HashMap::new);
+        if let Some(api_key) = config.http_api_key {
             header_map.insert("api-key".to_owned(), api_key);
-            Some(header_map)
-        } else {
-            None
-        };
+        }
 
+        let header_map = (!header_map.is_empty()).then_some(header_map);
         let http_client = HttpClient::new(&config.http_url, header_map)?;
 
         Ok(Self {
@@ -241,70 +239,3 @@ impl Provider {
         Ok(res)
     }
 }
-
-// pub fn parse_transaction(
-//     &self,
-//     tx: bitcoin::Transaction,
-//     network: bitcoin::network::Network,
-// ) -> crate::Result<()> {
-//     tracing::info!("{:?}", tx);
-//     for tx_in in tx.input.iter() {
-//         self.detect_input_address(tx_in, network);
-//     }
-//     Ok(())
-// }
-
-// pub fn detect_input_address(
-//     &self,
-//     tx_in: &bitcoin::TxIn,
-//     network: bitcoin::network::Network,
-// ) -> Option<bitcoin::Address> {
-//     // sig 不为空  以及 witness 为空时 可以判断是  传统地址
-//     if !tx_in.script_sig.is_empty() && tx_in.witness.is_empty() {
-//         let elements: Vec<_> = tx_in.script_sig.instructions().collect();
-//         // 只有两个元素代表 签名数据和 公钥
-//         if elements.len() == 2 {
-//             if let Some(Ok(Instruction::PushBytes(pubkey_bytes))) = elements.get(1) {
-//                 let pubkey_slice = pubkey_bytes.as_bytes();
-//                 if let Ok(pubkey) = bitcoin::PublicKey::from_slice(pubkey_slice) {
-//                     let address = bitcoin::Address::p2pkh(&pubkey, network);
-//                     tracing::warn!("address {}", address);
-//                     return Some(bitcoin::Address::p2pkh(&pubkey, network));
-//                 }
-//             }
-//         } else {
-//             // 获取最后一个元素,redeemScript
-//             if let Some(Ok(Instruction::PushBytes(redeem_script_bytes))) = elements.last() {
-//                 let pubkey_slice = redeem_script_bytes.as_bytes().to_vec();
-//                 let redeem_script = bitcoin::ScriptBuf::from_bytes(pubkey_slice);
-//                 let script = redeem_script.as_script();
-
-//                 return bitcoin::Address::p2sh(script, network).ok();
-//             }
-//         }
-//     } else if !tx_in.witness.is_empty() {
-//         let witness = &tx_in.witness;
-//         if witness.len() == 2 {
-//             // 几乎可以确定是p2wpkh
-//             let pubkey_slice = witness.last().unwrap();
-//             if let Ok(pubkey) = bitcoin::CompressedPublicKey::from_slice(pubkey_slice) {
-//                 let address = bitcoin::Address::p2wpkh(&pubkey, network);
-//                 return Some(address);
-//             }
-//         } else if witness.len() == 1 {
-//             // 几乎判断是p2tr
-//             let pubkey_slice = witness.last().unwrap();
-//             if let Ok(internal_key) = bitcoin::XOnlyPublicKey::from_slice(pubkey_slice) {
-//                 let secp = bitcoin::secp256k1::Secp256k1::new();
-//                 let address = bitcoin::Address::p2tr(&secp, internal_key, None, network);
-//                 return Some(address);
-//             }
-//         } else {
-//             let script_slice = witness.last().unwrap();
-//             let witness_script = bitcoin::ScriptBuf::from_bytes(script_slice.to_vec());
-
-//             return bitcoin::Address::from_script(&witness_script, network).ok();
-//         }
-//     }
-//     None
-// }
