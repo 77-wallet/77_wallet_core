@@ -52,3 +52,13 @@ pub struct NodeData {
     pub rpc_url: String,
     pub chain_code: String,
 }
+
+impl NodeData {
+    pub fn new(node_id: &str, rpc_url: &str, chain_code: &str) -> Self {
+        Self {
+            node_id: node_id.to_string(),
+            rpc_url: rpc_url.to_string(),
+            chain_code: chain_code.to_string(),
+        }
+    }
+}
