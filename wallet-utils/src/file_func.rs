@@ -18,6 +18,11 @@ pub fn recreate_dir_all<P: AsRef<Path>>(path: P) -> Result<(), crate::Error> {
     Ok(fs::create_dir_all(path)?)
 }
 
+pub fn copy_file<P: AsRef<Path>>(src: P, dst: P) -> Result<(), std::io::Error> {
+    std::fs::copy(src, dst)?;
+    Ok(())
+}
+
 pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> Result<(), crate::Error> {
     fs::remove_dir_all(path).map_err(crate::Error::IO)
 }
