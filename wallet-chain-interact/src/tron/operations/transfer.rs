@@ -15,7 +15,7 @@ use anychain_core::Transaction as _;
 use wallet_utils::address;
 
 /// transfer parameter
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct TransferOpt {
     pub from: String,
     pub to: String,
