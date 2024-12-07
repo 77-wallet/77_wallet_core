@@ -18,6 +18,7 @@ impl RpcClient {
     pub fn new(
         base_url: &str,
         header_opt: Option<HashMap<String, String>>,
+        timeout: Option<std::time::Duration>,
     ) -> Result<Self, TransportError> {
         let mut headers = HeaderMap::new();
 
@@ -33,8 +34,12 @@ impl RpcClient {
             }
         };
 
-        let client = reqwest::ClientBuilder::new()
-            .default_headers(headers)
+        let mut client = reqwest::ClientBuilder::new().default_headers(headers);
+        if let Some(timeout) = timeout {
+            client = client.timeout(timeout);
+        }
+
+        let client = client
             .build()
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
@@ -49,6 +54,7 @@ impl RpcClient {
         base_url: &str,
         username: &str,
         password: &str,
+        timeout: Option<std::time::Duration>,
     ) -> Result<Self, TransportError> {
         let mut headers = HeaderMap::new();
 
@@ -60,8 +66,12 @@ impl RpcClient {
             password: Some(password.to_owned()),
         });
 
-        let client = reqwest::ClientBuilder::new()
-            .default_headers(headers)
+        let mut client = reqwest::ClientBuilder::new().default_headers(headers);
+        if let Some(timeout) = timeout {
+            client = client.timeout(timeout);
+        }
+
+        let client = client
             .build()
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 

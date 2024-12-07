@@ -1,7 +1,6 @@
-use std::{collections::HashMap, str::FromStr, time::Duration};
-
 use crate::{errors::TransportError, request_builder::ReqBuilder};
 use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
+use std::{collections::HashMap, str::FromStr};
 
 #[derive(Debug, Clone)]
 pub struct HttpClient {
@@ -13,13 +12,12 @@ impl HttpClient {
     pub fn new(
         base_url: &str,
         headers_opt: Option<HashMap<String, String>>,
+        timeout: Option<std::time::Duration>,
     ) -> Result<Self, TransportError> {
         let mut headers = HeaderMap::new();
 
         headers.append(header::ACCEPT, "application/json".parse().unwrap());
         headers.append(header::CONTENT_TYPE, "application/json".parse().unwrap());
-        // headers.append("decodeRequest", "false".parse().unwrap());
-        // headers.append("encryptResponse", "true".parse().unwrap());
 
         if let Some(opt) = headers_opt {
             for (key, value) in opt {
@@ -30,9 +28,11 @@ impl HttpClient {
             }
         };
 
-        let client = reqwest::ClientBuilder::new()
-            .default_headers(headers)
-            .timeout(Duration::from_secs(15))
+        let mut client = reqwest::ClientBuilder::new().default_headers(headers);
+        if let Some(timeout) = timeout {
+            client = client.timeout(timeout);
+        }
+        let client = client
             .build()
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 

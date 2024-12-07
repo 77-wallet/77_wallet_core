@@ -32,11 +32,12 @@ impl Provider {
     pub fn new(
         config: ProviderConfig,
         header_opt: Option<HashMap<String, String>>,
+        timeout: Option<std::time::Duration>,
     ) -> crate::Result<Self> {
         let client = if let Some(auth) = config.rpc_auth {
-            RpcClient::new_with_base_auth(&config.rpc_url, &auth.user, &auth.password)?
+            RpcClient::new_with_base_auth(&config.rpc_url, &auth.user, &auth.password, timeout)?
         } else {
-            RpcClient::new(&config.rpc_url, header_opt.clone())?
+            RpcClient::new(&config.rpc_url, header_opt.clone(), timeout)?
         };
 
         let mut header_map = header_opt.unwrap_or_else(HashMap::new);
@@ -45,7 +46,7 @@ impl Provider {
         }
 
         let header_map = (!header_map.is_empty()).then_some(header_map);
-        let http_client = HttpClient::new(&config.http_url, header_map)?;
+        let http_client = HttpClient::new(&config.http_url, header_map, timeout)?;
 
         Ok(Self {
             client,

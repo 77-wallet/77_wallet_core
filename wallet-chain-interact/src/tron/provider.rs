@@ -292,7 +292,7 @@ pub struct TronProvider {
 }
 impl TronProvider {
     pub fn new(rpc_url: &str) -> crate::Result<Self> {
-        let client = HttpClient::new(rpc_url, None)?;
+        let client = HttpClient::new(rpc_url, None, None)?;
         Ok(Self { client })
     }
 

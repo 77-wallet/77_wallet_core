@@ -23,8 +23,9 @@ impl BtcChain {
         config: ProviderConfig,
         network: wallet_types::chain::network::NetworkKind,
         header_opt: Option<HashMap<String, String>>,
+        timeout: Option<std::time::Duration>,
     ) -> crate::Result<Self> {
-        let provider = Provider::new(config, header_opt)?;
+        let provider = Provider::new(config, header_opt, timeout)?;
         Ok(Self { provider, network })
     }
 
