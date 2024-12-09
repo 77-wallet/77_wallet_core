@@ -314,18 +314,15 @@ impl Provider {
     pub async fn get_default_fee(&self) -> crate::Result<EtherFee> {
         let block = self.latest_block().await?;
 
-        let base_fee = match block.header.base_fee_per_gas {
-            Some(base_fee) => {
-                if base_fee > 0 {
-                    U256::from(base_fee)
-                } else {
-                    U256::ZERO
-                }
-            }
-            None => U256::ZERO,
-        };
+        let base_fee = block
+            .header
+            .base_fee_per_gas
+            .map(|base_fee| U256::from(base_fee).max(U256::ZERO))
+            .unwrap_or(U256::ZERO);
 
-        let priority_fee_per_gas = self.gas_price().await? - base_fee;
+        let gas_price = self.gas_price().await?;
+        let priority_fee_per_gas = gas_price.saturating_sub(base_fee);
+
         Ok(EtherFee {
             base_fee,
             priority_fee_per_gas,
