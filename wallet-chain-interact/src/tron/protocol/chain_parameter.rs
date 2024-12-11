@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
-
 use crate::tron::consts::TRX_TO_SUN;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ParameterValue {

@@ -1,7 +1,6 @@
+use crate::tron::consts;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-
-use crate::tron::consts;
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(default)]
@@ -178,83 +177,4 @@ pub struct PermissionResp {
 pub struct Keys {
     address: String,
     weight: i8,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct FreezeBalanceResp {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    resource: Option<String>,
-    frozen_balance: i64,
-    owner_address: String,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct UnFreezeBalanceResp {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    resource: Option<String>,
-    unfreeze_balance: i64,
-    owner_address: String,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct DelegateResp {
-    owner_address: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    resource: Option<String>,
-    receiver_address: String,
-    balance: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    lock: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    lock_period: Option<i64>,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct UnDelegateResp {
-    owner_address: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    resource: Option<String>,
-    receiver_address: String,
-    balance: i64,
-}
-
-#[derive(serde::Deserialize)]
-pub struct CanWithdrawUnfreezeAmount {
-    #[serde(default)]
-    pub amount: i64,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct WithdrawExpire {
-    owner_address: String,
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DelegateOther {
-    pub account: String,
-    #[serde(default)]
-    pub from_accounts: Vec<String>,
-    #[serde(default)]
-    pub to_accounts: Vec<String>,
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct DelegatedResource {
-    #[serde(rename = "delegatedResource")]
-    pub delegated_resource: Vec<DelegateResouce>,
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct DelegateResouce {
-    pub from: String,
-    pub to: String,
-    #[serde(default)]
-    pub frozen_balance_for_bandwidth: i64,
-    #[serde(default)]
-    pub frozen_balance_for_energy: i64,
-    #[serde(default)]
-    pub expire_time_for_bandwidth: i64,
-    #[serde(default)]
-    pub expire_time_for_energy: i64,
 }

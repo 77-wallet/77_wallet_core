@@ -1,23 +1,20 @@
 use super::{
     operations::{
         contract::{ConstantContract, TriggerContractParameter, TriggerContractResult},
+        stake,
         transfer::{ContractTransferResp, TronTransferResp},
         RawTransactionParams, TronTransactionResponse,
     },
-    params::{self, ResourceConsumer, ResourceType},
+    params::ResourceConsumer,
     protocol::{
-        account::{
-            AccountResourceDetail, CanWithdrawUnfreezeAmount, DelegateOther, DelegateResp,
-            DelegatedResource, FreezeBalanceResp, TronAccount, UnDelegateResp, UnFreezeBalanceResp,
-            WithdrawExpire,
-        },
+        account::{AccountResourceDetail, TronAccount},
         block::TronBlock,
         chain_parameter::ChainParameter,
         receipt::TransactionInfo,
-        transaction::{BaseTransaction, CreateTransactionResp, SendRawTransactionResp},
+        transaction::SendRawTransactionResp,
     },
 };
-use crate::tron::{params::Resource, protocol::transaction::SendRawTransactionParams};
+use crate::tron::params::Resource;
 use serde_json::json;
 use std::{collections::HashMap, fmt::Debug};
 use wallet_transport::client::HttpClient;
@@ -286,152 +283,62 @@ impl Provider {
     }
 }
 
-// new version
-pub struct TronProvider {
-    client: HttpClient,
-}
-impl TronProvider {
-    pub fn new(rpc_url: &str) -> crate::Result<Self> {
-        let client = HttpClient::new(rpc_url, None, None)?;
-        Ok(Self { client })
-    }
-
-    pub async fn chain_params(&self) -> crate::Result<ChainParameter> {
-        Ok(self.client.get("wallet/getchainparameters").send().await?)
-    }
-
-    pub async fn account_info(&self, account: &str) -> crate::Result<TronAccount> {
-        let mut params = HashMap::new();
-        params.insert("address", account);
-        if account.starts_with("T") {
-            params.insert("visible", "true");
-        }
-
-        let res = self
-            .client
-            .post_request("wallet/getaccount", params)
-            .await?;
-        Ok(res)
-    }
-
-    pub async fn account_resource(&self, account: &str) -> crate::Result<AccountResourceDetail> {
-        let mut params = HashMap::new();
-        params.insert("address", account);
-        if account.starts_with("T") {
-            params.insert("visible", "true");
-        }
-
-        let res = self
-            .client
-            .post_request("wallet/getaccountresource", params)
-            .await?;
-        Ok(res)
-    }
-
-    pub async fn query_tx_info(&self, tx_hash: &str) -> crate::Result<TransactionInfo> {
-        let mut params = HashMap::new();
-        params.insert("value", tx_hash);
-
-        let result = self
-            .client
-            .post("wallet/gettransactioninfobyid")
-            .json(params)
-            .send::<TransactionInfo>()
-            .await?;
-        Ok(result)
-    }
-
-    pub async fn send_raw_transaction(
-        &self,
-        params: SendRawTransactionParams,
-    ) -> crate::Result<SendRawTransactionResp> {
-        let result = self
-            .client
-            .post_request("wallet/broadcasttransaction", params)
-            .await?;
-        Ok(result)
-    }
-
+// abount stake and degegate
+impl Provider {
     pub async fn can_delegate_resource(
         &self,
         owner_address: &str,
-        _resource: ResourceType,
+        resource: stake::ResourceType,
     ) -> crate::Result<String> {
-        let mut params = HashMap::new();
-
         let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
-        params.insert("owner_address", json!(owner_address));
-        params.insert("type", json!(1));
-        // params.insert("type", resource.to_int_str());
+
+        let args = json!({
+            "owner_address":json!(owner_address),
+            "type":json!(resource.to_int_str())
+        });
 
         let result = self
-            .client
-            .post_request("wallet/getcandelegatedmaxsize", params)
+            .do_request("wallet/getcandelegatedmaxsize", Some(args))
             .await?;
         Ok(result)
-    }
-
-    // build base transfer
-    pub async fn create_base_transfer(
-        &self,
-        params: BaseTransaction,
-    ) -> crate::Result<CreateTransactionResp<BaseTransaction>> {
-        let res = self
-            .client
-            .post_request("wallet/createtransaction", params)
-            .await?;
-        Ok(res)
-    }
-
-    pub fn calc_bandwidth(&self, raw_data_hex: &str, signature_num: u8) -> i64 {
-        let data_hex_pro = 3_i64;
-        let result_hex = 64_i64;
-        let sign_len = 67_i64 * signature_num as i64;
-
-        let raw_data_len = (raw_data_hex.len() / 2) as i64;
-        raw_data_len + data_hex_pro + result_hex + sign_len
     }
 
     pub async fn freeze_balance(
         &self,
-        args: params::FreezeBalanceArgs,
-    ) -> crate::Result<CreateTransactionResp<FreezeBalanceResp>> {
+        args: &stake::FreezeBalanceArgs,
+    ) -> crate::Result<TronTransactionResponse<stake::FreezeBalanceResp>> {
         let res = self
-            .client
-            .post_request("wallet/freezebalancev2", args)
+            .do_request("wallet/freezebalancev2", Some(args))
             .await?;
         Ok(res)
     }
 
     pub async fn unfreeze_balance(
         &self,
-        args: params::UnFreezeBalanceArgs,
-    ) -> crate::Result<CreateTransactionResp<UnFreezeBalanceResp>> {
+        args: &stake::UnFreezeBalanceArgs,
+    ) -> crate::Result<TronTransactionResponse<stake::UnFreezeBalanceResp>> {
         let res = self
-            .client
-            .post_request("wallet/unfreezebalancev2", args)
+            .do_request("wallet/unfreezebalancev2", Some(args))
             .await?;
         Ok(res)
     }
 
     pub async fn delegate_resource(
         &self,
-        args: params::DelegateArgs,
-    ) -> crate::Result<CreateTransactionResp<DelegateResp>> {
+        args: &stake::DelegateArgs,
+    ) -> crate::Result<TronTransactionResponse<stake::DelegateResp>> {
         let res = self
-            .client
-            .post_request("wallet/delegateresource", args)
+            .do_request("wallet/delegateresource", Some(args))
             .await?;
         Ok(res)
     }
 
     pub async fn un_delegate_resource(
         &self,
-        args: params::UnDelegateArgs,
-    ) -> crate::Result<CreateTransactionResp<UnDelegateResp>> {
+        args: &stake::UnDelegateArgs,
+    ) -> crate::Result<TronTransactionResponse<stake::UnDelegateResp>> {
         let res = self
-            .client
-            .post_request("wallet/undelegateresource", args)
+            .do_request("wallet/undelegateresource", Some(args))
             .await?;
         Ok(res)
     }
@@ -439,95 +346,151 @@ impl TronProvider {
     pub async fn withdraw_expire_unfree(
         &self,
         owner_address: &str,
-    ) -> crate::Result<CreateTransactionResp<WithdrawExpire>> {
-        let mut args = HashMap::new();
+    ) -> crate::Result<TronTransactionResponse<stake::WithdrawExpire>> {
         let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
-        args.insert("owner_address", owner_address);
+
+        let args = json!({
+            "owner_address":json!(owner_address)
+        });
         let res = self
-            .client
-            .post_request("wallet/withdrawexpireunfreeze", args)
+            .do_request("wallet/withdrawexpireunfreeze", Some(args))
             .await?;
+
         Ok(res)
     }
 
+    // available
     pub async fn can_withdraw_unfreeze_amount(
         &self,
         owner_address: &str,
-    ) -> crate::Result<CanWithdrawUnfreezeAmount> {
+    ) -> crate::Result<stake::CanWithdrawUnfreezeAmount> {
         let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
-        let mut args = HashMap::new();
-        args.insert("owner_address", owner_address);
+
+        let args = json!({
+            "owner_address":json!(owner_address)
+        });
+
         let res = self
-            .client
-            .post_request("wallet/getcanwithdrawunfreezeamount", args)
+            .do_request("wallet/getcanwithdrawunfreezeamount", Some(args))
             .await?;
         Ok(res)
     }
 
-    pub async fn delegate_others_list(&self, owner: &str) -> crate::Result<DelegateOther> {
-        let mut args = HashMap::new();
-        args.insert("value", json!(owner));
-        args.insert("visible", json!(true));
+    // query the resource delegation index by an account. Two lists will return, one is the list of addresses the account has delegated its resources(toAddress), and the other is the list of addresses that have delegated resources to the account(fromAddress).
+    pub async fn delegate_others_list(&self, owner: &str) -> crate::Result<stake::DelegateOther> {
+        let args = json!({
+            "value":json!(owner),
+            "visible":json!(true),
+        });
+
         let res = self
-            .client
-            .post_request("wallet/getdelegatedresourceaccountindexv2", args)
+            .do_request("wallet/getdelegatedresourceaccountindexv2", Some(args))
             .await?;
         Ok(res)
     }
 
+    // query the detail of resource share delegated from fromAddress to toAddress
     pub async fn delegated_resource(
         &self,
         owner: &str,
         to: &str,
-    ) -> crate::Result<DelegatedResource> {
-        let mut args = HashMap::new();
-        args.insert("fromAddress", json!(owner));
-        args.insert("toAddress", json!(to));
-        args.insert("visible", json!(true));
+    ) -> crate::Result<stake::DelegatedResource> {
+        let args = json!({
+            "fromAddress":json!(owner),
+            "toAddress":json!(to),
+            "visible":json!(true),
+        });
         let res = self
-            .client
-            .post_request("wallet/getdelegatedresourcev2", args)
+            .do_request("wallet/getdelegatedresourcev2", Some(args))
             .await?;
         Ok(res)
     }
 }
-// // 主币相关的交易错误类型
-// #[derive(Debug, serde::Deserialize)]
-// struct NodeError {
-//     pub code: String,
-//     pub message: String,
+
+// // new version
+// pub struct TronProvider {
+//     client: HttpClient,
+// }
+// impl TronProvider {
+// pub fn new(rpc_url: &str) -> crate::Result<Self> {
+//     let client = HttpClient::new(rpc_url, None, None)?;
+//     Ok(Self { client })
 // }
 
-// // 不是合约的调用、匹配成功和失败的情况
-// async fn do_normal_request<T, R>(&self, endpoint: &str, params: Option<T>) -> crate::Result<R>
-// where
-//     T: serde::Serialize + Debug,
-//     R: serde::de::DeserializeOwned,
-// {
-//     let request = self.client.post(endpoint);
-//     let request = if let Some(params) = params {
-//         request.json(&params)
-//     } else {
-//         request
-//     };
+// pub async fn chain_params(&self) -> crate::Result<ChainParameter> {
+//     Ok(self.client.get("wallet/getchainparameters").send().await?)
+// }
 
-//     match request.send::<NodeResponse<R, ContractError>>().await? {
-//         NodeResponse::Success(r) => Ok(r),
-//         NodeResponse::Fail(err) => {
-//             let error_msg = hex_func::hex_to_utf8(&err.result.message)?;
-//             Err(crate::Error::RpcError(error_msg))
-//         }
+// pub async fn account_info(&self, account: &str) -> crate::Result<TronAccount> {
+//     let mut params = HashMap::new();
+//     params.insert("address", account);
+//     if account.starts_with("T") {
+//         params.insert("visible", "true");
 //     }
+
+//     let res = self
+//         .client
+//         .post_request("wallet/getaccount", params)
+//         .await?;
+//     Ok(res)
 // }
 
-#[test]
-fn test_aaa() {
-    let s = r#"{"result":{"result":true},"transaction":{"visible":false,"txID":"eb2d58896b86c7b65ab007131ff21d237933be9d2834c33215d4ac768e0e48d2","raw_data":{"contract":[{"parameter":{"value":{"data":"a9059cbb000000000000000000000000fe26169e8a994ceb9addd4b8fb3a8f28d134e30500000000000000000000000000000000000000000000000000000000000186a0","owner_address":"414cec0660c26bcd7f33795e97b96e9fc27e17d8af","contract_address":"41ea51342dabbb928ae1e576bd39eff8aaf070a8c6"},"type_url":"type.googleapis.com/protocol.TriggerSmartContract"},"type":"TriggerSmartContract"}],"ref_block_bytes":"9f16","ref_block_hash":"8d8c6b82f6308136","expiration":1729161357000,"fee_limit":2045190,"timestamp":1729161298385},"raw_data_hex":"0a029f1622088d8c6b82f630813640c8cdb1d0a9325aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a15414cec0660c26bcd7f33795e97b96e9fc27e17d8af121541ea51342dabbb928ae1e576bd39eff8aaf070a8c62244a9059cbb000000000000000000000000fe26169e8a994ceb9addd4b8fb3a8f28d134e30500000000000000000000000000000000000000000000000000000000000186a070d183aed0a932900186ea7c"}}"#;
+// pub async fn account_resource(&self, account: &str) -> crate::Result<AccountResourceDetail> {
+//     let mut params = HashMap::new();
+//     params.insert("address", account);
+//     if account.starts_with("T") {
+//         params.insert("visible", "true");
+//     }
 
-    let res = serde_json::from_str::<
-        NodeResponse<TriggerContractResult<ContractTransferResp>, ContractError>,
-    >(s)
-    .unwrap();
+//     let res = self
+//         .client
+//         .post_request("wallet/getaccountresource", params)
+//         .await?;
+//     Ok(res)
+// }
 
-    println!("{:?}", res);
-}
+// pub async fn query_tx_info(&self, tx_hash: &str) -> crate::Result<TransactionInfo> {
+//     let mut params = HashMap::new();
+//     params.insert("value", tx_hash);
+
+//     let result = self
+//         .client
+//         .post("wallet/gettransactioninfobyid")
+//         .json(params)
+//         .send::<TransactionInfo>()
+//         .await?;
+//     Ok(result)
+// }
+
+// pub async fn send_raw_transaction(
+//     &self,
+//     params: SendRawTransactionParams,
+// ) -> crate::Result<SendRawTransactionResp> {
+//     let result = self
+//         .client
+//         .post_request("wallet/broadcasttransaction", params)
+//         .await?;
+//     Ok(result)
+// }
+
+// // build base transfer
+// pub async fn create_base_transfer(
+//     &self,
+//     params: BaseTransaction,
+// ) -> crate::Result<CreateTransactionResp<BaseTransaction>> {
+//     let res = self
+//         .client
+//         .post_request("wallet/createtransaction", params)
+//         .await?;
+//     Ok(res)
+// }
+
+// pub fn calc_bandwidth(&self, raw_data_hex: &str, signature_num: u8) -> i64 {
+//     let data_hex_pro = 3_i64;
+//     let result_hex = 64_i64;
+//     let sign_len = 67_i64 * signature_num as i64;
+
+//     let raw_data_len = (raw_data_hex.len() / 2) as i64;
+//     raw_data_len + data_hex_pro + result_hex + sign_len
+// }
+// }

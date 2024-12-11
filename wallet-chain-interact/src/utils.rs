@@ -1,11 +1,6 @@
 use alloy::primitives::{Address, U256};
 use alloy::sol_types::SolValue;
 
-// pub fn data_to_u8<T: Serialize>(data: &T) -> crate::Result<Vec<u8>> {
-//     let message = bincode::serialize(data).unwrap();
-//     Ok(message)
-// }
-
 // 地址进行abi编码
 pub fn abi_encode_address(addr: &str) -> String {
     let addr_bytes = hex::decode(addr).unwrap();
