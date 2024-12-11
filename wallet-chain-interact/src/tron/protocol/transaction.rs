@@ -1,4 +1,3 @@
-use crate::ParseErr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -11,26 +10,26 @@ pub struct BaseTransaction {
     pub permission_id: Option<u8>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct SendRawTransactionParams {
-    #[serde(rename = "txID")]
-    pub tx_id: String,
-    pub raw_data: String,
-    pub raw_data_hex: String,
-    pub signature: Vec<String>,
-}
+// #[derive(Deserialize, Serialize, Debug)]
+// pub struct SendRawTransactionParams {
+//     #[serde(rename = "txID")]
+//     pub tx_id: String,
+//     pub raw_data: String,
+//     pub raw_data_hex: String,
+//     pub signature: Vec<String>,
+// }
 
-impl SendRawTransactionParams {
-    pub fn from_bytes(bytes: &[u8]) -> crate::Result<Self> {
-        bincode::deserialize::<Self>(bytes)
-            .map_err(|e| crate::Error::ParseError(ParseErr::JsonErr(e.to_string())))
-    }
+// impl SendRawTransactionParams {
+//     pub fn from_bytes(bytes: &[u8]) -> crate::Result<Self> {
+//         bincode::deserialize::<Self>(bytes)
+//             .map_err(|e| crate::Error::ParseError(ParseErr::JsonErr(e.to_string())))
+//     }
 
-    pub fn to_bytes(&self) -> crate::Result<Vec<u8>> {
-        bincode::serialize(self)
-            .map_err(|e| crate::Error::ParseError(ParseErr::JsonErr(e.to_string())))
-    }
-}
+//     pub fn to_bytes(&self) -> crate::Result<Vec<u8>> {
+//         bincode::serialize(self)
+//             .map_err(|e| crate::Error::ParseError(ParseErr::JsonErr(e.to_string())))
+//     }
+// }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct SendRawTransactionResp {
