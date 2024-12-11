@@ -10,8 +10,8 @@ pub struct FeeSetting {
 
 impl FeeSetting {
     pub fn transaction_fee(&self) -> U256 {
-        // let price = self.base_fee + self.max_priority_fee_per_gas;
-        let price = self.max_fee_per_gas;
+        let price = self.base_fee + self.max_priority_fee_per_gas;
+        // let price = self.max_fee_per_gas;
         self.gas_limit * price
     }
 }
