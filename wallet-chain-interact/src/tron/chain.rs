@@ -240,160 +240,20 @@ impl TronChain {
             transaction.block_number,
         )))
     }
+
+    pub async fn withdraw_unfreeze_amount(
+        &self,
+        owner_address: &str,
+        key: ChainPrivateKey,
+    ) -> crate::Result<String> {
+        let resp = self.provider.withdraw_expire_unfree(owner_address).await?;
+
+        let raw = RawTransactionParams::from(resp);
+
+        // signature
+        let sign_str = wallet_utils::sign::sign_tron(&raw.tx_id, &key, None)?;
+
+        let rs = self.exec_multisig_transaction(raw, vec![sign_str]).await?;
+        Ok(rs)
+    }
 }
-
-// pub struct TronBlockChain {
-//     pub provider: TronProvider,
-// }
-// impl TronBlockChain {
-//     pub fn new(provider: TronProvider) -> crate::Result<Self> {
-//         Ok(Self { provider })
-//     }
-
-//     pub async fn chain_parameter(&self) -> crate::Result<ChainParameter> {
-//         self.provider.chain_params().await
-//     }
-
-//     pub async fn account_resource(&self, account: &str) -> crate::Result<AccountResourceDetail> {
-//         self.provider.account_resource(account).await
-//     }
-
-//     pub async fn account_info(&self, account: &str) -> crate::Result<TronAccount> {
-//         self.provider.account_info(account).await
-//     }
-
-//     pub async fn query_tx_res(&self, hash: &str) -> crate::Result<Option<QueryTransactionResult>> {
-//         let transaction = self.provider.query_tx_info(hash).await;
-//         let transaction = match transaction {
-//             Ok(transaction) => transaction,
-//             Err(_err) => return Ok(None),
-//         };
-
-//         // timestamp unit ms to s
-//         let time = transaction.block_timestamp / 1000;
-//         let fee = transaction.fee / super::consts::TRX_TO_SUN as f64;
-//         let status = if transaction.result.is_none() { 2 } else { 3 };
-
-//         let resource_consume = transaction
-//             .receipt
-//             .get_bill_resource_consumer()
-//             .to_json_str()?;
-
-//         Ok(Some(QueryTransactionResult::new(
-//             transaction.id,
-//             fee,
-//             resource_consume,
-//             time,
-//             status,
-//             transaction.block_number,
-//         )))
-//     }
-// }
-
-// about stake
-// impl TronBlockChain {
-// pub async fn freeze_balance(
-//     &self,
-//     args: params::FreezeBalanceArgs,
-//     key: ChainPrivateKey,
-// ) -> crate::Result<String> {
-//     let resp = self.provider.freeze_balance(args).await?;
-//     let mut raw_transaction = TransactionBuilder::build_raw_transaction_v2(resp, false)?;
-
-//     // signature
-//     let sign_str = wallet_utils::sign::sign_tron(&raw_transaction.tx_id, &key, None)?;
-//     raw_transaction.signature.push(sign_str);
-
-//     let res = self.provider.send_raw_transaction(raw_transaction).await?;
-
-//     Ok(res.tx_id)
-// }
-
-// pub async fn unfreeze_balance(
-//     &self,
-//     args: params::UnFreezeBalanceArgs,
-//     key: ChainPrivateKey,
-// ) -> crate::Result<String> {
-//     let resp = self.provider.unfreeze_balance(args).await?;
-//     let mut raw_transaction = TransactionBuilder::build_raw_transaction_v2(resp, false)?;
-
-//     // signature
-//     let sign_str = wallet_utils::sign::sign_tron(&raw_transaction.tx_id, &key, None)?;
-//     raw_transaction.signature.push(sign_str);
-
-//     let res = self.provider.send_raw_transaction(raw_transaction).await?;
-
-//     Ok(res.tx_id)
-// }
-
-// pub async fn delegate_resource(
-//     &self,
-//     args: params::DelegateArgs,
-//     key: ChainPrivateKey,
-// ) -> crate::Result<String> {
-//     let resp = self.provider.delegate_resource(args).await?;
-//     let mut raw_transaction = TransactionBuilder::build_raw_transaction_v2(resp, false)?;
-
-//     // signature
-//     let sign_str = wallet_utils::sign::sign_tron(&raw_transaction.tx_id, &key, None)?;
-//     raw_transaction.signature.push(sign_str);
-
-//     let res = self.provider.send_raw_transaction(raw_transaction).await?;
-
-//     Ok(res.tx_id)
-// }
-
-// pub async fn un_delegate_resource(
-//     &self,
-//     args: params::UnDelegateArgs,
-//     key: ChainPrivateKey,
-// ) -> crate::Result<String> {
-//     let resp = self.provider.un_delegate_resource(args).await?;
-//     let mut raw_transaction = TransactionBuilder::build_raw_transaction_v2(resp, false)?;
-
-//     // signature
-//     let sign_str = wallet_utils::sign::sign_tron(&raw_transaction.tx_id, &key, None)?;
-//     raw_transaction.signature.push(sign_str);
-
-//     let res = self.provider.send_raw_transaction(raw_transaction).await?;
-
-//     Ok(res.tx_id)
-// }
-
-// pub async fn can_withdraw_unfreeze_amount(&self, owner_address: &str) -> crate::Result<String> {
-//     let res = self
-//         .provider
-//         .can_withdraw_unfreeze_amount(owner_address)
-//         .await?;
-//     Ok(res.amount.to_string())
-// }
-
-// pub async fn can_delegate_resource(
-//     &self,
-//     owner_address: &str,
-//     resource: ResourceType,
-// ) -> crate::Result<String> {
-//     let res = self
-//         .provider
-//         .can_delegate_resource(owner_address, resource)
-//         .await?;
-//     Ok(res)
-// }
-
-// pub async fn withdraw_unfreeze_amount(
-//     &self,
-//     owner_address: &str,
-//     key: ChainPrivateKey,
-// ) -> crate::Result<String> {
-//     let resp = self.provider.withdraw_expire_unfree(owner_address).await?;
-//     let mut raw_transaction = TransactionBuilder::build_raw_transaction_v2(resp, false)?;
-
-//     // signature
-//     let sign_str = wallet_utils::sign::sign_tron(&raw_transaction.tx_id, &key, None)?;
-//     raw_transaction.signature.push(sign_str);
-
-//     let res = self.provider.send_raw_transaction(raw_transaction).await?;
-
-//     Ok(res.tx_id)
-// }
-// }
