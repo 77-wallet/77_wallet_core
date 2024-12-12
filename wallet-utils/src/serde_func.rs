@@ -59,3 +59,11 @@ where
 {
     Vec::<String>::deserialize(deserializer)
 }
+
+pub fn toml_from_str<'de, T: serde::de::DeserializeOwned>(value: &str) -> Result<T, crate::Error> {
+    toml::from_str(value).map_err(|e| crate::Error::Serde(e.into()))
+}
+
+pub fn toml_to_string<T: ?Sized + serde::Serialize>(value: &T) -> Result<String, crate::Error> {
+    toml::to_string(value).map_err(|e| crate::Error::Serde(e.into()))
+}
