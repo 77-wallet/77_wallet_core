@@ -6,6 +6,10 @@ pub enum SerdeError {
     ValueToVecFailed,
     #[error(" deserialize error: {0}")]
     Deserialize(String),
+    #[error("Toml serialize error: {0}")]
+    TomlSerialize(#[from] toml::ser::Error),
+    #[error("Toml deserialize error: {0}")]
+    TomlDeserialize(#[from] toml::de::Error),
 }
 
 impl SerdeError {
@@ -16,6 +20,8 @@ impl SerdeError {
             // SerdeError::BsonDeser(_) => 6061,
             SerdeError::ValueToVecFailed => 6062,
             SerdeError::Deserialize(_) => 6063,
+            SerdeError::TomlSerialize(_) => 6064,
+            SerdeError::TomlDeserialize(_) => 6065,
         }
     }
 }
