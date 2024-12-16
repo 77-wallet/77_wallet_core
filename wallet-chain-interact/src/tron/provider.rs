@@ -323,6 +323,16 @@ impl Provider {
         Ok(res)
     }
 
+    pub async fn cancel_all_unfreeze(
+        &self,
+        args: &stake::CancelAllFreezeBalanceArgs,
+    ) -> crate::Result<TronTransactionResponse<stake::CancelAllUnfreezeResp>> {
+        let res = self
+            .do_request("wallet/cancelallunfreezev2", Some(args))
+            .await?;
+        Ok(res)
+    }
+
     pub async fn delegate_resource(
         &self,
         args: &stake::DelegateArgs,

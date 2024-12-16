@@ -44,3 +44,34 @@ pub struct UnFreezeBalanceResp {
     unfreeze_balance: i64,
     owner_address: String,
 }
+
+#[derive(serde::Serialize, Debug)]
+pub struct CancelAllFreezeBalanceArgs {
+    owner_address: String,
+}
+impl CancelAllFreezeBalanceArgs {
+    pub fn new(owner_address: &str) -> crate::Result<Self> {
+        Ok(Self {
+            owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
+        })
+    }
+}
+
+#[async_trait::async_trait]
+impl TronTxOperation<CancelAllUnfreezeResp> for CancelAllFreezeBalanceArgs {
+    async fn build_raw_transaction(
+        &self,
+        provider: &Provider,
+    ) -> crate::Result<RawTransactionParams> {
+        let res = provider.cancel_all_unfreeze(self).await?;
+        Ok(RawTransactionParams::from(res))
+    }
+
+    fn get_to(&self) -> String {
+        String::new()
+    }
+}
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct CancelAllUnfreezeResp {
+    owner_address: String,
+}

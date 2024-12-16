@@ -12,7 +12,7 @@ pub use unfreeze::*;
 
 pub mod vote;
 
-#[derive(serde::Serialize, Debug)]
+#[derive(serde::Serialize, Debug, serde::Deserialize)]
 pub enum ResourceType {
     ENERGY,
     BANDWIDTH,
@@ -23,6 +23,13 @@ impl ResourceType {
         match self {
             ResourceType::ENERGY => "1".to_string(),
             ResourceType::BANDWIDTH => "0".to_string(),
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            ResourceType::ENERGY => "energy".to_string(),
+            ResourceType::BANDWIDTH => "bandwidth".to_string(),
         }
     }
 }
