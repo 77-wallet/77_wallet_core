@@ -415,4 +415,40 @@ impl Provider {
             .await?;
         Ok(res)
     }
+
+    pub async fn get_reward(&self, owner: &str) -> crate::Result<stake::Reward> {
+        let args = json!({
+            "address":json!(owner),
+            "visible":json!(true),
+        });
+        let res = self.do_request("wallet/getReward", Some(args)).await?;
+        Ok(res)
+    }
+
+    // 领取投票的奖励
+    pub async fn withdraw_balance(
+        &self,
+        owner_address: &str,
+    ) -> crate::Result<TronTransactionResponse<stake::WithdrawBalanceResp>> {
+        let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
+
+        let args = json!({
+            "owner_address":json!(owner_address)
+        });
+        let res = self
+            .do_request("wallet/withdrawbalance", Some(args))
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn votes_wintess(
+        &self,
+        args: &stake::VoteWitness,
+    ) -> crate::Result<TronTransactionResponse<stake::VoteWitness>> {
+        let res = self
+            .do_request("wallet/votewitnessaccount", Some(args))
+            .await?;
+        Ok(res)
+    }
 }

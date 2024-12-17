@@ -11,6 +11,7 @@ pub mod unfreeze;
 pub use unfreeze::*;
 
 pub mod vote;
+pub use vote::*;
 
 #[derive(serde::Serialize, Debug, serde::Deserialize)]
 pub enum ResourceType {

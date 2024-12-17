@@ -52,7 +52,7 @@ impl TronTxOperation<DelegateResp> for DelegateArgs {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct DelegateResp {
     owner_address: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -101,7 +101,7 @@ pub struct CanWithdrawUnfreezeAmount {
     pub amount: i64,
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct WithdrawExpire {
     owner_address: String,
 }

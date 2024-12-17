@@ -113,6 +113,10 @@ pub struct AccountResourceDetail {
     pub energy_limit: i64,
     pub total_energy_limit: i64,
     pub total_energy_weight: i64,
+    #[serde(rename = "tronPowerUsed")]
+    pub tron_power_used: i64,
+    #[serde(rename = "tronPowerLimit")]
+    pub tron_power_limit: i64,
 }
 impl AccountResourceDetail {
     pub fn energy_price(&self) -> f64 {

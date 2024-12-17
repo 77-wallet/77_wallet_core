@@ -45,7 +45,7 @@ impl TronTxOperation<UnDelegateResp> for UnDelegateArgs {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct UnDelegateResp {
     owner_address: String,
     #[serde(skip_serializing_if = "Option::is_none")]

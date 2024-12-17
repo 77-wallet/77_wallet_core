@@ -40,7 +40,7 @@ impl TronTxOperation<FreezeBalanceResp> for FreezeBalanceArgs {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct FreezeBalanceResp {
     #[serde(skip_serializing_if = "Option::is_none")]
     resource: Option<String>,
