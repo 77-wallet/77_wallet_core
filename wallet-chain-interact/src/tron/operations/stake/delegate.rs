@@ -105,3 +105,16 @@ pub struct CanWithdrawUnfreezeAmount {
 pub struct WithdrawExpire {
     owner_address: String,
 }
+
+#[derive(serde::Deserialize, Debug)]
+pub struct CanDelegatedMaxSize {
+    #[serde(default)]
+    // unit is sun
+    pub max_size: u64,
+}
+
+impl CanDelegatedMaxSize {
+    pub fn to_sun(&self) -> f64 {
+        ((self.max_size as f64 / consts::TRX_TO_SUN as f64) * 100.0).round() / 100.0
+    }
+}

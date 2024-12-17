@@ -19,10 +19,10 @@ pub enum ResourceType {
 }
 
 impl ResourceType {
-    pub fn to_int_str(&self) -> String {
+    pub fn to_i8(&self) -> i8 {
         match self {
-            ResourceType::ENERGY => "1".to_string(),
-            ResourceType::BANDWIDTH => "0".to_string(),
+            ResourceType::ENERGY => 1,
+            ResourceType::BANDWIDTH => 0,
         }
     }
 

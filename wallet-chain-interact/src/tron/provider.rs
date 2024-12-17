@@ -1,7 +1,7 @@
 use super::{
     operations::{
         contract::{ConstantContract, TriggerContractParameter, TriggerContractResult},
-        stake,
+        stake::{self, CanDelegatedMaxSize},
         transfer::{ContractTransferResp, TronTransferResp},
         RawTransactionParams, TronTransactionResponse,
     },
@@ -289,12 +289,12 @@ impl Provider {
         &self,
         owner_address: &str,
         resource: stake::ResourceType,
-    ) -> crate::Result<String> {
+    ) -> crate::Result<CanDelegatedMaxSize> {
         let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
 
         let args = json!({
             "owner_address":json!(owner_address),
-            "type":json!(resource.to_int_str())
+            "type":json!(resource.to_i8())
         });
 
         let result = self
@@ -416,91 +416,3 @@ impl Provider {
         Ok(res)
     }
 }
-
-// // new version
-// pub struct TronProvider {
-//     client: HttpClient,
-// }
-// impl TronProvider {
-// pub fn new(rpc_url: &str) -> crate::Result<Self> {
-//     let client = HttpClient::new(rpc_url, None, None)?;
-//     Ok(Self { client })
-// }
-
-// pub async fn chain_params(&self) -> crate::Result<ChainParameter> {
-//     Ok(self.client.get("wallet/getchainparameters").send().await?)
-// }
-
-// pub async fn account_info(&self, account: &str) -> crate::Result<TronAccount> {
-//     let mut params = HashMap::new();
-//     params.insert("address", account);
-//     if account.starts_with("T") {
-//         params.insert("visible", "true");
-//     }
-
-//     let res = self
-//         .client
-//         .post_request("wallet/getaccount", params)
-//         .await?;
-//     Ok(res)
-// }
-
-// pub async fn account_resource(&self, account: &str) -> crate::Result<AccountResourceDetail> {
-//     let mut params = HashMap::new();
-//     params.insert("address", account);
-//     if account.starts_with("T") {
-//         params.insert("visible", "true");
-//     }
-
-//     let res = self
-//         .client
-//         .post_request("wallet/getaccountresource", params)
-//         .await?;
-//     Ok(res)
-// }
-
-// pub async fn query_tx_info(&self, tx_hash: &str) -> crate::Result<TransactionInfo> {
-//     let mut params = HashMap::new();
-//     params.insert("value", tx_hash);
-
-//     let result = self
-//         .client
-//         .post("wallet/gettransactioninfobyid")
-//         .json(params)
-//         .send::<TransactionInfo>()
-//         .await?;
-//     Ok(result)
-// }
-
-// pub async fn send_raw_transaction(
-//     &self,
-//     params: SendRawTransactionParams,
-// ) -> crate::Result<SendRawTransactionResp> {
-//     let result = self
-//         .client
-//         .post_request("wallet/broadcasttransaction", params)
-//         .await?;
-//     Ok(result)
-// }
-
-// // build base transfer
-// pub async fn create_base_transfer(
-//     &self,
-//     params: BaseTransaction,
-// ) -> crate::Result<CreateTransactionResp<BaseTransaction>> {
-//     let res = self
-//         .client
-//         .post_request("wallet/createtransaction", params)
-//         .await?;
-//     Ok(res)
-// }
-
-// pub fn calc_bandwidth(&self, raw_data_hex: &str, signature_num: u8) -> i64 {
-//     let data_hex_pro = 3_i64;
-//     let result_hex = 64_i64;
-//     let sign_len = 67_i64 * signature_num as i64;
-
-//     let raw_data_len = (raw_data_hex.len() / 2) as i64;
-//     raw_data_len + data_hex_pro + result_hex + sign_len
-// }
-// }
