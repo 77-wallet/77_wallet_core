@@ -32,11 +32,10 @@ impl ReqBuilder {
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
         if !res.status().is_success() {
-            let text = res
-                .text()
-                .await
-                .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
-            return Err(crate::TransportError::NodeResponseError(text));
+            return Err(crate::TransportError::NodeResponseError(format!(
+                "error_code {}",
+                res.status()
+            )));
         }
 
         let response = res
@@ -55,6 +54,13 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
+        if !res.status().is_success() {
+            return Err(crate::TransportError::NodeResponseError(format!(
+                "error_code {}",
+                res.status()
+            )));
+        }
+
         let response = res
             .text()
             .await
@@ -70,6 +76,13 @@ impl ReqBuilder {
             .send()
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
+
+        if !res.status().is_success() {
+            return Err(crate::TransportError::NodeResponseError(format!(
+                "error_code {}",
+                res.status()
+            )));
+        }
 
         let response_str = res
             .text()
@@ -96,6 +109,13 @@ impl ReqBuilder {
             .send()
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
+
+        if !res.status().is_success() {
+            return Err(crate::TransportError::NodeResponseError(format!(
+                "error_code {}",
+                res.status()
+            )));
+        }
 
         let response_bytes = res
             .bytes()
