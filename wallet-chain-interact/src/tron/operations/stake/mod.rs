@@ -13,7 +13,7 @@ pub use unfreeze::*;
 pub mod vote;
 pub use vote::*;
 
-#[derive(serde::Serialize, Debug, serde::Deserialize)]
+#[derive(serde::Serialize, Debug, serde::Deserialize, Clone, Copy)]
 pub enum ResourceType {
     ENERGY,
     BANDWIDTH,

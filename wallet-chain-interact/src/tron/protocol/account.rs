@@ -1,4 +1,4 @@
-use crate::tron::consts;
+use crate::tron::{consts, operations::stake::ResourceType};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -119,12 +119,14 @@ pub struct AccountResourceDetail {
     pub tron_power_limit: i64,
 }
 impl AccountResourceDetail {
+    // unit is trx
     pub fn energy_price(&self) -> f64 {
         if self.total_energy_weight == 0 {
             return 0.0;
         }
         self.total_energy_limit as f64 / self.total_energy_weight as f64
     }
+    // unit is trx
     pub fn net_price(&self) -> f64 {
         if self.total_net_weight == 0 {
             return 0.0;
@@ -142,6 +144,17 @@ impl AccountResourceDetail {
 
     pub fn available_energy(&self) -> i64 {
         (self.energy_limit - self.energy_used).max(0)
+    }
+
+    // value unit is trx
+    pub fn resource_value(&self, resource_type: ResourceType, value: &str) -> crate::Result<f64> {
+        let price = match resource_type {
+            ResourceType::BANDWIDTH => self.net_price(),
+            ResourceType::ENERGY => self.energy_price(),
+        };
+
+        let value = wallet_utils::unit::string_to_f64(value)?;
+        Ok((price * value * 100.0).round() / 100.0)
     }
 }
 

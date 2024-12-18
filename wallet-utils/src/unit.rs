@@ -89,3 +89,19 @@ pub fn truncate_to_8_decimals(input: &str) -> String {
         result
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::string_to_f64;
+
+    #[test]
+    fn test_string_to_f64() {
+        let a = "1.0";
+        let a = string_to_f64(a).unwrap();
+        assert_eq!(a, 1.0);
+
+        let a = "1";
+        let a = string_to_f64(a).unwrap();
+        assert_eq!(a, 1.0)
+    }
+}
