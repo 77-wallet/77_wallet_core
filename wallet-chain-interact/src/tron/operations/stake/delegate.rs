@@ -7,7 +7,7 @@ use crate::tron::provider::Provider;
 pub struct DelegateArgs {
     pub owner_address: String,
     pub receiver_address: String,
-    pub balance: u64,
+    pub balance: i64,
     pub resource: ResourceType,
     pub lock: bool,
     pub lock_period: i64,
@@ -16,14 +16,13 @@ impl DelegateArgs {
     pub fn new(
         owner_address: &str,
         receiver_address: &str,
-        balance: &str,
+        balance: i64,
         resource: &str,
     ) -> crate::Result<Self> {
-        let balance = wallet_utils::unit::convert_to_u256(balance, consts::TRX_DECIMALS)?;
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             receiver_address: wallet_utils::address::bs58_addr_to_hex(receiver_address)?,
-            balance: balance.to::<u64>(),
+            balance: balance * consts::TRX_VALUE,
             resource: ResourceType::try_from(resource)?,
             lock: false,
             lock_period: 0,
@@ -94,11 +93,26 @@ pub struct DelegateResouce {
     #[serde(default)]
     pub expire_time_for_energy: i64,
 }
+impl DelegateResouce {
+    pub fn value_trx(&self, resource_type: ResourceType) -> i64 {
+        match resource_type {
+            ResourceType::BANDWIDTH => {
+                self.frozen_balance_for_bandwidth / consts::TRX_TO_SUN as i64
+            }
+            ResourceType::ENERGY => self.frozen_balance_for_energy / consts::TRX_TO_SUN as i64,
+        }
+    }
+}
 
 #[derive(Debug, serde::Deserialize)]
 pub struct CanWithdrawUnfreezeAmount {
     #[serde(default)]
     pub amount: i64,
+}
+impl CanWithdrawUnfreezeAmount {
+    pub fn to_sun(&self) -> i64 {
+        self.amount / consts::TRX_VALUE
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]

@@ -1,4 +1,5 @@
 use crate::tron::{
+    consts,
     operations::{RawTransactionParams, TronTxOperation},
     Provider,
 };
@@ -9,22 +10,20 @@ use super::ResourceType;
 pub struct UnDelegateArgs {
     pub owner_address: String,
     pub receiver_address: String,
-    pub balance: u64,
+    pub balance: i64,
     pub resource: ResourceType,
 }
 impl UnDelegateArgs {
     pub fn new(
         owner_address: &str,
         receiver_address: &str,
-        balance: &str,
+        balance: i64,
         resource: &str,
     ) -> crate::Result<Self> {
-        let balance = wallet_utils::unit::convert_to_u256(balance, 6)?;
-
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             receiver_address: wallet_utils::address::bs58_addr_to_hex(receiver_address)?,
-            balance: balance.to::<u64>(),
+            balance: balance * consts::TRX_VALUE,
             resource: ResourceType::try_from(resource)?,
         })
     }

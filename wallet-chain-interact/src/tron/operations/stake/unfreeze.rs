@@ -1,5 +1,6 @@
 use super::{ResourceType, WithdrawExpire};
 use crate::tron::{
+    consts,
     operations::{RawTransactionParams, TronTxOperation},
     Provider,
 };
@@ -12,12 +13,11 @@ pub struct UnFreezeBalanceArgs {
 }
 
 impl UnFreezeBalanceArgs {
-    pub fn new(owner_address: &str, resource: &str, unfreeze_balance: &str) -> crate::Result<Self> {
-        let unfreeze_balance = wallet_utils::unit::convert_to_u256(unfreeze_balance, 6)?;
+    pub fn new(owner_address: &str, resource: &str, unfreeze_balance: i64) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             resource: ResourceType::try_from(resource)?,
-            unfreeze_balance: unfreeze_balance.to::<i64>(),
+            unfreeze_balance: unfreeze_balance * consts::TRX_VALUE,
         })
     }
 }

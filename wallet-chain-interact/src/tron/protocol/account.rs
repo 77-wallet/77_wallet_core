@@ -147,14 +147,13 @@ impl AccountResourceDetail {
     }
 
     // value unit is trx
-    pub fn resource_value(&self, resource_type: ResourceType, value: &str) -> crate::Result<f64> {
+    pub fn resource_value(&self, resource_type: ResourceType, value: i64) -> crate::Result<f64> {
         let price = match resource_type {
             ResourceType::BANDWIDTH => self.net_price(),
             ResourceType::ENERGY => self.energy_price(),
         };
 
-        let value = wallet_utils::unit::string_to_f64(value)?;
-        Ok((price * value * 100.0).round() / 100.0)
+        Ok((price * value as f64 * 100.0).round() / 100.0)
     }
 }
 

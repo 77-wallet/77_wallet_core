@@ -1,5 +1,6 @@
 use super::ResourceType;
 use crate::tron::{
+    consts,
     operations::{RawTransactionParams, TronTxOperation},
     Provider,
 };
@@ -13,13 +14,11 @@ pub struct FreezeBalanceArgs {
 }
 
 impl FreezeBalanceArgs {
-    pub fn new(owner_address: &str, resource: &str, frozen_balance: &str) -> crate::Result<Self> {
-        let frozen_balance = wallet_utils::unit::convert_to_u256(frozen_balance, 6)?;
-
+    pub fn new(owner_address: &str, resource: &str, frozen_balance: i64) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             resource: ResourceType::try_from(resource)?,
-            frozen_balance: frozen_balance.to::<i64>(),
+            frozen_balance: frozen_balance * consts::TRX_VALUE,
             visible: false,
         })
     }
