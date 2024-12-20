@@ -444,8 +444,8 @@ impl Provider {
 
     pub async fn votes_wintess(
         &self,
-        args: &stake::VoteWitness,
-    ) -> crate::Result<TronTransactionResponse<stake::VoteWitness>> {
+        args: &stake::VoteWitnessArgs,
+    ) -> crate::Result<TronTransactionResponse<stake::VoteWitnessArgs>> {
         let res = self
             .do_request("wallet/votewitnessaccount", Some(args))
             .await?;

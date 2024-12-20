@@ -42,11 +42,11 @@ pub struct WithdrawBalanceResp {
 
 // 投票
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct VoteWitness {
+pub struct VoteWitnessArgs {
     pub owner_address: String,
     pub votes: Vec<Votes>,
 }
-impl VoteWitness {
+impl VoteWitnessArgs {
     pub fn new(owner_address: &str, votes: Vec<Votes>) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
@@ -71,7 +71,7 @@ impl Votes {
 }
 
 #[async_trait::async_trait]
-impl TronTxOperation<VoteWitness> for VoteWitness {
+impl TronTxOperation<VoteWitnessArgs> for VoteWitnessArgs {
     async fn build_raw_transaction(
         &self,
         provider: &Provider,
