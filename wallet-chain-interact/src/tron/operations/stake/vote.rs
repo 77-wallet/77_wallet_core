@@ -16,12 +16,12 @@ impl Reward {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct WithdrawBalance {
+pub struct WithdrawBalanceReq {
     pub owner_address: String,
 }
 
 #[async_trait::async_trait]
-impl TronTxOperation<WithdrawBalanceResp> for WithdrawBalance {
+impl TronTxOperation<WithdrawBalanceResp> for WithdrawBalanceReq {
     async fn build_raw_transaction(
         &self,
         provider: &Provider,
