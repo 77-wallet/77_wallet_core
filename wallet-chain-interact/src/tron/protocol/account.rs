@@ -25,15 +25,33 @@ pub struct TronAccount {
 }
 
 impl TronAccount {
+    // unit is sun
     pub fn frozen_v2_owner(&self, resource_type: &str) -> i64 {
-        self.frozen_v2
+        let sun = self
+            .frozen_v2
             .iter()
             .filter(|item| item.types == resource_type)
             .map(|item| item.amount)
-            .sum::<i64>()
+            .sum::<i64>();
+
+        sun / consts::TRX_VALUE
     }
 
-    pub fn can_withdraw_unfreeze_amount(&self, resource_type: &str) -> i64 {
+    // pub fn can_withdraw_unfreeze_amount(&self, resource_type: &str) -> i64 {
+    //     let start = SystemTime::now();
+    //     let since_the_epoch = start
+    //         .duration_since(UNIX_EPOCH)
+    //         .expect("Time went backwards");
+    //     let timestamp = since_the_epoch.as_micros() as i64;
+
+    //     self.unfreeze_v2
+    //         .iter()
+    //         .filter(|item| item.types == resource_type && item.unfreeze_expire_time <= timestamp)
+    //         .map(|item| item.unfreeze_amount)
+    //         .sum::<i64>()
+    // }
+
+    pub fn can_withdraw_num(&self) -> i64 {
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
@@ -42,9 +60,8 @@ impl TronAccount {
 
         self.unfreeze_v2
             .iter()
-            .filter(|item| item.types == resource_type && item.unfreeze_expire_time <= timestamp)
-            .map(|item| item.unfreeze_amount)
-            .sum::<i64>()
+            .filter(|item| item.unfreeze_expire_time <= timestamp)
+            .count() as i64
     }
 
     pub fn balance_to_f64(&self) -> f64 {
@@ -56,6 +73,25 @@ impl TronAccount {
             .iter()
             .any(|permission| permission.keys.len() >= 2)
             || self.owner_permission.keys.len() >= 2
+    }
+
+    // unit is trx
+    pub fn delegate_resource(&self, resource_type: ResourceType) -> i64 {
+        let value = match resource_type {
+            ResourceType::BANDWIDTH => self.delegated_bandwidth,
+            ResourceType::ENERGY => self.account_resource.delegated_energy,
+        };
+
+        value / consts::TRX_VALUE
+    }
+
+    // unit is trx
+    pub fn acquired_resource(&self, resource_type: ResourceType) -> i64 {
+        let value = match resource_type {
+            ResourceType::BANDWIDTH => self.acquired_bandwidth,
+            ResourceType::ENERGY => self.account_resource.acquired_energy,
+        };
+        value / consts::TRX_VALUE
     }
 }
 

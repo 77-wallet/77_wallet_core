@@ -160,9 +160,14 @@ impl TronChain {
     {
         let tx = params.build_raw_transaction(&self.provider).await?;
         let to = params.get_to();
+        let to = if to.is_empty() {
+            None
+        } else {
+            Some(to.as_str())
+        };
 
         self.provider
-            .transfer_fee(account, Some(&to), &tx, signature_num)
+            .transfer_fee(account, to, &tx, signature_num)
             .await
     }
 

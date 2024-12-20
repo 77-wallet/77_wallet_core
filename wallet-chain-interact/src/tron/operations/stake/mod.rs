@@ -26,13 +26,6 @@ impl ResourceType {
             ResourceType::BANDWIDTH => 0,
         }
     }
-
-    pub fn to_string(&self) -> String {
-        match self {
-            ResourceType::ENERGY => "energy".to_string(),
-            ResourceType::BANDWIDTH => "bandwidth".to_string(),
-        }
-    }
 }
 impl TryFrom<&str> for ResourceType {
     type Error = crate::Error;
