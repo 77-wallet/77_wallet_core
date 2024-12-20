@@ -84,3 +84,26 @@ impl TronTxOperation<VoteWitnessArgs> for VoteWitnessArgs {
         String::new()
     }
 }
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct VoteWitnessResp {
+    owner_address: String,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct ListWitnessResp {
+    witnesses: Vec<Witness>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Witness {
+    address: String,
+    vote_count: Option<i64>,
+    url: String,
+    total_produced: Option<i64>,
+    total_missed: Option<i64>,
+    latest_block_num: Option<i64>,
+    latest_slot_num: Option<i64>,
+    is_jobs: Option<bool>,
+}
