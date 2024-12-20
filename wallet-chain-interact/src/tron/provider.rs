@@ -456,4 +456,12 @@ impl Provider {
         let res = self.do_request("wallet/listwitnesses", None::<()>).await?;
         Ok(res)
     }
+
+    pub async fn get_brokerage(&self, address: &str) -> crate::Result<stake::BrokerageResp> {
+        let args = json!({
+            "address": address,
+        });
+        let res = self.do_request("wallet/getBrokerage", Some(args)).await?;
+        Ok(res)
+    }
 }

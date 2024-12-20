@@ -92,18 +92,23 @@ pub struct VoteWitnessResp {
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct ListWitnessResp {
-    witnesses: Vec<Witness>,
+    pub witnesses: Vec<Witness>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Witness {
-    address: String,
-    vote_count: Option<i64>,
-    url: String,
+    pub address: String,
+    pub vote_count: Option<i64>,
+    pub url: String,
     total_produced: Option<i64>,
     total_missed: Option<i64>,
     latest_block_num: Option<i64>,
     latest_slot_num: Option<i64>,
     is_jobs: Option<bool>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct BrokerageResp {
+    pub brokerages: i64,
 }
