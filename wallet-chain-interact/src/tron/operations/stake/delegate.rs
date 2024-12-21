@@ -124,11 +124,11 @@ pub struct WithdrawExpire {
 pub struct CanDelegatedMaxSize {
     #[serde(default)]
     // unit is sun
-    pub max_size: u64,
+    pub max_size: i64,
 }
 
 impl CanDelegatedMaxSize {
-    pub fn to_sun(&self) -> f64 {
-        ((self.max_size as f64 / consts::TRX_TO_SUN as f64) * 100.0).round() / 100.0
+    pub fn to_sun(&self) -> i64 {
+        self.max_size / consts::TRX_VALUE
     }
 }
