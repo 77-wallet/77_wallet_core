@@ -71,7 +71,7 @@ impl TronTxOperation<CancelAllUnfreezeResp> for CancelAllFreezeBalanceArgs {
         String::new()
     }
 }
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct CancelAllUnfreezeResp {
     owner_address: String,
 }

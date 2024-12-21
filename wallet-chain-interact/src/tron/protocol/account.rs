@@ -25,7 +25,15 @@ pub struct TronAccount {
 }
 
 impl TronAccount {
-    // unit is sun
+    fn now_time(&self) -> i64 {
+        let start = SystemTime::now();
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        since_the_epoch.as_micros() as i64
+    }
+
+    // unit is trx
     pub fn frozen_v2_owner(&self, resource_type: &str) -> i64 {
         let sun = self
             .frozen_v2
@@ -37,30 +45,37 @@ impl TronAccount {
         sun / consts::TRX_VALUE
     }
 
-    // pub fn can_withdraw_unfreeze_amount(&self, resource_type: &str) -> i64 {
-    //     let start = SystemTime::now();
-    //     let since_the_epoch = start
-    //         .duration_since(UNIX_EPOCH)
-    //         .expect("Time went backwards");
-    //     let timestamp = since_the_epoch.as_micros() as i64;
-
-    //     self.unfreeze_v2
-    //         .iter()
-    //         .filter(|item| item.types == resource_type && item.unfreeze_expire_time <= timestamp)
-    //         .map(|item| item.unfreeze_amount)
-    //         .sum::<i64>()
-    // }
-
-    pub fn can_withdraw_num(&self) -> i64 {
-        let start = SystemTime::now();
-        let since_the_epoch = start
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
-        let timestamp = since_the_epoch.as_micros() as i64;
+    // 可以提取的金额
+    pub fn can_withdraw_amount(&self) -> i64 {
+        let now = self.now_time();
 
         self.unfreeze_v2
             .iter()
-            .filter(|item| item.unfreeze_expire_time <= timestamp)
+            .filter(|item| item.unfreeze_expire_time >= now)
+            .map(|item| item.unfreeze_amount)
+            .sum::<i64>()
+            / consts::TRX_VALUE
+    }
+
+    // 待提取的能量或者带宽
+    pub fn can_withdraw_unfreeze_amount(&self, resource_type: &str) -> i64 {
+        let now_time = self.now_time();
+
+        self.unfreeze_v2
+            .iter()
+            .filter(|item| item.types == resource_type && item.unfreeze_expire_time <= now_time)
+            .map(|item| item.unfreeze_amount)
+            .sum::<i64>()
+            / consts::TRX_VALUE
+    }
+
+    // 有几个带提取的
+    pub fn can_withdraw_num(&self) -> i64 {
+        let now = self.now_time();
+
+        self.unfreeze_v2
+            .iter()
+            .filter(|item| item.unfreeze_expire_time <= now)
             .count() as i64
     }
 
