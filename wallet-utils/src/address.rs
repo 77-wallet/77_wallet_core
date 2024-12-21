@@ -203,3 +203,53 @@ impl AccountIndexMap {
         })
     }
 }
+
+pub fn to_checksum_address(address: &str) -> String {
+    use sha3::Digest as _;
+    // 去掉 0x 前缀并转换为小写
+    let address = address.trim_start_matches("0x").to_lowercase();
+
+    // 计算 Keccak-256 哈希
+    let hash = sha3::Keccak256::digest(address.as_bytes());
+
+    // 根据哈希值调整字符大小写
+    let checksum_address: String = address
+        .chars()
+        .enumerate()
+        .map(|(i, c)| {
+            if c.is_digit(10) {
+                c // 数字保持不变
+            } else {
+                // 判断对应哈希位的值
+                let hash_char = (hash[i / 2] >> (4 * (1 - i % 2))) & 0xF;
+                if hash_char >= 8 {
+                    c.to_ascii_uppercase() // 大写
+                } else {
+                    c.to_ascii_lowercase() // 小写
+                }
+            }
+        })
+        .collect();
+
+    format!("0x{}", checksum_address)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::to_checksum_address;
+
+    #[test]
+    fn test_to_checksum_address() {
+        let input = "0x3bac24b73c7a03c8715697ca1646a6f85b91023a";
+        let expected = "0x3bAc24b73c7A03C8715697cA1646a6f85B91023a";
+        assert_eq!(to_checksum_address(input), expected);
+
+        let input = "0xf7d5c082ce49922913404b56168eba82dda4c1f7";
+        let expected = "0xF7d5c082Ce49922913404b56168EBa82Dda4c1F7";
+        assert_eq!(to_checksum_address(input), expected);
+
+        let input = "0xf1299eb148b413be971822dff4fd079dab9d045d";
+        let expected = "0xf1299EB148b413bE971822DfF4fD079dAB9d045d";
+        assert_eq!(to_checksum_address(input), expected);
+    }
+}
