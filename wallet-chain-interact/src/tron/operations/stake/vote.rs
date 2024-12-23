@@ -90,6 +90,34 @@ pub struct VoteWitnessResp {
     owner_address: String,
 }
 
+pub mod vote_list {
+    #[derive(Debug, serde::Serialize, serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct VoteWitnessResp {
+        pub total: u16,
+        pub total_votes: i64,
+        pub data: Vec<Witness>,
+        // #[serde(flatten)]
+        // pub ext: std::collections::HashMap<String, serde_json::Value>,
+    }
+
+    #[derive(Debug, serde::Serialize, serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Witness {
+        pub real_time_ranking: Option<i64>,
+        pub name: String,
+        pub address: String,
+        pub real_time_votes: Option<i64>,
+        pub url: String,
+        /// 分成比例
+        pub brokerage: i64,
+        /// 年化收益率
+        pub annualized_rate: String,
+        // #[serde(flatten)]
+        // pub ext: std::collections::HashMap<String, serde_json::Value>,
+    }
+}
+
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct ListWitnessResp {
     pub witnesses: Vec<Witness>,

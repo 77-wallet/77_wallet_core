@@ -68,6 +68,14 @@ impl Provider {
         Ok(request.send::<R>().await?)
     }
 
+    pub async fn do_get_request<R>(&self, endpoint: &str) -> crate::Result<R>
+    where
+        R: serde::de::DeserializeOwned,
+    {
+        let request = self.client.get(endpoint);
+        Ok(request.send::<R>().await?)
+    }
+
     // 合约相关的调用、匹配成功和失败的情况
     async fn do_contract_request<T, R>(&self, endpoint: &str, params: Option<T>) -> crate::Result<R>
     where
@@ -449,6 +457,11 @@ impl Provider {
         let res = self
             .do_request("wallet/votewitnessaccount", Some(args))
             .await?;
+        Ok(res)
+    }
+
+    pub async fn vote_witnesses(&self) -> crate::Result<stake::vote_list::VoteWitnessResp> {
+        let res = self.do_get_request("vote/witness").await?;
         Ok(res)
     }
 
