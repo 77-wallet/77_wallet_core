@@ -1,5 +1,5 @@
 use super::operations::multisig::{BtcMultisigRaw, MultisigAccountOpt, MultisigTransactionOpt};
-use super::params::FeeSetting;
+use super::params::{FeeSetting, TransferResp};
 use super::provider::{Provider, ProviderConfig};
 use super::script::BtcScript;
 use super::signature::{BtcSignature, SignatureCombiner};
@@ -96,7 +96,7 @@ impl BtcChain {
         &self,
         params: operations::transfer::TransferArg,
         key: ChainPrivateKey,
-    ) -> crate::Result<String> {
+    ) -> crate::Result<TransferResp> {
         let utxo = self
             .provider
             .utxos(&params.from.to_string(), self.network)
@@ -105,8 +105,8 @@ impl BtcChain {
 
         let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
 
-        if params.spend_all {
-            transaction_builder.spent_all_set_fee(fee_rate, params.to, params.address_type)?;
+        let size = if params.spend_all {
+            transaction_builder.spent_all_set_fee(fee_rate, params.to, params.address_type)?
         } else {
             // 找零和手续费配置
             transaction_builder.change_and_fee(
@@ -114,8 +114,8 @@ impl BtcChain {
                 params.change_address,
                 params.address_type,
                 params.value,
-            )?;
-        }
+            )?
+        };
 
         // 签名
         let utxo = transaction_builder.utxo.used_utxo_to_hash_map();
@@ -132,8 +132,9 @@ impl BtcChain {
         let raw = transaction_builder.get_raw_transaction();
 
         // 执行交易
-        let res = self.provider.send_raw_transaction(&raw).await?;
-        Ok(res)
+        let tx_hash = self.provider.send_raw_transaction(&raw).await?;
+
+        Ok(TransferResp::new(tx_hash, fee_rate, size))
     }
 
     pub async fn transfer_with_fee(
@@ -261,7 +262,7 @@ impl BtcChain {
         params: MultisigTransactionOpt,
         signatures: Vec<String>,
         inner_key: String,
-    ) -> crate::Result<String> {
+    ) -> crate::Result<TransferResp> {
         let raw_data = BtcMultisigRaw::from_hex_str(&params.raw_data)?;
 
         let bytes = hex_func::hex_decode(&raw_data.raw_hex)?;
@@ -309,7 +310,8 @@ impl BtcChain {
 
         let hex_raw = consensus::encode::serialize_hex(&transaction);
 
-        self.provider.send_raw_transaction(&hex_raw).await
+        let tx_hash = self.provider.send_raw_transaction(&hex_raw).await?;
+        Ok(TransferResp::new(tx_hash, fee_rate, size))
     }
 
     pub async fn multisig_address(

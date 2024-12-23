@@ -17,3 +17,15 @@ impl FeeSetting {
         res.to_float_in(bitcoin::Denomination::Bitcoin)
     }
 }
+
+#[derive(Debug)]
+pub struct TransferResp {
+    pub tx_hash: String,
+    pub fee: f64,
+}
+impl TransferResp {
+    pub fn new(tx_hash: String, fee_rate: bitcoin::Amount, size: usize) -> Self {
+        let fee = (fee_rate * size as u64).to_float_in(bitcoin::Denomination::Bitcoin);
+        Self { tx_hash, fee }
+    }
+}
