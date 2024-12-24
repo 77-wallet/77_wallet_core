@@ -438,8 +438,6 @@ impl Provider {
         &self,
         owner_address: &str,
     ) -> crate::Result<TronTransactionResponse<stake::WithdrawBalanceResp>> {
-        let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
-
         let args = json!({
             "owner_address":json!(owner_address)
         });
