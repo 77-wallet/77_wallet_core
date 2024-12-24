@@ -51,7 +51,7 @@ impl TronTxOperation<DelegateResp> for DelegateArgs {
     }
 
     fn get_to(&self) -> String {
-        String::new()
+        self.receiver_address.clone()
     }
 }
 

@@ -42,7 +42,7 @@ impl TronTxOperation<UnDelegateResp> for UnDelegateArgs {
     }
 
     fn get_to(&self) -> String {
-        String::new()
+        self.receiver_address.clone()
     }
 }
 

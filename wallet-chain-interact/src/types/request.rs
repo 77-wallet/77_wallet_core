@@ -145,7 +145,7 @@ impl SignTransactionArgs {
 }
 
 // TODO 逐步优化,考虑使用u8字节
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ChainPrivateKey(String);
 
 impl std::ops::Deref for ChainPrivateKey {
