@@ -11,10 +11,7 @@ pub struct TokenPriceChangeBody {
     // 链码
     pub chain_code: String,
     // 代币编码
-    #[serde(
-        rename = "code",
-        deserialize_with = "wallet_utils::serde_func::deserialize_uppercase"
-    )]
+    #[serde(rename = "code")]
     pub symbol: String,
     // 默认代币
     pub default_token: Option<bool>,
