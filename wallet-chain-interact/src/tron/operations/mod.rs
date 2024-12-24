@@ -20,8 +20,13 @@ pub trait TronTxOperation<T> {
     fn get_to(&self) -> String;
 }
 
-pub trait TronSimulateOperation<T> {
-    fn simulate_raw_transaction(&self) -> crate::Result<RawTransactionParams>;
+pub trait TronSimulateOperation {
+    const DEFAULT_NUM: i64 = 27007120;
+    const DEFAULT_HASH: &'static str =
+        "00000000019c1890f87d110a81d815b9a38a3e62d44a00a7c8fd50a7b322a2df";
+
+    // return raw_data_hex
+    fn simulate_raw_transaction(&self) -> crate::Result<String>;
 }
 
 #[async_trait]

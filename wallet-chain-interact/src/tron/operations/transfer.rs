@@ -1,14 +1,10 @@
 use super::{
     contract::{ConstantContract, TriggerContractParameter},
-    Contract, Parameter, RawData, RawTransactionParams, TronConstantOperation,
-    TronSimulateOperation, TronTxOperation,
+    RawTransactionParams, TronConstantOperation, TronSimulateOperation, TronTxOperation,
 };
 use crate::{
     abi_encode_address, abi_encode_u256,
-    tron::{
-        operations::TronTransactionResponse, params::ResourceConsumer,
-        protocol::protobuf::transaction::Raw, provider::Provider,
-    },
+    tron::{params::ResourceConsumer, protocol::protobuf::transaction::Raw, provider::Provider},
 };
 use alloy::primitives::U256;
 use anychain_core::Transaction as _;
@@ -81,67 +77,23 @@ impl TronTxOperation<TronTransferResp> for TransferOpt {
     }
 }
 
-impl TronSimulateOperation<TronTransferResp> for TransferOpt {
-    fn simulate_raw_transaction(&self) -> crate::Result<RawTransactionParams> {
+impl TronSimulateOperation for TransferOpt {
+    fn simulate_raw_transaction(&self) -> crate::Result<String> {
         let ct = anychain_tron::trx::build_transfer_contract(
             &self.from,
             &self.to,
             &self.value.to_string(),
-        )
-        .map_err(|e| {
-            crate::Error::Other(format!("any chian tron build contract tx error: {}", e))
-        })?;
+        )?;
 
         let mut param = anychain_tron::TronTransactionParameters::default();
         param.set_timestamp(anychain_tron::trx::timestamp_millis());
-        param.set_ref_block(
-            27007120,
-            "00000000019c1890f87d110a81d815b9a38a3e62d44a00a7c8fd50a7b322a2df",
-        );
+        param.set_ref_block(Self::DEFAULT_NUM, Self::DEFAULT_HASH);
         param.set_contract(ct);
-        let transaction = anychain_tron::TronTransaction::new(&param)
-            .map_err(|e| crate::Error::Other(format!("any chian tron build tx error: {}", e)))?;
 
-        let raw_data_hex = transaction.to_bytes().map_err(|e| {
-            crate::Error::Other(format!("any chain tron transaction to bytes error: {}", e))
-        })?;
+        let transaction = anychain_tron::TronTransaction::new(&param)?;
 
-        let value = TronTransferResp {
-            amount: self.value,
-            owner_address: self.from.clone(),
-            to_address: self.to.clone(),
-            permission_id: None,
-            extra_data: self.memo.clone(),
-        };
-
-        let contract = Contract {
-            parameter: Parameter {
-                value,
-                type_url: "type.googleapis.com/protocol.TransferContract".to_string(),
-            },
-            types: "TransferContract".to_string(),
-            permission_id: None,
-        };
-
-        let raw = RawData {
-            contract: vec![contract],
-            ref_block_bytes: "cc46".to_string(),
-            ref_block_hash: "86013f30ec6d034b".to_string(),
-            expiration: 1719569763000,
-            fee_limit: None,
-            data: self.memo.clone(),
-            timestamp: 1719569703563,
-        };
-
-        let tx_resp = TronTransactionResponse {
-            visible: false,
-            tx_id: "4c3a90b598ae28174617a5960bf9d38500ac1ec5e57e7679141b04cda3467f1f".to_string(),
-            raw_data: raw,
-            raw_data_hex: wallet_utils::hex_func::hex_encode(raw_data_hex),
-            ext: None,
-        };
-
-        Ok(RawTransactionParams::from(tx_resp))
+        let raw_data_hex = transaction.to_bytes()?;
+        Ok(wallet_utils::hex_func::hex_encode(raw_data_hex))
     }
 }
 

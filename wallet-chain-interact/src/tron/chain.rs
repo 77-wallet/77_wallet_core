@@ -167,12 +167,12 @@ impl TronChain {
         };
 
         self.provider
-            .transfer_fee(account, to, &tx, signature_num)
+            .transfer_fee(account, to, &tx.raw_data_hex, signature_num)
             .await
     }
 
     // trx fee : this method is estimate fee by simulate a transaction
-    pub async fn simulate_simple_fee<T, R>(
+    pub async fn simulate_simple_fee<T>(
         &self,
         account: &str,
         to: &str,
@@ -180,13 +180,14 @@ impl TronChain {
         params: T,
     ) -> crate::Result<ResourceConsumer>
     where
-        T: operations::TronSimulateOperation<R>,
-        R: serde::Serialize + Debug,
+        T: operations::TronSimulateOperation,
     {
-        let tx = params.simulate_raw_transaction()?;
+        let raw_data_hex = params.simulate_raw_transaction()?;
+
+        let to = if to.is_empty() { None } else { Some(to) };
 
         self.provider
-            .transfer_fee(account, Some(to), &tx, signature_num)
+            .transfer_fee(account, to, &raw_data_hex, signature_num)
             .await
     }
 

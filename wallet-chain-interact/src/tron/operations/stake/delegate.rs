@@ -1,7 +1,11 @@
 use super::ResourceType;
 use crate::tron::consts;
-use crate::tron::operations::{RawTransactionParams, TronTxOperation};
+use crate::tron::operations::{RawTransactionParams, TronSimulateOperation, TronTxOperation};
 use crate::tron::provider::Provider;
+use anychain_core::Transaction as _;
+use anychain_tron::protocol::balance_contract::DelegateResourceContract;
+use anychain_tron::protocol::common::ResourceCode;
+use protobuf::EnumOrUnknown;
 
 #[derive(serde::Serialize, Debug)]
 pub struct DelegateArgs {
@@ -48,6 +52,35 @@ impl TronTxOperation<DelegateResp> for DelegateArgs {
 
     fn get_to(&self) -> String {
         String::new()
+    }
+}
+
+impl TronSimulateOperation for DelegateArgs {
+    fn simulate_raw_transaction(&self) -> crate::Result<String> {
+        let mut dr_contract = DelegateResourceContract::new();
+
+        let resource_code = match self.resource {
+            ResourceType::BANDWIDTH => ResourceCode::BANDWIDTH,
+            ResourceType::ENERGY => ResourceCode::ENERGY,
+        };
+
+        dr_contract.owner_address = wallet_utils::hex_func::hex_decode(&self.owner_address)?;
+        dr_contract.receiver_address = wallet_utils::hex_func::hex_decode(&self.receiver_address)?;
+        dr_contract.balance = self.balance;
+        dr_contract.resource = EnumOrUnknown::<ResourceCode>::new(resource_code);
+        dr_contract.lock = self.lock;
+        dr_contract.lock_period = self.lock_period;
+        let ct = anychain_tron::trx::build_contract(&dr_contract)?;
+
+        let mut param = anychain_tron::TronTransactionParameters::default();
+        param.set_timestamp(anychain_tron::trx::timestamp_millis());
+        param.set_ref_block(Self::DEFAULT_NUM, Self::DEFAULT_HASH);
+        param.set_contract(ct);
+
+        let transaction = anychain_tron::TronTransaction::new(&param)?;
+
+        let raw_data_hex = transaction.to_bytes()?;
+        Ok(wallet_utils::hex_func::hex_encode(raw_data_hex))
     }
 }
 

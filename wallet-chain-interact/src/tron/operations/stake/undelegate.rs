@@ -1,10 +1,12 @@
+use super::ResourceType;
 use crate::tron::{
     consts,
-    operations::{RawTransactionParams, TronTxOperation},
+    operations::{RawTransactionParams, TronSimulateOperation, TronTxOperation},
     Provider,
 };
-
-use super::ResourceType;
+use anychain_core::Transaction;
+use anychain_tron::protocol::{balance_contract::UnDelegateResourceContract, common::ResourceCode};
+use protobuf::EnumOrUnknown;
 
 #[derive(Debug, serde::Serialize)]
 pub struct UnDelegateArgs {
@@ -41,6 +43,33 @@ impl TronTxOperation<UnDelegateResp> for UnDelegateArgs {
 
     fn get_to(&self) -> String {
         String::new()
+    }
+}
+
+impl TronSimulateOperation for UnDelegateArgs {
+    fn simulate_raw_transaction(&self) -> crate::Result<String> {
+        let mut dr_contract = UnDelegateResourceContract::new();
+
+        let resource_code = match self.resource {
+            ResourceType::BANDWIDTH => ResourceCode::BANDWIDTH,
+            ResourceType::ENERGY => ResourceCode::ENERGY,
+        };
+
+        dr_contract.owner_address = wallet_utils::hex_func::hex_decode(&self.owner_address)?;
+        dr_contract.receiver_address = wallet_utils::hex_func::hex_decode(&self.receiver_address)?;
+        dr_contract.balance = self.balance;
+        dr_contract.resource = EnumOrUnknown::<ResourceCode>::new(resource_code);
+        let ct = anychain_tron::trx::build_contract(&dr_contract)?;
+
+        let mut param = anychain_tron::TronTransactionParameters::default();
+        param.set_timestamp(anychain_tron::trx::timestamp_millis());
+        param.set_ref_block(Self::DEFAULT_NUM, Self::DEFAULT_HASH);
+        param.set_contract(ct);
+
+        let transaction = anychain_tron::TronTransaction::new(&param)?;
+
+        let raw_data_hex = transaction.to_bytes()?;
+        Ok(wallet_utils::hex_func::hex_encode(raw_data_hex))
     }
 }
 

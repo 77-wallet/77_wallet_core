@@ -3,7 +3,7 @@ use super::{
         contract::{ConstantContract, TriggerContractParameter, TriggerContractResult},
         stake::{self, CanDelegatedMaxSize},
         transfer::{ContractTransferResp, TronTransferResp},
-        RawTransactionParams, TronTransactionResponse,
+        TronTransactionResponse,
     },
     params::ResourceConsumer,
     protocol::{
@@ -191,7 +191,7 @@ impl Provider {
         &self,
         account: &str,
         to: Option<&str>,
-        tx: &RawTransactionParams,
+        raw_data_hex: &str,
         signature_num: u8,
     ) -> crate::Result<ResourceConsumer> {
         let chain_params = self.chain_params().await?;
@@ -202,7 +202,7 @@ impl Provider {
             let to_account = self.account_info(to).await?;
 
             if !to_account.address.is_empty() {
-                let bandwidth = self.calc_bandwidth(&tx.raw_data_hex, signature_num);
+                let bandwidth = self.calc_bandwidth(raw_data_hex, signature_num);
                 let bandwidth = Resource::new(
                     resource.available_bandwidth(),
                     bandwidth,
@@ -227,7 +227,7 @@ impl Provider {
                 resource
             }
         } else {
-            let bandwidth = self.calc_bandwidth(&tx.raw_data_hex, signature_num);
+            let bandwidth = self.calc_bandwidth(raw_data_hex, signature_num);
             let bandwidth = Resource::new(
                 resource.available_bandwidth(),
                 bandwidth,

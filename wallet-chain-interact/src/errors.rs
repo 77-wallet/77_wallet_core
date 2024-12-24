@@ -58,6 +58,10 @@ pub enum Error {
     UtxoError(#[from] UtxoError),
     #[error("transfer error {0}")]
     TransferError(String),
+    #[error("any chain")]
+    AnyChainError(#[from] anychain_core::error::Error),
+    #[error("any chain transaction")]
+    AnyTransaction(#[from] anychain_core::TransactionError),
 }
 
 impl Error {
