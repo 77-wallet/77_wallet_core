@@ -101,7 +101,7 @@ pub mod vote_list {
         // pub ext: std::collections::HashMap<String, serde_json::Value>,
     }
 
-    #[derive(Debug, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Witness {
         pub real_time_ranking: Option<i64>,
@@ -115,6 +115,25 @@ pub mod vote_list {
         pub annualized_rate: String,
         // #[serde(flatten)]
         // pub ext: std::collections::HashMap<String, serde_json::Value>,
+    }
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct VoteRewardResp {
+    pub balance: f64,
+    pub reward: f64,
+    pub tron_power_limit: i64,
+    pub tron_power_used: i64,
+}
+
+impl VoteRewardResp {
+    pub fn new(balance: f64, reward: f64, tron_power_limit: i64, tron_power_used: i64) -> Self {
+        Self {
+            balance,
+            reward,
+            tron_power_limit,
+            tron_power_used,
+        }
     }
 }
 
