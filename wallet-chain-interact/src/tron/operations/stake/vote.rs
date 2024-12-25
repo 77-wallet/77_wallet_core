@@ -158,5 +158,5 @@ pub struct Witness {
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct BrokerageResp {
-    pub brokerages: i64,
+    pub brokerage: i64,
 }
