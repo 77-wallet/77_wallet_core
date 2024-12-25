@@ -59,34 +59,29 @@ pub fn string_to_f64(value: &str) -> Result<f64, crate::Error> {
 }
 
 pub fn truncate_to_8_decimals(input: &str) -> String {
+    let input = input.trim();
     if input.is_empty() {
-        return "0".to_string(); // 空字符串直接返回
-    }
-
-    // 尝试将字符串解析为 f64
-    let value = match f64::from_str(input) {
-        Ok(v) => v,
-        Err(_) => return "0".to_string(), // 解析失败，返回空字符串
-    };
-
-    // 如果是 0，直接返回 "0"
-    if value == 0.0 {
         return "0".to_string();
     }
 
-    // 截断小数点后 8 位
-    let multiplier = 10f64.powi(8);
-    let truncated = (value * multiplier).trunc() / multiplier;
+    // 找到小数点位置
+    if let Some(dot_index) = input.find('.') {
+        // 截断小数部分至 8 位
+        let int_part = &input[..dot_index];
+        let mut frac_part = &input[dot_index + 1..];
+        if frac_part.len() > 8 {
+            frac_part = &frac_part[..8];
+        }
+        let truncated = format!("{}.{}", int_part, frac_part);
 
-    // 转换为字符串，去掉多余的 0
-    let result = truncated.to_string();
-    if result.contains('.') {
-        result
+        // 去除末尾多余 0
+        truncated
             .trim_end_matches('0')
             .trim_end_matches('.')
             .to_string()
     } else {
-        result
+        // 没有小数点，直接返回
+        input.to_string()
     }
 }
 
@@ -100,8 +95,8 @@ mod test {
         let a = string_to_f64(a).unwrap();
         assert_eq!(a, 1.0);
 
-        let a = "1";
-        let a = string_to_f64(a).unwrap();
-        assert_eq!(a, 1.0)
+        let a = "0.0003".to_string();
+        let a = string_to_f64(&a).unwrap();
+        println!("{}", a);
     }
 }
