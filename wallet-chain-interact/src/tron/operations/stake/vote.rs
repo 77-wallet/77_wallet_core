@@ -146,7 +146,8 @@ pub struct ListWitnessResp {
 #[serde(rename_all = "camelCase")]
 pub struct Witness {
     pub address: String,
-    pub vote_count: Option<i64>,
+    #[serde(default)]
+    pub vote_count: i64,
     pub url: String,
     total_produced: Option<i64>,
     total_missed: Option<i64>,
