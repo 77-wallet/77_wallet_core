@@ -1,4 +1,4 @@
-use crate::{types::RpcResult, TransportError};
+use crate::{errors::NodeResponseError, types::RpcResult, TransportError};
 use reqwest::RequestBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
@@ -31,11 +31,11 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        if !res.status().is_success() {
-            return Err(crate::TransportError::NodeResponseError(format!(
-                "error_code {}",
-                res.status()
-            )));
+        let status = res.status();
+        if !status.is_success() {
+            return Err(crate::TransportError::NodeResponseError(
+                NodeResponseError::new(status.as_u16() as i64, None),
+            ));
         }
 
         let response = res
@@ -54,11 +54,11 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        if !res.status().is_success() {
-            return Err(crate::TransportError::NodeResponseError(format!(
-                "error_code {}",
-                res.status()
-            )));
+        let status = res.status();
+        if !status.is_success() {
+            return Err(crate::TransportError::NodeResponseError(
+                NodeResponseError::new(status.as_u16() as i64, None),
+            ));
         }
 
         let response = res
@@ -77,11 +77,11 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        if !res.status().is_success() {
-            return Err(crate::TransportError::NodeResponseError(format!(
-                "error_code {}",
-                res.status()
-            )));
+        let status = res.status();
+        if !status.is_success() {
+            return Err(crate::TransportError::NodeResponseError(
+                NodeResponseError::new(status.as_u16() as i64, None),
+            ));
         }
 
         let response_str = res
@@ -92,7 +92,10 @@ impl ReqBuilder {
 
         let rpc_result = wallet_utils::serde_func::serde_from_str::<RpcResult<T>>(&response_str)?;
         if let Some(err) = rpc_result.error {
-            return Err(TransportError::NodeResponseError(err.message));
+            return Err(TransportError::NodeResponseError(NodeResponseError::new(
+                err.code,
+                Some(err.message),
+            )));
         }
 
         match rpc_result.result {
@@ -110,11 +113,11 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        if !res.status().is_success() {
-            return Err(crate::TransportError::NodeResponseError(format!(
-                "error_code {}",
-                res.status()
-            )));
+        let status = res.status();
+        if !status.is_success() {
+            return Err(crate::TransportError::NodeResponseError(
+                NodeResponseError::new(status.as_u16() as i64, None),
+            ));
         }
 
         let response_bytes = res
@@ -124,7 +127,10 @@ impl ReqBuilder {
 
         let rpc_result = serde_json::from_slice::<RpcResult<T>>(&response_bytes).unwrap();
         if let Some(err) = rpc_result.error {
-            return Err(TransportError::NodeResponseError(err.message));
+            return Err(TransportError::NodeResponseError(NodeResponseError::new(
+                err.code,
+                Some(err.message),
+            )));
         }
 
         match rpc_result.result {
