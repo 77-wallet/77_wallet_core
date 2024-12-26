@@ -442,7 +442,7 @@ impl Provider {
         let res = self
             .client
             .set_params(params)
-            .send_json_stream::<Block>()
+            .send_json_rpc::<Block>()
             .await?;
         Ok(res)
     }

@@ -23,6 +23,15 @@ impl std::fmt::Display for NodeResponseError {
         )
     }
 }
+impl TransportError {
+    pub fn is_network_error(&self) -> bool {
+        match self {
+            TransportError::Utils(e) => e.is_network_error(),
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct NodeResponseError {
     pub code: i64,
@@ -32,14 +41,5 @@ pub struct NodeResponseError {
 impl NodeResponseError {
     pub fn new(code: i64, message: Option<String>) -> Self {
         Self { code, message }
-    }
-}
-
-impl TransportError {
-    pub fn is_network_error(&self) -> bool {
-        match self {
-            TransportError::Utils(e) => e.is_network_error(),
-            _ => false,
-        }
     }
 }

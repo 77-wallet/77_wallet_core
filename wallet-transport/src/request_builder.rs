@@ -24,108 +24,41 @@ impl ReqBuilder {
         self
     }
 
-    pub async fn send<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
+    async fn do_request<T: DeserializeOwned>(self) -> Result<String, crate::TransportError> {
         let res = self
             .0
             .send()
             .await
-            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
+            .map_err(|e| TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
         let status = res.status();
         if !status.is_success() {
-            return Err(crate::TransportError::NodeResponseError(
-                NodeResponseError::new(status.as_u16() as i64, None),
-            ));
-        }
-
-        let response = res
-            .text()
-            .await
-            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
-        tracing::info!("response = {}", response);
-
-        Ok(wallet_utils::serde_func::serde_from_str(&response)?)
-    }
-
-    pub async fn send_string(self) -> Result<String, crate::TransportError> {
-        let res = self
-            .0
-            .send()
-            .await
-            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
-
-        let status = res.status();
-        if !status.is_success() {
-            return Err(crate::TransportError::NodeResponseError(
-                NodeResponseError::new(status.as_u16() as i64, None),
-            ));
-        }
-
-        let response = res
-            .text()
-            .await
-            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
-        tracing::debug!("[rpc response] = {}", response);
-
-        Ok(response)
-    }
-
-    pub async fn send_json_rpc<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
-        let res = self
-            .0
-            .send()
-            .await
-            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
-
-        let status = res.status();
-        if !status.is_success() {
-            return Err(crate::TransportError::NodeResponseError(
-                NodeResponseError::new(status.as_u16() as i64, None),
-            ));
-        }
-
-        let response_str = res
-            .text()
-            .await
-            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
-        tracing::info!("[rpc response] = {}", response_str);
-
-        let rpc_result = wallet_utils::serde_func::serde_from_str::<RpcResult<T>>(&response_str)?;
-        if let Some(err) = rpc_result.error {
             return Err(TransportError::NodeResponseError(NodeResponseError::new(
-                err.code,
-                Some(err.message),
+                status.as_u16() as i64,
+                None,
             )));
         }
 
-        match rpc_result.result {
-            Some(res) => Ok(res),
-            None => Err(TransportError::EmptyResult),
-        }
+        let response = res
+            .text()
+            .await
+            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
+
+        tracing::info!("response = {}", response);
+        Ok(response)
     }
 
-    pub async fn send_json_stream<T: DeserializeOwned + Debug>(
-        self,
-    ) -> Result<T, crate::TransportError> {
-        let res = self
-            .0
-            .send()
-            .await
-            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
+    pub async fn send<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
+        let res = self.do_request::<T>().await?;
 
-        let status = res.status();
-        if !status.is_success() {
-            return Err(crate::TransportError::NodeResponseError(
-                NodeResponseError::new(status.as_u16() as i64, None),
-            ));
-        }
+        Ok(wallet_utils::serde_func::serde_from_str(&res)?)
+    }
 
-        let response_bytes = res
-            .bytes()
-            .await
-            .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
+    // 结果解析为JsonResut
+    pub async fn send_json_rpc<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
+        let response = self.do_request::<T>().await?;
+        let rpc_result = wallet_utils::serde_func::serde_from_str::<RpcResult<T>>(&response)?;
 
-        let rpc_result = serde_json::from_slice::<RpcResult<T>>(&response_bytes).unwrap();
         if let Some(err) = rpc_result.error {
             return Err(TransportError::NodeResponseError(NodeResponseError::new(
                 err.code,
