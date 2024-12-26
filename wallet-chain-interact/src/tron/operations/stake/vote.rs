@@ -143,7 +143,7 @@ pub struct ListWitnessResp {
     pub witnesses: Vec<Witness>,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Witness {
     pub address: String,
