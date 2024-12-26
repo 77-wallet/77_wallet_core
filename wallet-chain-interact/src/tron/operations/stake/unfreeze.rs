@@ -1,4 +1,4 @@
-use super::{ResourceType, WithdrawExpire};
+use super::ResourceType;
 use crate::tron::{
     consts,
     operations::{RawTransactionParams, TronTxOperation},
@@ -80,8 +80,13 @@ pub struct CancelAllUnfreezeResp {
 pub struct WithdrawUnfreezeArgs {
     pub owner_address: String,
 }
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct WithdrawExpireResp {
+    owner_address: String,
+}
 #[async_trait::async_trait]
-impl TronTxOperation<WithdrawExpire> for WithdrawUnfreezeArgs {
+impl TronTxOperation<WithdrawExpireResp> for WithdrawUnfreezeArgs {
     async fn build_raw_transaction(
         &self,
         provider: &Provider,

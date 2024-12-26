@@ -364,7 +364,7 @@ impl Provider {
     pub async fn withdraw_expire_unfree(
         &self,
         owner_address: &str,
-    ) -> crate::Result<TronTransactionResponse<stake::WithdrawExpire>> {
+    ) -> crate::Result<TronTransactionResponse<stake::WithdrawExpireResp>> {
         let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
 
         let args = json!({

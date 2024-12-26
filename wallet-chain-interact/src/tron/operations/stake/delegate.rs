@@ -148,11 +148,6 @@ impl CanWithdrawUnfreezeAmount {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct WithdrawExpire {
-    owner_address: String,
-}
-
 #[derive(serde::Deserialize, Debug)]
 pub struct CanDelegatedMaxSize {
     #[serde(default)]
