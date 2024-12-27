@@ -118,4 +118,24 @@ impl ResourceConsumer {
     pub fn need_extra_bandwidth(&self) -> i64 {
         self.bandwidth.need_extra_resource()
     }
+
+    pub fn act_energy(&self) -> i64 {
+        if let Some(energy) = &self.energy {
+            if energy.consumer > energy.limit {
+                energy.consumer - energy.limit
+            } else {
+                energy.consumer
+            }
+        } else {
+            0
+        }
+    }
+
+    pub fn act_bandwidth(&self) -> i64 {
+        if self.bandwidth.consumer > self.bandwidth.limit {
+            0
+        } else {
+            self.bandwidth.consumer
+        }
+    }
 }
