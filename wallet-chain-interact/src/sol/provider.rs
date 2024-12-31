@@ -2,6 +2,7 @@ use super::{
     operations::multisig::program::{MultisigArgs, ProgramConfig},
     protocol::{
         account::{AccountInfo, Balance, TokenAccount},
+        block::Prioritization,
         contract::TotalSupply,
         transaction::{CommitmentConfig, Status},
     },
@@ -332,6 +333,19 @@ impl Provider {
 
         let result = self.invoke_request::<_, Response<bool>>(params).await?;
         Ok(result.value)
+    }
+
+    pub async fn get_recent_prioritization(
+        &self,
+        account: Option<String>,
+    ) -> crate::Result<Prioritization> {
+        let account = account.map(|v| vec![vec![v]]);
+
+        let params = JsonRpcParams::default()
+            .method("getRecentPrioritizationFees")
+            .params(account);
+
+        self.invoke_request::<_, Prioritization>(params).await
     }
 
     pub async fn _simulate_transaction(

@@ -17,3 +17,35 @@ pub struct Block {
     pub previous_blockhash: String,
     pub transactions: Vec<BlockTransaction>,
 }
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Prioritization(pub Vec<PrioritizationFee>);
+
+impl Prioritization {
+    pub fn get_avg(&self) -> u64 {
+        if self.0.len() == 0 {
+            return 0;
+        }
+
+        let last_records = if self.0.len() > 20 {
+            &self.0[self.0.len() - 20..]
+        } else {
+            &self.0[..]
+        };
+
+        let amount = last_records
+            .iter()
+            .map(|i| i.prioritization_fee)
+            .sum::<u64>();
+
+        amount / self.0.len() as u64
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PrioritizationFee {
+    pub slot: u64,
+    pub prioritization_fee: u64,
+}
