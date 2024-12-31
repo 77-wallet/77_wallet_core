@@ -63,7 +63,7 @@ impl TronAccount {
 
         self.unfreeze_v2
             .iter()
-            .filter(|item| item.types == resource_type && item.unfreeze_expire_time <= now_time)
+            .filter(|item| item.types == resource_type && item.unfreeze_expire_time >= now_time)
             .map(|item| item.unfreeze_amount)
             .sum::<i64>()
             / consts::TRX_VALUE
