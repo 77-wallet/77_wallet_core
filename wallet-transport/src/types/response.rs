@@ -15,5 +15,5 @@ pub struct RpcResult<T = String, E = JsonRpcError> {
 pub struct JsonRpcError {
     pub code: i64,
     pub message: String,
-    pub data: Option<String>,
+    pub data: Option<serde_json::Value>,
 }
