@@ -16,15 +16,22 @@ use solana_sdk::{
     hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Keypair,
     transaction::Transaction,
 };
-use std::{str::FromStr, time::Duration};
+use std::{fmt::Debug, str::FromStr, time::Duration};
 use tokio::time::sleep;
-use wallet_transport::{
-    client::RpcClient,
-    types::{JsonRpcParams, JsonRpcResult},
-};
+use wallet_transport::{client::RpcClient, types::JsonRpcParams};
 
 pub struct Provider {
     pub client: RpcClient,
+}
+
+impl Provider {
+    async fn invoke_request<T, R>(&self, params: T) -> crate::Result<R>
+    where
+        T: serde::Serialize + Debug,
+        R: serde::de::DeserializeOwned,
+    {
+        Ok(self.client.set_params(params).send_json_rpc::<R>().await?)
+    }
 }
 
 impl Provider {
@@ -37,12 +44,7 @@ impl Provider {
             .method("getBalance")
             .params(vec![address]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<Balance>>()
-            .await?;
-        Ok(res.result)
+        self.invoke_request::<_, Balance>(params).await
     }
 
     pub async fn token_balance(&self, token: &str, address: &str) -> crate::Result<TokenAccount> {
@@ -60,12 +62,7 @@ impl Provider {
             .method("getTokenAccountsByOwner")
             .params(req);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<TokenAccount>>()
-            .await?;
-        Ok(res.result)
+        self.invoke_request::<_, TokenAccount>(params).await
     }
 
     pub async fn token_symbol(&self, mint: &str) -> crate::Result<String> {
@@ -174,14 +171,7 @@ impl Provider {
                 "commitment": commitment.to_string()
             })]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<Response<BlockHash>>>()
-            .await
-            .unwrap();
-
-        Ok(res.result)
+        self.invoke_request::<_, Response<BlockHash>>(params).await
     }
 
     pub async fn latest_blockhash(&self, commitment: CommitmentConfig) -> crate::Result<Hash> {
@@ -297,13 +287,11 @@ impl Provider {
             .method("getSignatureStatuses")
             .params(vec![vec![tx_hash]]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<Response<Vec<Option<SignatureStatus>>>>>()
+        let result = self
+            .invoke_request::<_, Response<Vec<Option<SignatureStatus>>>>(params)
             .await?;
 
-        Ok(res.result.value[0].clone())
+        Ok(result.value[0].clone())
     }
 
     pub async fn send_transaction(&self, tx: &str, node_retry: bool) -> crate::Result<String> {
@@ -323,13 +311,7 @@ impl Provider {
             .method("sendTransaction")
             .params(req);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<String>>()
-            .await?;
-
-        Ok(res.result)
+        self.invoke_request::<_, String>(params).await
     }
 
     pub async fn is_blockhash_vaild(
@@ -348,13 +330,8 @@ impl Provider {
             .method("isBlockhashValid")
             .params(req);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<Response<bool>>>()
-            .await?;
-
-        Ok(res.result.value)
+        let result = self.invoke_request::<_, Response<bool>>(params).await?;
+        Ok(result.value)
     }
 
     pub async fn _simulate_transaction(
@@ -374,14 +351,7 @@ impl Provider {
             .method("simulateTransaction")
             .params(vec![raw_tx]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<String>>()
-            .await
-            .unwrap();
-
-        Ok(res.result)
+        self.invoke_request::<_, String>(params).await
     }
 
     pub async fn message_fee(&self, message: &str) -> crate::Result<Response<u64>> {
@@ -393,13 +363,7 @@ impl Provider {
             .method("getFeeForMessage")
             .params(vec![message.into(), commitment]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<Response<u64>>>()
-            .await?;
-
-        Ok(res.result)
+        self.invoke_request::<_, Response<u64>>(params).await
     }
 
     pub async fn query_transaction(
@@ -407,25 +371,19 @@ impl Provider {
         txid: &str,
         commitment: &str,
     ) -> crate::Result<TransactionResponse> {
-        let req = json!([
-            txid,
-            json!({
-                "encoding": "json",
-                "maxSupportedTransactionVersion":0,
-                "rewards": false,
-                commitment:commitment
-            }),
-        ]);
         let params = JsonRpcParams::default()
             .method("getTransaction")
-            .params(req);
+            .params(json!([
+                txid,
+                json!({
+                    "encoding": "json",
+                    "maxSupportedTransactionVersion":0,
+                    "rewards": false,
+                    commitment:commitment
+                }),
+            ]));
 
-        let res = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<TransactionResponse>()
-            .await?;
-        Ok(res)
+        self.invoke_request::<_, TransactionResponse>(params).await
     }
 
     pub async fn get_block(&self, slot: u64) -> crate::Result<Block> {
@@ -439,34 +397,21 @@ impl Provider {
         ]);
         let params = JsonRpcParams::default().method("getBlock").params(req);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<Block>()
-            .await?;
-        Ok(res)
+        self.invoke_request::<_, Block>(params).await
     }
 
     pub async fn get_block_height(&self) -> crate::Result<u64> {
         let params: JsonRpcParams<()> = JsonRpcParams::default()
             .method("getBlockHeight")
             .no_params();
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<u64>()
-            .await?;
-        Ok(r)
+
+        self.invoke_request::<_, u64>(params).await
     }
 
     pub async fn get_slot(&self) -> crate::Result<u64> {
         let params: JsonRpcParams<()> = JsonRpcParams::default().method("getSlot").no_params();
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<u64>()
-            .await?;
-        Ok(r)
+
+        self.invoke_request::<_, u64>(params).await
     }
 
     pub async fn total_supply(&self, token_addr: &str) -> crate::Result<Response<TotalSupply>> {
@@ -474,28 +419,19 @@ impl Provider {
             .method("getTokenSupply")
             .params(vec![token_addr]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<Response<TotalSupply>>()
-            .await?;
-        Ok(res)
+        self.invoke_request(params).await
     }
 
     pub async fn account_info(&self, addr: Pubkey) -> crate::Result<Response<Option<AccountInfo>>> {
-        let encoding = json!({
-            "encoding": "base64",
-        });
-        let v = vec![addr.to_string().into(), encoding];
-        let params = JsonRpcParams::default().method("getAccountInfo").params(v);
+        let params = JsonRpcParams::default()
+            .method("getAccountInfo")
+            .params(vec![
+                addr.to_string().into(),
+                json!({ "encoding": "base64" }),
+            ]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<Response<Option<AccountInfo>>>>()
-            .await?;
-
-        Ok(res.result)
+        self.invoke_request::<_, Response<Option<AccountInfo>>>(params)
+            .await
     }
 
     pub async fn get_minimum_balance_for_rent(&self, data_len: u64) -> crate::Result<u64> {
@@ -503,12 +439,6 @@ impl Provider {
             .method("getMinimumBalanceForRentExemption")
             .params(vec![data_len]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<u64>>()
-            .await?;
-
-        Ok(res.result)
+        self.invoke_request(params).await
     }
 }
