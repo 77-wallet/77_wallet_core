@@ -1,3 +1,7 @@
+use super::{
+    protocol::contract::{isBlackListedCall, nameCall, symbolCall},
+    EtherFee,
+};
 use crate::eth::protocol::contract::{balanceOfCall, decimalsCall};
 use alloy::{
     network::{eip2718::Encodable2718, TransactionBuilder},
@@ -8,11 +12,6 @@ use alloy::{
 use serde_json::json;
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
 use wallet_utils::{address, unit};
-
-use super::{
-    protocol::contract::{isBlackListedCall, nameCall, symbolCall},
-    EtherFee,
-};
 
 pub struct Provider {
     client: RpcClient,
@@ -28,11 +27,7 @@ impl Provider {
             .method("eth_getBalance")
             .params(vec![addr, "latest"]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
+        let r = self.client.invoke_request::<_, String>(params).await?;
         Ok(unit::u256_from_str(&r)?)
     }
 
@@ -41,12 +36,7 @@ impl Provider {
             .method("eth_getCode")
             .params(vec![addr, "latest"]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
-        Ok(r)
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 
     pub async fn estimate_gas(&self, tx: TransactionRequest) -> crate::Result<U256> {
@@ -54,14 +44,11 @@ impl Provider {
             .method("eth_estimateGas")
             .params(vec![json!(tx)]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
+        let r = self.client.invoke_request::<_, String>(params).await?;
 
         let gas = wallet_utils::unit::u256_from_str(&r)?;
         let ten_percent = (gas * U256::from(10)) / U256::from(100);
+
         Ok(gas + ten_percent)
     }
 
@@ -122,12 +109,7 @@ impl Provider {
             .method("eth_sendRawTransaction")
             .params(vec![hex_raw]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
-        Ok(r)
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 
     pub async fn token_balance(&self, addr: &str, token: &str) -> crate::Result<U256> {
@@ -147,11 +129,7 @@ impl Provider {
             .method("eth_call")
             .params(vec![json!(tx_req), "latest".into()]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
+        let r = self.client.invoke_request::<_, String>(params).await?;
         Ok(wallet_utils::unit::u256_from_str(&r)?)
     }
 
@@ -160,25 +138,15 @@ impl Provider {
             .method("eth_call")
             .params(vec![json!(tx), json!("latest")]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
-
-        Ok(r)
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 
     pub async fn get_block_height(&self) -> crate::Result<String> {
         let params: JsonRpcParams<()> = JsonRpcParams::default()
             .method("eth_blockNumber")
             .no_params();
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
-        Ok(r)
+
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 
     // 代币精度
@@ -198,11 +166,7 @@ impl Provider {
             .method("eth_call")
             .params(vec![json!(tx_req), json!("latest")]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
+        let r = self.client.invoke_request::<_, String>(params).await?;
         Ok(unit::u256_from_str(&r)?)
     }
 
@@ -222,11 +186,7 @@ impl Provider {
             .method("eth_call")
             .params(vec![json!(tx_req), json!("latest")]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
+        let r = self.client.invoke_request::<_, String>(params).await?;
 
         Ok(r)
     }
@@ -247,12 +207,7 @@ impl Provider {
             .method("eth_call")
             .params(vec![json!(tx_req), json!("latest")]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
-
+        let r = self.client.invoke_request::<_, String>(params).await?;
         Ok(r)
     }
 
@@ -273,41 +228,23 @@ impl Provider {
             .method("eth_call")
             .params(vec![json!(tx_req), json!("latest")]);
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
-
-        Ok(r)
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 
     pub async fn gas_price(&self) -> crate::Result<U256> {
         let params = JsonRpcParams::<String>::default().method("eth_gasPrice");
 
-        let r = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
+        let r = self.client.invoke_request::<_, String>(params).await?;
         Ok(unit::u256_from_str(&r)?)
     }
 
+    // 最后区块
     pub async fn latest_block(&self) -> crate::Result<Block> {
-        let hash = serde_json::to_value("latest").unwrap();
-        let bool = serde_json::to_value(false).unwrap();
-
         let params = JsonRpcParams::default()
             .method("eth_getBlockByNumber")
-            .params(vec![hash, bool]);
+            .params(vec![json!("latest"), json!(false)]);
 
-        let res = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<Block>()
-            .await?;
-
-        Ok(res)
+        Ok(self.client.invoke_request::<_, Block>(params).await?)
     }
 
     // price unit is wei
@@ -349,27 +286,19 @@ impl Provider {
             .method("eth_getTransactionCount")
             .params(vec![addr, "pending"]);
 
-        let rs = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
+        let rs = self.client.invoke_request::<_, String>(params).await?;
 
-        let chain_id = wallet_utils::unit::u256_from_str(&rs)?;
-        Ok(chain_id.to::<u64>())
+        let nonce = wallet_utils::unit::u256_from_str(&rs)?;
+        Ok(nonce.to::<u64>())
     }
 
     pub async fn chain_id(&self) -> crate::Result<u64> {
         let c: Vec<String> = Vec::with_capacity(1);
         let params = JsonRpcParams::default().method("eth_chainId").params(c);
 
-        let rs = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
-
+        let rs = self.client.invoke_request::<_, String>(params).await?;
         let chain_id = wallet_utils::unit::u256_from_str(&rs)?;
+
         Ok(chain_id.to::<u64>())
     }
 
@@ -379,43 +308,27 @@ impl Provider {
             .method("eth_getTransactionReceipt")
             .params(vec![hash]);
 
-        let rs = self
+        Ok(self
             .client
-            .set_params(params)
-            .send_json_rpc::<TransactionReceipt>()
-            .await?;
-        Ok(rs)
+            .invoke_request::<_, TransactionReceipt>(params)
+            .await?)
     }
 
     pub async fn block_by_hash(&self, hash: &str) -> crate::Result<Block> {
-        let hash = serde_json::to_value(hash).unwrap();
-        let bool = serde_json::to_value(false).unwrap();
-
         let params = JsonRpcParams::default()
             .method("eth_getBlockByHash")
-            .params(vec![hash, bool]);
+            .params(vec![json!(hash), json!(false)]);
 
-        let result = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<Block>()
-            .await?;
+        let result = self.client.invoke_request::<_, Block>(params).await?;
         Ok(result)
     }
 
-    pub async fn get_block(&self, hash: i64) -> crate::Result<Block> {
-        let hash = serde_json::to_value(hash).unwrap();
-        let bool = serde_json::to_value(true).unwrap();
-
+    pub async fn block_by_num(&self, num: i64) -> crate::Result<Block> {
         let params = JsonRpcParams::default()
             .method("eth_getBlockByNumber")
-            .params(vec![hash, bool]);
+            .params(vec![json!(num), json!(true)]);
 
-        let result = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<Block>()
-            .await?;
+        let result = self.client.invoke_request::<_, Block>(params).await?;
         Ok(result)
     }
 }

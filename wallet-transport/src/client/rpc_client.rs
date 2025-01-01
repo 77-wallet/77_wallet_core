@@ -1,6 +1,6 @@
 use crate::{errors::TransportError, request_builder::ReqBuilder};
 use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, fmt::Debug, str::FromStr};
 
 pub struct RpcClient {
@@ -83,8 +83,9 @@ impl RpcClient {
     }
 
     pub fn set_params<T: Serialize + Debug>(&self, p: T) -> ReqBuilder {
-        tracing::info!("[url] = {:?}", self.base_url);
-        tracing::info!("[rpc request] = {:?}", p);
+        tracing::info!("[req url] = {:?}", self.base_url);
+        tracing::info!("[req params] = {:?}", p);
+
         let build = if let Some(auth) = &self.base_auth {
             self.client
                 .post(&self.base_url)
@@ -95,5 +96,13 @@ impl RpcClient {
         };
 
         ReqBuilder(build)
+    }
+
+    pub async fn invoke_request<T, R>(&self, params: T) -> Result<R, TransportError>
+    where
+        T: Serialize + Debug,
+        R: DeserializeOwned,
+    {
+        self.set_params(params).send_json_rpc().await
     }
 }
