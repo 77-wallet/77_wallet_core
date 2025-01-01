@@ -17,22 +17,12 @@ use solana_sdk::{
     hash::Hash, instruction::Instruction, pubkey::Pubkey, signature::Keypair,
     transaction::Transaction,
 };
-use std::{fmt::Debug, str::FromStr, time::Duration};
+use std::{str::FromStr, time::Duration};
 use tokio::time::sleep;
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
 
 pub struct Provider {
     pub client: RpcClient,
-}
-
-impl Provider {
-    async fn invoke_request<T, R>(&self, params: T) -> crate::Result<R>
-    where
-        T: serde::Serialize + Debug,
-        R: serde::de::DeserializeOwned,
-    {
-        Ok(self.client.set_params(params).send_json_rpc::<R>().await?)
-    }
 }
 
 impl Provider {
@@ -45,7 +35,7 @@ impl Provider {
             .method("getBalance")
             .params(vec![address]);
 
-        self.invoke_request::<_, Balance>(params).await
+        Ok(self.client.invoke_request::<_, Balance>(params).await?)
     }
 
     pub async fn token_balance(&self, token: &str, address: &str) -> crate::Result<TokenAccount> {
@@ -63,7 +53,10 @@ impl Provider {
             .method("getTokenAccountsByOwner")
             .params(req);
 
-        self.invoke_request::<_, TokenAccount>(params).await
+        Ok(self
+            .client
+            .invoke_request::<_, TokenAccount>(params)
+            .await?)
     }
 
     pub async fn token_symbol(&self, mint: &str) -> crate::Result<String> {
@@ -172,7 +165,10 @@ impl Provider {
                 "commitment": commitment.to_string()
             })]);
 
-        self.invoke_request::<_, Response<BlockHash>>(params).await
+        Ok(self
+            .client
+            .invoke_request::<_, Response<BlockHash>>(params)
+            .await?)
     }
 
     pub async fn latest_blockhash(&self, commitment: CommitmentConfig) -> crate::Result<Hash> {
@@ -289,6 +285,7 @@ impl Provider {
             .params(vec![vec![tx_hash]]);
 
         let result = self
+            .client
             .invoke_request::<_, Response<Vec<Option<SignatureStatus>>>>(params)
             .await?;
 
@@ -312,7 +309,7 @@ impl Provider {
             .method("sendTransaction")
             .params(req);
 
-        self.invoke_request::<_, String>(params).await
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 
     pub async fn is_blockhash_vaild(
@@ -331,7 +328,10 @@ impl Provider {
             .method("isBlockhashValid")
             .params(req);
 
-        let result = self.invoke_request::<_, Response<bool>>(params).await?;
+        let result = self
+            .client
+            .invoke_request::<_, Response<bool>>(params)
+            .await?;
         Ok(result.value)
     }
 
@@ -345,7 +345,10 @@ impl Provider {
             .method("getRecentPrioritizationFees")
             .params(account);
 
-        self.invoke_request::<_, Prioritization>(params).await
+        Ok(self
+            .client
+            .invoke_request::<_, Prioritization>(params)
+            .await?)
     }
 
     pub async fn _simulate_transaction(
@@ -365,7 +368,7 @@ impl Provider {
             .method("simulateTransaction")
             .params(vec![raw_tx]);
 
-        self.invoke_request::<_, String>(params).await
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 
     pub async fn message_fee(&self, message: &str) -> crate::Result<Response<u64>> {
@@ -377,7 +380,10 @@ impl Provider {
             .method("getFeeForMessage")
             .params(vec![message.into(), commitment]);
 
-        self.invoke_request::<_, Response<u64>>(params).await
+        Ok(self
+            .client
+            .invoke_request::<_, Response<u64>>(params)
+            .await?)
     }
 
     pub async fn query_transaction(
@@ -397,7 +403,10 @@ impl Provider {
                 }),
             ]));
 
-        self.invoke_request::<_, TransactionResponse>(params).await
+        Ok(self
+            .client
+            .invoke_request::<_, TransactionResponse>(params)
+            .await?)
     }
 
     pub async fn get_block(&self, slot: u64) -> crate::Result<Block> {
@@ -411,7 +420,7 @@ impl Provider {
         ]);
         let params = JsonRpcParams::default().method("getBlock").params(req);
 
-        self.invoke_request::<_, Block>(params).await
+        Ok(self.client.invoke_request::<_, Block>(params).await?)
     }
 
     pub async fn get_block_height(&self) -> crate::Result<u64> {
@@ -419,13 +428,13 @@ impl Provider {
             .method("getBlockHeight")
             .no_params();
 
-        self.invoke_request::<_, u64>(params).await
+        Ok(self.client.invoke_request::<_, u64>(params).await?)
     }
 
     pub async fn get_slot(&self) -> crate::Result<u64> {
         let params: JsonRpcParams<()> = JsonRpcParams::default().method("getSlot").no_params();
 
-        self.invoke_request::<_, u64>(params).await
+        Ok(self.client.invoke_request::<_, u64>(params).await?)
     }
 
     pub async fn total_supply(&self, token_addr: &str) -> crate::Result<Response<TotalSupply>> {
@@ -433,7 +442,7 @@ impl Provider {
             .method("getTokenSupply")
             .params(vec![token_addr]);
 
-        self.invoke_request(params).await
+        Ok(self.client.invoke_request(params).await?)
     }
 
     pub async fn account_info(&self, addr: Pubkey) -> crate::Result<Response<Option<AccountInfo>>> {
@@ -444,8 +453,10 @@ impl Provider {
                 json!({ "encoding": "base64" }),
             ]);
 
-        self.invoke_request::<_, Response<Option<AccountInfo>>>(params)
-            .await
+        Ok(self
+            .client
+            .invoke_request::<_, Response<Option<AccountInfo>>>(params)
+            .await?)
     }
 
     pub async fn get_minimum_balance_for_rent(&self, data_len: u64) -> crate::Result<u64> {
@@ -453,6 +464,6 @@ impl Provider {
             .method("getMinimumBalanceForRentExemption")
             .params(vec![data_len]);
 
-        self.invoke_request(params).await
+        Ok(self.client.invoke_request(params).await?)
     }
 }

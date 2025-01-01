@@ -1,4 +1,8 @@
-use crate::{errors::TransportError, request_builder::ReqBuilder};
+use crate::{
+    errors::{NodeResponseError, TransportError},
+    request_builder::ReqBuilder,
+    types::JsonRpcResult,
+};
 use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, fmt::Debug, str::FromStr};
@@ -103,6 +107,20 @@ impl RpcClient {
         T: Serialize + Debug,
         R: DeserializeOwned,
     {
-        self.set_params(params).send_json_rpc().await
+        let response = self.set_params(params).do_request().await?;
+
+        let rpc_result = wallet_utils::serde_func::serde_from_str::<JsonRpcResult<R>>(&response)?;
+
+        if let Some(err) = rpc_result.error {
+            return Err(TransportError::NodeResponseError(NodeResponseError::new(
+                err.code,
+                Some(err.message),
+            )));
+        }
+
+        match rpc_result.result {
+            Some(res) => Ok(res),
+            None => Err(TransportError::EmptyResult),
+        }
     }
 }
