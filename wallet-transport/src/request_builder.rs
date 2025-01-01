@@ -47,14 +47,17 @@ impl ReqBuilder {
         tracing::info!("response = {}", response);
         Ok(response)
     }
+}
 
+impl ReqBuilder {
+    // 普通请求
     pub async fn send<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
         let res = self.do_request::<T>().await?;
 
         Ok(wallet_utils::serde_func::serde_from_str(&res)?)
     }
 
-    // 结果解析为JsonResut
+    // 结果解析为JsonRpcResut
     pub async fn send_json_rpc<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
         let response = self.do_request::<T>().await?;
         let rpc_result = wallet_utils::serde_func::serde_from_str::<RpcResult<T>>(&response)?;

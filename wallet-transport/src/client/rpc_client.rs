@@ -83,8 +83,8 @@ impl RpcClient {
     }
 
     pub fn set_params<T: Serialize + Debug>(&self, p: T) -> ReqBuilder {
-        tracing::info!("[rpc request] = {:?}", p);
         tracing::info!("[url] = {:?}", self.base_url);
+        tracing::info!("[rpc request] = {:?}", p);
         let build = if let Some(auth) = &self.base_auth {
             self.client
                 .post(&self.base_url)

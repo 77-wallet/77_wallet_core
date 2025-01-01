@@ -119,16 +119,11 @@ impl ResourceConsumer {
         self.bandwidth.need_extra_resource()
     }
 
+    // 一笔交易实际使用的能量
     pub fn act_energy(&self) -> i64 {
-        if let Some(energy) = &self.energy {
-            if energy.consumer > energy.limit {
-                energy.consumer - energy.limit
-            } else {
-                energy.consumer
-            }
-        } else {
-            0
-        }
+        self.energy
+            .as_ref()
+            .map_or(0, |energy| energy.consumer.min(energy.limit))
     }
 
     pub fn act_bandwidth(&self) -> i64 {
