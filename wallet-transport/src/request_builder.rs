@@ -1,4 +1,4 @@
-use crate::{errors::NodeResponseError, types::RpcResult, TransportError};
+use crate::{errors::NodeResponseError, types::JsonRpcResult, TransportError};
 use reqwest::RequestBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
@@ -60,7 +60,7 @@ impl ReqBuilder {
     // 结果解析为JsonRpcResut
     pub async fn send_json_rpc<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
         let response = self.do_request::<T>().await?;
-        let rpc_result = wallet_utils::serde_func::serde_from_str::<RpcResult<T>>(&response)?;
+        let rpc_result = wallet_utils::serde_func::serde_from_str::<JsonRpcResult<T>>(&response)?;
 
         if let Some(err) = rpc_result.error {
             return Err(TransportError::NodeResponseError(NodeResponseError::new(

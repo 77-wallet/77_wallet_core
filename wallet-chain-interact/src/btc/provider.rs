@@ -6,11 +6,10 @@ use super::{
     },
     utxos::{Utxo, UtxoList},
 };
-use serde_json::json;
 use std::collections::HashMap;
 use wallet_transport::{
     client::{HttpClient, RpcClient},
-    types::{JsonRpcParams, JsonRpcResult},
+    types::JsonRpcParams,
 };
 
 pub struct ProviderConfig {
@@ -68,14 +67,9 @@ impl Provider {
                 let v: Vec<serde_json::Value> = serde_json::from_str(&json_str).unwrap();
                 let params = JsonRpcParams::default().method("scantxoutset").params(v);
 
-                let result = self
-                    .client
-                    .set_params(params)
-                    .send::<JsonRpcResult<ScanOut>>()
-                    .await?;
+                let result = self.client.invoke_request::<_, ScanOut>(params).await?;
 
                 let mut utxo = result
-                    .result
                     .unspents
                     .iter()
                     .map(Utxo::from)
@@ -130,13 +124,8 @@ impl Provider {
                     .method("estimatesmartfee")
                     .params(vec![blocks]);
 
-                let result = self
-                    .client
-                    .set_params(params)
-                    .send::<JsonRpcResult<FeeRate>>()
-                    .await?;
-
-                Ok(result.result)
+                let reuslt = self.client.invoke_request::<_, FeeRate>(params).await?;
+                Ok(reuslt)
             }
         }
     }
@@ -146,12 +135,7 @@ impl Provider {
             .method("sendrawtransaction")
             .params(vec![hex_raw]);
 
-        let result = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<String>>()
-            .await?;
-        Ok(result.result)
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 
     pub async fn utxo_out(&self, tx_id: &str, index: u32) -> crate::Result<OutInfo> {
@@ -162,12 +146,7 @@ impl Provider {
             .method("gettxout")
             .params(vec![txid, index]);
 
-        let result = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<OutInfo>()
-            .await?;
-        Ok(result)
+        Ok(self.client.invoke_request::<_, OutInfo>(params).await?)
     }
 
     pub async fn block_header(&self, block_hash: &str) -> crate::Result<BlockHeader> {
@@ -175,13 +154,7 @@ impl Provider {
             .method("getblockheader")
             .params(vec![block_hash]);
 
-        let result = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<BlockHeader>>()
-            .await?;
-
-        Ok(result.result)
+        Ok(self.client.invoke_request::<_, BlockHeader>(params).await?)
     }
 
     pub async fn query_transaction<T>(&self, txid: &str, verbose: bool) -> crate::Result<T>
@@ -195,41 +168,13 @@ impl Provider {
             .method("getrawtransaction")
             .params(vec![tx_id, verbose]);
 
-        let result = self
-            .client
-            .set_params(params)
-            .send::<JsonRpcResult<T>>()
-            .await?;
-
-        Ok(result.result)
+        Ok(self.client.invoke_request::<_, T>(params).await?)
     }
 
     pub async fn block_heigh(&self) -> crate::Result<u64> {
         let params = JsonRpcParams::<Vec<String>>::default().method("getblockcount");
 
-        let result = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<u64>()
-            .await?;
-
-        Ok(result)
-    }
-
-    pub async fn block_info(&self, block_hash: &str) -> crate::Result<String> {
-        let tx_id = json!(block_hash);
-        let options = json!(0);
-
-        let params = JsonRpcParams::default()
-            .method("getblock")
-            .params(vec![tx_id, options]);
-
-        let res = self
-            .client
-            .set_params(params)
-            .send_json_rpc::<String>()
-            .await?;
-        Ok(res)
+        Ok(self.client.invoke_request::<_, u64>(params).await?)
     }
 
     pub async fn get_transaction_from_api(&self, hash: &str) -> crate::Result<ApiTransaction> {
