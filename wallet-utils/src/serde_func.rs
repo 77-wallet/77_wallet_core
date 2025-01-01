@@ -37,6 +37,13 @@ where
     String::deserialize(deserializer).map(|s| s.to_uppercase())
 }
 
+pub fn deserialize_default_false<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Option::<bool>::deserialize(deserializer)?.unwrap_or(false))
+}
+
 pub fn serialize_lowercase<S>(value: &str, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
