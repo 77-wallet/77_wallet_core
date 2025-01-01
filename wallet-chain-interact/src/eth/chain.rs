@@ -5,17 +5,27 @@ use crate::{BillResourceConsume, QueryTransactionResult};
 use alloy::primitives::{Address, U256};
 use alloy::rpc::types::TransactionRequest;
 use alloy::sol_types::{SolType, SolValue};
+use wallet_types::chain::chain::ChainCode;
 use wallet_types::chain::network;
 use wallet_utils::unit;
 
 pub struct EthChain {
     pub provider: Provider,
+    chain_code: ChainCode,
     network: network::NetworkKind,
 }
 
 impl EthChain {
-    pub fn new(provider: Provider, network: network::NetworkKind) -> crate::Result<Self> {
-        Ok(Self { provider, network })
+    pub fn new(
+        provider: Provider,
+        network: network::NetworkKind,
+        chain_code: ChainCode,
+    ) -> crate::Result<Self> {
+        Ok(Self {
+            provider,
+            chain_code,
+            network,
+        })
     }
 }
 
@@ -155,7 +165,10 @@ impl EthChain {
             _ => self.provider.get_fee(params.clone()).await?,
         };
 
-        let transfer_params = self.provider.set_transaction_fee(params, fee).await?;
+        let transfer_params = self
+            .provider
+            .set_transaction_fee(params, fee, self.chain_code)
+            .await?;
 
         self.provider
             .send_raw_transaction(transfer_params, &private_key)

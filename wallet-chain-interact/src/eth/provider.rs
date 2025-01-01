@@ -11,6 +11,7 @@ use alloy::{
 };
 use serde_json::json;
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
+use wallet_types::chain::chain::ChainCode;
 use wallet_utils::{address, unit};
 
 pub struct Provider {
@@ -75,11 +76,18 @@ impl Provider {
         &self,
         tx: TransactionRequest,
         fee: super::params::FeeSetting,
+        chain_code: ChainCode,
     ) -> crate::Result<TransactionRequest> {
+        // 币安链 单独处理
+        let max_fee = match chain_code {
+            ChainCode::BnbSmartChain => fee.max_priority_fee_per_gas.to::<u128>(),
+            _ => fee.max_fee_per_gas.to::<u128>(),
+        };
+
         Ok(tx
             .with_gas_limit(fee.gas_limit.to::<u64>())
             .with_max_priority_fee_per_gas(fee.max_priority_fee_per_gas.to::<u128>())
-            .with_max_fee_per_gas(fee.max_fee_per_gas.to::<u128>()))
+            .with_max_fee_per_gas(max_fee))
     }
 
     pub async fn send_raw_transaction(
