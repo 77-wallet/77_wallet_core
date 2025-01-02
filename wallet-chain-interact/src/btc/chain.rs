@@ -142,7 +142,7 @@ impl BtcChain {
         params: operations::transfer::TransferArg,
         fee: f64,
         key: ChainPrivateKey,
-    ) -> crate::Result<String> {
+    ) -> crate::Result<TransferResp> {
         let utxo = self
             .provider
             .utxos(&params.from.to_string(), self.network)
@@ -162,7 +162,10 @@ impl BtcChain {
 
         let raw = transaction_builder.get_raw_transaction();
 
-        self.provider.send_raw_transaction(&raw).await
+        // 执行交易
+        let tx_hash = self.provider.send_raw_transaction(&raw).await?;
+
+        Ok(TransferResp::new(tx_hash, Amount::default(), 0))
     }
 
     pub async fn estimate_fee(
