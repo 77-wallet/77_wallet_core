@@ -67,6 +67,7 @@ reqwest = { version = "0.12.4", default-features = false, features = [
     "charset",
     "http2",
     "macos-system-configuration",
+    "gzip",
     "json",
 ] }
 http = "1.1.0"
