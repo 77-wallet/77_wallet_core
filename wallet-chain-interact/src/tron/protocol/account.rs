@@ -19,6 +19,7 @@ pub struct TronAccount {
     pub unfreeze_v2: Vec<UnfrozenV2>,
     pub owner_permission: PermissionResp,
     pub active_permission: Vec<PermissionResp>,
+    pub votes: Vec<Vote>,
     #[serde(flatten)]
     #[serde(default)]
     extra_fields: std::collections::HashMap<String, serde_json::Value>,
@@ -244,4 +245,11 @@ pub struct PermissionResp {
 pub struct Keys {
     address: String,
     weight: i8,
+}
+
+#[derive(Debug, Serialize, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Vote {
+    vote_address: String,
+    vote_count: i64,
 }
