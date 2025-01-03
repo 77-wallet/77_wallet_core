@@ -249,6 +249,6 @@ pub struct Keys {
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct Vote {
-    vote_address: String,
-    vote_count: i64,
+    pub vote_address: String,
+    pub vote_count: i64,
 }
