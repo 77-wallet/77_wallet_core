@@ -123,40 +123,6 @@ pub mod vote_list {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct VoteRewardResp {
-    pub balance: f64,
-    pub reward: f64,
-    pub tron_power_limit: i64,
-    pub tron_power_used: i64,
-    pub votes: Vec<Vote>,
-}
-
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct Vote {
-    pub vote_address: String,
-    pub vote_count: i64,
-}
-
-impl VoteRewardResp {
-    pub fn new(
-        balance: f64,
-        reward: f64,
-        tron_power_limit: i64,
-        tron_power_used: i64,
-        votes: Vec<Vote>,
-    ) -> Self {
-        Self {
-            balance,
-            reward,
-            tron_power_limit,
-            tron_power_used,
-            votes,
-        }
-    }
-}
-
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct ListWitnessResp {
     pub witnesses: Vec<Witness>,
 }
