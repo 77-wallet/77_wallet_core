@@ -134,8 +134,8 @@ pub struct VoteRewardResp {
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct Vote {
-    vote_address: String,
-    vote_count: i64,
+    pub vote_address: String,
+    pub vote_count: i64,
 }
 
 impl VoteRewardResp {
