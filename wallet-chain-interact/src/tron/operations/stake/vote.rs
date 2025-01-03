@@ -129,7 +129,13 @@ pub struct VoteRewardResp {
     pub reward: f64,
     pub tron_power_limit: i64,
     pub tron_power_used: i64,
-    pub votes: Vec<crate::tron::protocol::account::Vote>,
+    pub votes: Vec<Vote>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct Vote {
+    vote_address: String,
+    vote_count: i64,
 }
 
 impl VoteRewardResp {
@@ -138,7 +144,7 @@ impl VoteRewardResp {
         reward: f64,
         tron_power_limit: i64,
         tron_power_used: i64,
-        votes: Vec<crate::tron::protocol::account::Vote>,
+        votes: Vec<Vote>,
     ) -> Self {
         Self {
             balance,
