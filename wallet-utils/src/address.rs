@@ -1,6 +1,6 @@
 use crate::error::parse::ParseError;
 use alloy::primitives;
-use sha2::Digest as _;
+use sha2::{Digest as _, Sha256};
 use std::str::FromStr;
 
 pub fn bs58_addr_to_hex(bs58_addr: &str) -> Result<String, crate::Error> {
@@ -20,6 +20,26 @@ pub fn bs58_addr_to_hex_bytes(bs58_addr: &str) -> Result<Vec<u8>, crate::Error> 
     bs58::decode(bs58_addr)
         .into_vec()
         .map_err(|_| crate::Error::Parse(ParseError::AddressConvertFailed(bs58_addr.to_string())))
+}
+
+pub fn hex_to_bs58_addr(hex_addr: &str) -> Result<String, crate::Error> {
+    let bytes = hex::decode(hex_addr)
+        .map_err(|_| crate::Error::Parse(ParseError::AddressConvertFailed(hex_addr.to_string())))?;
+    if bytes.len() != 21 {
+        return Err(crate::Error::Parse(ParseError::AddressConvertFailed(
+            hex_addr.to_string(),
+        )));
+    }
+    // 计算校验和 (checksum)
+    let hash1 = Sha256::digest(&bytes);
+    let hash2 = Sha256::digest(&hash1);
+    let checksum = &hash2[..4]; // 校验和为前 4 字节
+
+    let mut full_bytes = bytes;
+    full_bytes.extend_from_slice(checksum); // 添加校验和
+
+    // 转换为 Base58 编码
+    Ok(bs58::encode(full_bytes).into_string())
 }
 
 pub fn is_tron_address(address: &str) -> bool {
@@ -236,6 +256,8 @@ pub fn to_checksum_address(address: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use crate::address::hex_to_bs58_addr;
+
     use super::to_checksum_address;
 
     #[test]
@@ -251,5 +273,26 @@ mod tests {
         let input = "0xf1299eb148b413be971822dff4fd079dab9d045d";
         let expected = "0xf1299EB148b413bE971822DfF4fD079dAB9d045d";
         assert_eq!(to_checksum_address(input), expected);
+    }
+
+    #[test]
+    fn test_hex_to_bs58_addr() {
+        // 示例 Hex 地址（21 字节有效数据）
+        let hex_addr = "4178c842ee63b253f8f0d2955bbc582c661a078c9d";
+
+        // 预期的 Base58 地址
+        let expected_bs58_addr = "TLyqzVGLV1srkB7dToTAEqgDSfPtXRJZYH";
+
+        // 调用函数
+        match hex_to_bs58_addr(hex_addr) {
+            Ok(bs58_addr) => {
+                // 断言结果是否符合预期
+                assert_eq!(bs58_addr, expected_bs58_addr, "Base58 地址不正确");
+            }
+            Err(e) => {
+                // 如果函数出错，测试失败
+                panic!("函数调用失败: {:?}", e);
+            }
+        }
     }
 }
