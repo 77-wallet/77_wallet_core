@@ -248,7 +248,6 @@ pub struct Keys {
 }
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Vote {
     vote_address: String,
     vote_count: i64,
