@@ -37,7 +37,7 @@ mod test {
         //     i as u32
         // };
         // println!("index: {index}");
-        let index = 0;
+        // let index = 0;
         let path = "m/44h/195h/0h/0/0";
 
         let derive = key.derive_path(path).unwrap();

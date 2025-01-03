@@ -129,15 +129,23 @@ pub struct VoteRewardResp {
     pub reward: f64,
     pub tron_power_limit: i64,
     pub tron_power_used: i64,
+    pub votes: Vec<crate::tron::protocol::account::Vote>,
 }
 
 impl VoteRewardResp {
-    pub fn new(balance: f64, reward: f64, tron_power_limit: i64, tron_power_used: i64) -> Self {
+    pub fn new(
+        balance: f64,
+        reward: f64,
+        tron_power_limit: i64,
+        tron_power_used: i64,
+        votes: Vec<crate::tron::protocol::account::Vote>,
+    ) -> Self {
         Self {
             balance,
             reward,
             tron_power_limit,
             tron_power_used,
+            votes,
         }
     }
 }
