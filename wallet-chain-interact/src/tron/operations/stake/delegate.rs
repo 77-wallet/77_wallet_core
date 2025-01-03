@@ -14,6 +14,7 @@ pub struct DelegateArgs {
     pub balance: i64,
     pub resource: ResourceType,
     pub lock: bool,
+    // day * 28800
     pub lock_period: i64,
 }
 impl DelegateArgs {
