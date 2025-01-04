@@ -81,7 +81,7 @@ impl Provider {
                 let url = format!("/{}/utxo/{}", API_ENPOINT, address);
 
                 let mut params = HashMap::new();
-                params.insert("confirmed", "true");
+                params.insert("confirmed", "false");
 
                 let mut utxo = self
                     .http_client
@@ -178,12 +178,12 @@ impl Provider {
     }
 
     pub async fn get_transaction_from_api(&self, hash: &str) -> crate::Result<ApiTransaction> {
-        let url = format!("/{}/tx/{}", API_ENPOINT, hash);
+        let url = format!("{}/tx/{}", API_ENPOINT, hash);
         let res = self.http_client.get_request::<ApiTransaction>(&url).await?;
         Ok(res)
     }
     pub async fn get_block_from_api(&self, hash: &str, page: u32) -> crate::Result<ApiBlock> {
-        let url = format!("/{}/block/{}?page={}", API_ENPOINT, hash, page);
+        let url = format!("{}/block/{}?page={}", API_ENPOINT, hash, page);
         let res = self.http_client.get_request::<ApiBlock>(&url).await?;
         Ok(res)
     }

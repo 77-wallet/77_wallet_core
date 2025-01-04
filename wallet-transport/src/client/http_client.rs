@@ -64,8 +64,6 @@ impl HttpClient {
     where
         R: serde::de::DeserializeOwned,
     {
-        let url = format!("{}/{}", self.base_url, endpoint);
-        tracing::info!("request url = {}", url);
         self.get(endpoint).send::<R>().await
     }
 
