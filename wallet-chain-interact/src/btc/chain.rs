@@ -123,6 +123,10 @@ impl BtcChain {
             return Err(crate::UtxoError::ExceedsMaximum.into());
         }
 
+        if transaction_builder.is_dust_tx(params.value, fee) {
+            return Err(crate::UtxoError::DustTx.into());
+        }
+
         // 签名
         let utxo = transaction_builder.utxo.used_utxo_to_hash_map();
         let signer = BtcSignature::new(&key, utxo)?;
@@ -173,6 +177,10 @@ impl BtcChain {
         if transaction_builder.exceeds_max_fee(fee) {
             return Err(crate::UtxoError::ExceedsMaximum.into());
         }
+
+        if transaction_builder.is_dust_tx(params.value, fee) {
+            return Err(crate::UtxoError::DustTx.into());
+        }
         let raw = transaction_builder.get_raw_transaction();
 
         // 执行交易
@@ -220,7 +228,6 @@ impl BtcChain {
             .provider
             .utxos(&params.from.to_string(), self.network)
             .await?;
-
         let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
 
         let mut transaction_builder = params.build_transaction(utxo)?;
@@ -237,6 +244,9 @@ impl BtcChain {
         let fee = fee_rate * size as u64;
         if transaction_builder.exceeds_max_fee(fee) {
             return Err(crate::UtxoError::ExceedsMaximum.into());
+        }
+        if transaction_builder.is_dust_tx(params.value, fee) {
+            return Err(crate::UtxoError::DustTx.into());
         }
 
         let raw = BtcMultisigRaw {

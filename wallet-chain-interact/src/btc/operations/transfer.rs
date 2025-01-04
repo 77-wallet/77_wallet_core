@@ -276,6 +276,11 @@ impl TransferBuilder {
         act_fee > (fee * 5)
     }
 
+    // 转账金额小于手续费
+    pub fn is_dust_tx(&self, amount: Amount, fee: Amount) -> bool {
+        amount <= fee
+    }
+
     pub fn get_raw_transaction(&self) -> String {
         consensus::encode::serialize_hex(&self.transaction)
     }

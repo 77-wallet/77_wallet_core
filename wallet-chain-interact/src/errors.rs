@@ -27,6 +27,8 @@ pub enum UtxoError {
     InsufficientFee,
     #[error("Exceeds Maximum")]
     ExceedsMaximum,
+    #[error("duct tx")]
+    DustTx,
 }
 
 #[derive(Error, Debug)]
