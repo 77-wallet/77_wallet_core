@@ -59,7 +59,6 @@ impl VoteWitnessArgs {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct Votes {
     pub vote_address: String,
     pub vote_count: i64,
@@ -90,7 +89,6 @@ impl TronTxOperation<VoteWitnessArgs> for VoteWitnessArgs {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct VoteWitnessResp {
     pub owner_address: String,
     pub votes: Vec<Votes>,
