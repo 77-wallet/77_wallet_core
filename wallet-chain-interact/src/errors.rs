@@ -25,6 +25,8 @@ pub enum UtxoError {
     InsufficientBalance,
     #[error("Insufficient fee")]
     InsufficientFee,
+    #[error("Exceeds Maximum")]
+    ExceedsMaximum,
 }
 
 #[derive(Error, Debug)]

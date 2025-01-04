@@ -93,10 +93,11 @@ impl TransferArg {
 
     // build transaction with fee  fee unit is Btc
     // include change
-    pub fn build_with_fee(&self, mut utxo: UtxoList, fee: f64) -> crate::Result<TransferBuilder> {
-        let fee = bitcoin::Amount::from_float_in(fee, bitcoin::Denomination::Bitcoin)
-            .map_err(|e| crate::Error::Other(e.to_string()))?;
-
+    pub fn build_with_fee(
+        &self,
+        mut utxo: UtxoList,
+        fee: Amount,
+    ) -> crate::Result<TransferBuilder> {
         let amount = self.value + fee;
         let input = utxo.inputs_from_utxo(amount)?;
 
@@ -253,6 +254,26 @@ impl TransferBuilder {
                 script_pubkey: change_address.script_pubkey(),
             });
         }
+    }
+
+    pub fn act_transfer_fee(&self) -> Amount {
+        let input_total = self.utxo.total_input_amount();
+
+        let out_total = self
+            .transaction
+            .output
+            .iter()
+            .map(|item| item.value)
+            .sum::<Amount>();
+
+        input_total - out_total
+    }
+
+    // 如果实际的手续费大于 给定的手续费 5倍，那么报错
+    pub fn exceeds_max_fee(&self, fee: Amount) -> bool {
+        let act_fee = self.act_transfer_fee();
+
+        act_fee > (fee * 5)
     }
 
     pub fn get_raw_transaction(&self) -> String {

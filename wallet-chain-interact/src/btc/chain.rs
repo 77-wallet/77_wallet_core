@@ -117,6 +117,12 @@ impl BtcChain {
             )?
         };
 
+        // 验证是否超过最大手续费配置
+        let fee = fee_rate * size as u64;
+        if transaction_builder.exceeds_max_fee(fee) {
+            return Err(crate::UtxoError::ExceedsMaximum.into());
+        }
+
         // 签名
         let utxo = transaction_builder.utxo.used_utxo_to_hash_map();
         let signer = BtcSignature::new(&key, utxo)?;
@@ -137,6 +143,7 @@ impl BtcChain {
         Ok(TransferResp::new(tx_hash, fee_rate, size))
     }
 
+    // fee unit is btc
     pub async fn transfer_with_fee(
         &self,
         params: operations::transfer::TransferArg,
@@ -147,6 +154,9 @@ impl BtcChain {
             .provider
             .utxos(&params.from.to_string(), self.network)
             .await?;
+
+        let fee = bitcoin::Amount::from_float_in(fee, bitcoin::Denomination::Bitcoin)
+            .map_err(|e| crate::Error::Other(e.to_string()))?;
 
         let mut transaction_builder = params.build_with_fee(utxo, fee)?;
         let utxo = transaction_builder.utxo.used_utxo_to_hash_map();
@@ -160,6 +170,9 @@ impl BtcChain {
             )
             .await?;
 
+        if transaction_builder.exceeds_max_fee(fee) {
+            return Err(crate::UtxoError::ExceedsMaximum.into());
+        }
         let raw = transaction_builder.get_raw_transaction();
 
         // 执行交易
@@ -212,7 +225,7 @@ impl BtcChain {
 
         let mut transaction_builder = params.build_transaction(utxo)?;
 
-        transaction_builder.change_and_fee(
+        let size = transaction_builder.change_and_fee(
             fee_rate,
             params.change_address,
             params.address_type,
@@ -220,6 +233,11 @@ impl BtcChain {
         )?;
 
         let used_utxo = transaction_builder.utxo.used_utxo_to_hash_map();
+
+        let fee = fee_rate * size as u64;
+        if transaction_builder.exceeds_max_fee(fee) {
+            return Err(crate::UtxoError::ExceedsMaximum.into());
+        }
 
         let raw = BtcMultisigRaw {
             used_utxo,
