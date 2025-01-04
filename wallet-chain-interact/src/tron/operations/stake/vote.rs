@@ -46,12 +46,14 @@ pub struct WithdrawBalanceResp {
 pub struct VoteWitnessArgs {
     pub owner_address: String,
     pub votes: Vec<Votes>,
+    pub visible: bool,
 }
 impl VoteWitnessArgs {
     pub fn new(owner_address: &str, votes: Vec<Votes>) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             votes,
+            visible: false,
         })
     }
 }
