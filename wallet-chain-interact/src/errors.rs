@@ -29,6 +29,8 @@ pub enum UtxoError {
     ExceedsMaximum,
     #[error("duct tx")]
     DustTx,
+    #[error("Exceeds Max FeeRate")]
+    ExceedsMaxFeeRate,
 }
 
 #[derive(Error, Debug)]
