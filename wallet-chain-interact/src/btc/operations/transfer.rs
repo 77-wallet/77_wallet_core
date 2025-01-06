@@ -138,6 +138,24 @@ pub struct TransferBuilder {
 
 // build
 impl TransferBuilder {
+    pub fn transactin_size(
+        &mut self,
+        fee_rate: Amount,
+        params: &TransferArg,
+    ) -> crate::Result<usize> {
+        if params.spend_all {
+            self.spent_all_set_fee(fee_rate, params.to.clone(), params.address_type)
+        } else {
+            // 找零和手续费配置
+            self.change_and_fee(
+                fee_rate,
+                params.change_address.clone(),
+                params.address_type,
+                params.value,
+            )
+        }
+    }
+
     pub fn change_and_fee(
         &mut self,
         fee_rate: bitcoin::Amount,

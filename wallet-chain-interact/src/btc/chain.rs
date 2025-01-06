@@ -105,19 +105,8 @@ impl BtcChain {
 
         let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
 
-        let size = if params.spend_all {
-            transaction_builder.spent_all_set_fee(fee_rate, params.to, params.address_type)?
-        } else {
-            // 找零和手续费配置
-            transaction_builder.change_and_fee(
-                fee_rate,
-                params.change_address,
-                params.address_type,
-                params.value,
-            )?
-        };
+        let size = transaction_builder.transactin_size(fee_rate, &params)?;
 
-        // 验证是否超过最大手续费配置
         let fee = fee_rate * size as u64;
         if transaction_builder.exceeds_max_fee(fee) {
             return Err(crate::UtxoError::ExceedsMaximum.into());
@@ -201,21 +190,7 @@ impl BtcChain {
 
         let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
 
-        let size = if params.spend_all {
-            transaction_builder.spent_all_set_fee(
-                fee_rate,
-                params.to.clone(),
-                params.address_type,
-            )?
-        } else {
-            // 找零和手续费配置
-            transaction_builder.change_and_fee(
-                fee_rate,
-                params.change_address,
-                params.address_type,
-                params.value,
-            )?
-        };
+        let size = transaction_builder.transactin_size(fee_rate, &params)?;
 
         Ok(FeeSetting { fee_rate, size })
     }
@@ -231,13 +206,7 @@ impl BtcChain {
         let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
 
         let mut transaction_builder = params.build_transaction(utxo)?;
-
-        let size = transaction_builder.change_and_fee(
-            fee_rate,
-            params.change_address,
-            params.address_type,
-            params.value,
-        )?;
+        let size = transaction_builder.transactin_size(fee_rate, &params)?;
 
         let used_utxo = transaction_builder.utxo.used_utxo_to_hash_map();
 
