@@ -76,7 +76,7 @@ impl BtcChain {
         let total_vout = transaction.total_vout();
 
         let transaction_fee = total_vin - total_vout;
-        let status = if transaction.confirmations > 2 { 2 } else { 3 };
+        let status = 2;
 
         // transaction.weight,
         let resource_consume =
