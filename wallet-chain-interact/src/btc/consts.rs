@@ -4,4 +4,4 @@ pub const FEE_RATE: u8 = 1;
 // 手续费最大费率
 pub const MAX_FEE_RATE: u64 = 200;
 // 手续费放大的值
-pub const EXPEND_FEE_RATE: u64 = 3;
+pub const EXPEND_FEE_RATE: u64 = 2;
