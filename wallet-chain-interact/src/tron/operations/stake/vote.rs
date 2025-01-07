@@ -92,6 +92,8 @@ impl TronTxOperation<VoteWitnessArgs> for VoteWitnessArgs {
 pub struct VoteWitnessResp {
     pub owner_address: String,
     pub votes: Vec<Votes>,
+    #[serde(default)]
+    pub visible: bool,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
