@@ -145,7 +145,6 @@ impl SolanaChain {
         // add fee instruction
         if let Some(fee) = fee_setting {
             if let Some(priority) = fee.priority_fee_per_compute_unit {
-                tracing::warn!("priority ===  {}", priority);
                 let fee_instruction =
                     compute_budget::ComputeBudgetInstruction::set_compute_unit_price(priority);
                 instructions.insert(0, fee_instruction);

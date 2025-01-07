@@ -44,7 +44,7 @@ impl<'a> TransferOpt<'a> {
 impl super::SolInstructionOperation for TransferOpt<'_> {
     async fn instructions(&self) -> crate::Result<Vec<solana_sdk::instruction::Instruction>> {
         let instructions = if let Some(token) = self.token {
-            let token_build = TokenTransferBuild::new(self, token).unwrap();
+            let token_build = TokenTransferBuild::new(self, token)?;
             token_build.transfer_instruction().await?
         } else {
             vec![solana_sdk::system_instruction::transfer(
