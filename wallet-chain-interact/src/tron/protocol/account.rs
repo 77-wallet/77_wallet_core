@@ -70,6 +70,16 @@ impl TronAccount {
             / consts::TRX_VALUE
     }
 
+    // 所有解冻中的能量或者带宽
+    pub fn un_freeze_amount(&self, resource_type: &str) -> i64 {
+        self.unfreeze_v2
+            .iter()
+            .filter(|item| item.types == resource_type)
+            .map(|item| item.unfreeze_amount)
+            .sum::<i64>()
+            / consts::TRX_VALUE
+    }
+
     // 有几个带提取的
     pub fn can_withdraw_num(&self) -> i64 {
         let now = self.now_time();
