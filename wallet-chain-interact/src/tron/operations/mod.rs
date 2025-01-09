@@ -18,6 +18,8 @@ pub trait TronTxOperation<T> {
     ) -> crate::Result<RawTransactionParams>;
 
     fn get_to(&self) -> String;
+
+    fn get_value(&self) -> i64;
 }
 
 pub trait TronSimulateOperation {

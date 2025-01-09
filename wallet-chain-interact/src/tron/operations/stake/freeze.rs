@@ -37,6 +37,10 @@ impl TronTxOperation<FreezeBalanceResp> for FreezeBalanceArgs {
     fn get_to(&self) -> String {
         String::new()
     }
+
+    fn get_value(&self) -> i64 {
+        self.frozen_balance / consts::TRX_VALUE
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]

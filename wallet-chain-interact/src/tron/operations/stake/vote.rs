@@ -33,6 +33,10 @@ impl TronTxOperation<WithdrawBalanceResp> for WithdrawBalanceArgs {
     fn get_to(&self) -> String {
         String::new()
     }
+
+    fn get_value(&self) -> i64 {
+        0
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
@@ -84,6 +88,9 @@ impl TronTxOperation<VoteWitnessArgs> for VoteWitnessArgs {
 
     fn get_to(&self) -> String {
         String::new()
+    }
+    fn get_value(&self) -> i64 {
+        0
     }
 }
 

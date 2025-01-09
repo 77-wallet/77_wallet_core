@@ -4,7 +4,9 @@ use super::{
 };
 use crate::{
     abi_encode_address, abi_encode_u256,
-    tron::{params::ResourceConsumer, protocol::protobuf::transaction::Raw, provider::Provider},
+    tron::{
+        consts, params::ResourceConsumer, protocol::protobuf::transaction::Raw, provider::Provider,
+    },
 };
 use alloy::primitives::U256;
 use anychain_core::Transaction as _;
@@ -74,6 +76,10 @@ impl TronTxOperation<TronTransferResp> for TransferOpt {
 
     fn get_to(&self) -> String {
         self.to.clone()
+    }
+
+    fn get_value(&self) -> i64 {
+        self.value / consts::TRX_VALUE
     }
 }
 
@@ -206,6 +212,10 @@ impl TronTxOperation<ContractTransferResp> for ContractTransferOpt {
 
     fn get_to(&self) -> String {
         self.to.clone()
+    }
+
+    fn get_value(&self) -> i64 {
+        self.value.to::<i64>() / consts::TRX_VALUE
     }
 }
 

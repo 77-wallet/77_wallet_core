@@ -80,6 +80,10 @@ impl TronTxOperation<MultisigAccountResp> for MultisigAccountOpt {
     fn get_to(&self) -> String {
         self.from.clone()
     }
+
+    fn get_value(&self) -> i64 {
+        0
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
