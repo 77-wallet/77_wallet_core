@@ -1,11 +1,15 @@
 use super::ResourceType;
 use crate::tron::consts;
-use crate::tron::operations::{RawTransactionParams, TronSimulateOperation, TronTxOperation};
+use crate::tron::operations::{
+    RawData, RawTransactionParams, TronSimulateOperation, TronTxOperation,
+};
+use crate::tron::protocol::protobuf::transaction::Raw;
 use crate::tron::provider::Provider;
 use anychain_core::Transaction as _;
 use anychain_tron::protocol::balance_contract::DelegateResourceContract;
 use anychain_tron::protocol::common::ResourceCode;
 use protobuf::EnumOrUnknown;
+use wallet_utils::serde_func;
 
 #[derive(serde::Serialize, Debug)]
 pub struct DelegateArgs {
@@ -48,7 +52,25 @@ impl TronTxOperation<DelegateResp> for DelegateArgs {
         provider: &Provider,
     ) -> crate::Result<RawTransactionParams> {
         let res = provider.delegate_resource(self).await?;
-        Ok(RawTransactionParams::from(res))
+        // 加入过期时间、防止批量执行的时候导致交易过期(默认给到30s的过期时间)
+        let mut resp = RawTransactionParams::from(res);
+
+        let mut raw_data = serde_func::serde_from_str::<RawData<DelegateResp>>(&resp.raw_data)?;
+
+        // expiration unit is ms
+        let new_time = raw_data.expiration + 30 * 1000;
+        raw_data.expiration = new_time;
+
+        let mut raw = Raw::from_str(&resp.raw_data_hex)?;
+        raw.expiration = new_time as i64;
+
+        let bytes = raw.to_bytes()?;
+
+        resp.tx_id = Raw::tx_id(&bytes);
+        resp.raw_data_hex = Raw::raw_data_hex(&bytes);
+        resp.raw_data = raw_data.to_json_string()?;
+
+        Ok(resp)
     }
 
     fn get_to(&self) -> String {
