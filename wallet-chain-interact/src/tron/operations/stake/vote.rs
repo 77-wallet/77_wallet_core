@@ -36,7 +36,6 @@ impl TronTxOperation<WithdrawBalanceResp> for WithdrawBalanceArgs {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct WithdrawBalanceResp {
     owner_address: String,
 }
