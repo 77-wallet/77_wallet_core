@@ -183,7 +183,7 @@ impl SolanaChain {
         let raw_message = wallet_utils::hex_func::bs64_encode(&message)?;
         let res = self.provider.message_fee(raw_message.as_str()).await?;
 
-        let mut sol_fee = SolFeeSetting::new(res.value, 0);
+        let mut sol_fee = SolFeeSetting::new(res.value, 10);
         if let Some(extra_fee) = params.extra_fee().await? {
             sol_fee.extra_fee = Some(extra_fee);
         }
