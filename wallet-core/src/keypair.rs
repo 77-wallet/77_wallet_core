@@ -1,4 +1,4 @@
-pub trait KeyPair {
+pub trait KeyPair: Send + Sync {
     type Error;
     // type Address;
     // type Raw;
