@@ -1,4 +1,6 @@
-use super::{RawTransactionParams, TronTransactionResponse, TronTxOperation};
+use super::{
+    permisions::PermissionTypes, RawTransactionParams, TronTransactionResponse, TronTxOperation,
+};
 use crate::{
     tron::{consts::PERMISSION, provider::Provider},
     types::{ChainPrivateKey, MultisigSignResp},
@@ -106,12 +108,48 @@ impl Permission {
             keys,
         }
     }
+
+    pub fn new_owner(threshold: u8, keys: Vec<Keys>) -> Self {
+        Self {
+            types: Some(json!(0)),
+            permission_name: "owner".to_owned(),
+            operations: None,
+            threshold,
+            keys,
+        }
+    }
+
+    pub fn new_actives(
+        permission_name: String,
+        permission: PermissionTypes,
+        threshold: u8,
+        keys: Vec<Keys>,
+    ) -> Self {
+        let permisions = permission.to_hex();
+
+        Self {
+            types: Some(json!(2)),
+            permission_name,
+            operations: Some(permisions),
+            threshold,
+            keys,
+        }
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Keys {
+    // hex
     address: String,
     weight: i8,
+}
+impl Keys {
+    pub fn new(address: &str, weight: i8) -> crate::Result<Self> {
+        Ok(Self {
+            address: address::bs58_addr_to_hex(address)?,
+            weight,
+        })
+    }
 }
 
 pub struct TransactionOpt;
