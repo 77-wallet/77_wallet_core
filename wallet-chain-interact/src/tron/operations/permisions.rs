@@ -149,7 +149,6 @@ impl Default for PermissionTypes {
             ContractType::UpdateEnergyLimitContract, // Update Contract Energy Limit
             ContractType::AccountPermissionUpdateContract, // Update Account Permissions
         ];
-
         PermissionTypes(contract_ids)
     }
 }
