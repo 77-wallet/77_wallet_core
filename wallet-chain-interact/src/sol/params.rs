@@ -1,8 +1,10 @@
+use super::consts;
+
 #[derive(Debug)]
 pub struct SolFeeSetting {
     // unit lamports
     pub base_fee: u64,
-    // unit lamports
+    // unit miro lamports  1lamport = 100_000_0 miro lamports
     pub priority_fee_per_compute_unit: Option<u64>,
     // consumed compute units
     pub compute_units_consumed: u64,
@@ -32,7 +34,7 @@ impl SolFeeSetting {
     pub fn original_fee(&self) -> u64 {
         // priority fee
         let priority = if let Some(priority) = self.priority_fee_per_compute_unit {
-            self.compute_units_consumed * priority
+            self.compute_units_consumed * priority / consts::SOL_MIROR_LARMPORT
         } else {
             0
         };
