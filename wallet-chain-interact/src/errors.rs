@@ -17,6 +17,8 @@ pub enum ParseErr {
     SerdeErr(#[from] serde_json::Error),
     #[error("serialize {0}")]
     Serialize(String),
+    #[error("sol multisig transaction account size parase error {0}")]
+    SolMultisigArgs(String),
 }
 
 #[derive(Error, Debug)]

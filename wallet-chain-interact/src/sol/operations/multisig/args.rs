@@ -1,3 +1,6 @@
+use super::vault_transaction::{TransactionMessage, VaultTransactionMessage};
+use borsh::BorshDeserialize;
+use solana_sdk::borsh1::get_instance_packed_len;
 use wallet_utils::address;
 
 /// multisig program params
@@ -33,7 +36,17 @@ impl VaultTransactionCreateArgs {
         borsh::to_vec(self).map_err(|e| crate::Error::Other(e.to_string()))
     }
 
-    pub fn size(transaction_message: &[u8]) -> crate::Result<usize> {
+    pub fn size(transaction_message: &[u8], ephemeral_signers: u8) -> crate::Result<usize> {
+        let args = VaultTransactionCreateArgs::deserialize(&mut &transaction_message[..])
+            .map_err(|e| crate::ParseErr::SolMultisigArgs(e.to_string()))?;
+
+        let message = TransactionMessage::deserialize(&mut args.transaction_message.as_ref())
+            .map_err(|e| crate::ParseErr::SolMultisigArgs(e.to_string()))?;
+
+        let messagge = VaultTransactionMessage::try_from(message)
+            .map_err(|e| crate::ParseErr::SolMultisigArgs(e.to_string()))?;
+
+        let message_len = get_instance_packed_len(&messagge).unwrap_or_default();
         Ok(
             8 +   // anchor account discriminator
             32 +  // multisig
@@ -42,8 +55,8 @@ impl VaultTransactionCreateArgs {
             1 +   // bump 
             1 +   // vault_index
             1 +   // vault_bump
-            4+     // ephemeral_signers_bumps vec
-            transaction_message.len(), // message
+            (4 + usize::from(ephemeral_signers)) +     // ephemeral_signers_bumps vec
+            message_len, // message
         )
     }
 }

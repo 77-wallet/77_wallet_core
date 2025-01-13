@@ -37,7 +37,7 @@ impl BuildTransactionArgs {
 
 pub struct BuildTransactionOpt<'a> {
     pub multisig_pda: solana_sdk::pubkey::Pubkey,
-    pub threshold: u8,
+    pub members_len: usize,
     pub creator: solana_sdk::pubkey::Pubkey,
     pub program_id: solana_sdk::pubkey::Pubkey,
     pub base: TransferOpt<'a>,
@@ -45,13 +45,13 @@ pub struct BuildTransactionOpt<'a> {
 impl<'a> BuildTransactionOpt<'a> {
     pub fn new(
         multisig_pda: &str,
-        threshold: u8,
+        members_len: usize,
         creator: &str,
         base: TransferOpt<'a>,
     ) -> crate::Result<Self> {
         Ok(Self {
             multisig_pda: address::parse_sol_address(multisig_pda)?,
-            threshold,
+            members_len,
             creator: address::parse_sol_address(creator)?,
             program_id: address::parse_sol_address(MULTISIG_PROGRAM_ID)?,
             base,
@@ -176,10 +176,9 @@ impl<'a> BuildTransactionOpt<'a> {
         msg: &[u8],
         mut base_fee: SolFeeSetting,
     ) -> crate::Result<SolFeeSetting> {
-        let vault_size = VaultTransactionCreateArgs::size(msg)?;
+        let vault_size = VaultTransactionCreateArgs::size(msg, 0)?;
 
-        // tracing::warn!("vault account size {}", vault_size);
-        let proposal_size = ProposalCreateArgs::size(self.threshold as usize);
+        let proposal_size = ProposalCreateArgs::size(self.members_len);
 
         let total_size = vault_size + proposal_size;
 

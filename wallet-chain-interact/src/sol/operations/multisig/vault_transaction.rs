@@ -251,3 +251,95 @@ impl VaultTransactionMessageExt for TransactionMessage {
         self
     }
 }
+
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct VaultTransactionMessage {
+    /// The number of signer pubkeys in the account_keys vec.
+    pub num_signers: u8,
+    /// The number of writable signer pubkeys in the account_keys vec.
+    pub num_writable_signers: u8,
+    /// The number of writable non-signer pubkeys in the account_keys vec.
+    pub num_writable_non_signers: u8,
+    /// Unique account pubkeys (including program IDs) required for execution of the tx.
+    /// The signer pubkeys appear at the beginning of the vec, with writable pubkeys first, and read-only pubkeys following.
+    /// The non-signer pubkeys follow with writable pubkeys first and read-only ones following.
+    /// Program IDs are also stored at the end of the vec along with other non-signer non-writable pubkeys:
+    ///
+    /// ```plaintext
+    /// [pubkey1, pubkey2, pubkey3, pubkey4, pubkey5, pubkey6, pubkey7, pubkey8]
+    ///  |---writable---|  |---readonly---|  |---writable---|  |---readonly---|
+    ///  |------------signers-------------|  |----------non-singers-----------|
+    /// ```
+    pub account_keys: Vec<Pubkey>,
+    /// List of instructions making up the tx.
+    pub instructions: Vec<MultisigCompiledInstruction>,
+    /// List of address table lookups used to load additional accounts
+    /// for this transaction.
+    pub address_table_lookups: Vec<MultisigMessageAddressTableLookup>,
+}
+
+impl TryFrom<TransactionMessage> for VaultTransactionMessage {
+    type Error = crate::Error;
+
+    fn try_from(message: TransactionMessage) -> crate::Result<Self> {
+        let account_keys: Vec<Pubkey> = message.account_keys.into();
+        let instructions: Vec<CompiledInstruction> = message.instructions.into();
+        let instructions: Vec<MultisigCompiledInstruction> = instructions
+            .into_iter()
+            .map(MultisigCompiledInstruction::from)
+            .collect();
+        let address_table_lookups: Vec<MessageAddressTableLookup> =
+            message.address_table_lookups.into();
+
+        Ok(Self {
+            num_signers: message.num_signers,
+            num_writable_signers: message.num_writable_signers,
+            num_writable_non_signers: message.num_writable_non_signers,
+            account_keys,
+            instructions,
+            address_table_lookups: address_table_lookups
+                .into_iter()
+                .map(MultisigMessageAddressTableLookup::from)
+                .collect(),
+        })
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct MultisigCompiledInstruction {
+    pub program_id_index: u8,
+    /// Indices into the tx's `account_keys` list indicating which accounts to pass to the instruction.
+    pub account_indexes: Vec<u8>,
+    /// Instruction data.
+    pub data: Vec<u8>,
+}
+
+impl From<CompiledInstruction> for MultisigCompiledInstruction {
+    fn from(compiled_instruction: CompiledInstruction) -> Self {
+        Self {
+            program_id_index: compiled_instruction.program_id_index,
+            account_indexes: compiled_instruction.account_indexes.into(),
+            data: compiled_instruction.data.into(),
+        }
+    }
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+pub struct MultisigMessageAddressTableLookup {
+    /// Address lookup table account key.
+    pub account_key: Pubkey,
+    /// List of indexes used to load writable accounts.
+    pub writable_indexes: Vec<u8>,
+    /// List of indexes used to load readonly accounts.
+    pub readonly_indexes: Vec<u8>,
+}
+
+impl From<MessageAddressTableLookup> for MultisigMessageAddressTableLookup {
+    fn from(m: MessageAddressTableLookup) -> Self {
+        Self {
+            account_key: m.account_key,
+            writable_indexes: m.writable_indexes.into(),
+            readonly_indexes: m.readonly_indexes.into(),
+        }
+    }
+}
