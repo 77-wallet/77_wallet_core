@@ -126,7 +126,6 @@ impl Permission {
         keys: Vec<Keys>,
     ) -> Self {
         let permisions = permission.to_hex();
-
         Self {
             types: Some(json!(2)),
             permission_name,

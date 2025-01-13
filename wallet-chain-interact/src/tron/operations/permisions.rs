@@ -9,28 +9,46 @@ use wallet_utils::address;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContractType {
     AccountCreateContract = 0,
+    // 转账
     TransferContract = 1,
     TransferAssetContract = 2,
     VoteAssetContract = 3,
+    // 投票Vote
     VoteWitnessContract = 4,
+    // 成为超级节点
     WitnessCreateContract = 5,
+    // Issue Contract
     AssetIssueContract = 6,
+    // 更新超级节点信息(Update SR Info)
     WitnessUpdateContract = 8,
+    // Participate in TRC10 Issuance
     ParticipateAssetIssueContract = 9,
+    // Update Account Name
     AccountUpdateContract = 10,
+    // TRX Stake (1.0)
     FreezeBalanceContract = 11,
+    // TRX Unstake (1.0)
     UnfreezeBalanceContract = 12,
+    // Claim Voting Rewards
     WithdrawBalanceContract = 13,
+    // Unstake TRC10
     UnfreezeAssetContract = 14,
+    // Update TRC10 Parameters
     UpdateAssetContract = 15,
+    // Create Proposal
     ProposalCreateContract = 16,
+    // Approve Proposal
     ProposalApproveContract = 17,
+    // Cancel Proposal
     ProposalDeleteContract = 18,
     SetAccountIdContract = 19,
     CustomContract = 20,
+    // Create Smart Contract
     CreateSmartContract = 30,
+    // Trigger Smart Contract
     TriggerSmartContract = 31,
     GetContract = 32,
+    // Update Contract Parameters
     UpdateSettingContract = 33,
     ExchangeCreateContract = 41,
     ExchangeInjectContract = 42,
@@ -43,11 +61,17 @@ pub enum ContractType {
     ShieldedTransferContract = 51,
     MarketSellAssetContract = 52,
     MarketCancelOrderContract = 53,
+    // freeze v2
     FreezeBalanceV2Contract = 54,
+    // stake v2
     UnfreezeBalanceV2Contract = 55,
+    // 取款
     WithdrawExpireUnfreezeContract = 56,
+    // 委派
     DelegateResourceContract = 57,
+    // 取消委派
     UnDelegateResourceContract = 58,
+    // 全部取消委派
     CancelAllUnfreezeV2Contract = 59,
 }
 
@@ -69,6 +93,26 @@ impl PermissionTypes {
 
         hex::encode(operations)
     }
+
+    pub fn from_hex(hex_str: &str) -> crate::Result<Vec<u8>> {
+        let operations = wallet_utils::hex_func::hex_decode(hex_str)?;
+
+        let mut contract_ids = Vec::new();
+        for (byte_index, &byte) in operations.iter().enumerate() {
+            for bit_index in 0..8 {
+                if (byte & (1 << bit_index)) != 0 {
+                    contract_ids.push(byte_index * 8 + bit_index);
+                }
+            }
+        }
+
+        let original_structure = contract_ids
+            .into_iter()
+            .map(|id| id as u8)
+            .collect::<Vec<u8>>();
+
+        Ok(original_structure)
+    }
 }
 
 impl Default for PermissionTypes {
@@ -77,6 +121,7 @@ impl Default for PermissionTypes {
             ContractType::AccountCreateContract,           // Activate Account
             ContractType::TransferContract,                // Transfer TRX
             ContractType::TransferAssetContract,           // Transfer TRC10
+            ContractType::VoteAssetContract,               // Transfer TRC10
             ContractType::VoteWitnessContract,             // Vote
             ContractType::WitnessCreateContract,           // Apply to Become a SR Candidate
             ContractType::AssetIssueContract,              // Issue TRC10
@@ -91,8 +136,11 @@ impl Default for PermissionTypes {
             ContractType::ProposalCreateContract,          // Create Proposal
             ContractType::ProposalApproveContract,         // Approve Proposal
             ContractType::ProposalDeleteContract,          // Cancel Proposal
+            ContractType::SetAccountIdContract,            // Cancel Proposal
+            ContractType::CustomContract,                  // Cancel Proposal
             ContractType::CreateSmartContract,             // Create Smart Contract
             ContractType::TriggerSmartContract,            // Trigger Smart Contract
+            ContractType::GetContract,                     // Trigger Smart Contract
             ContractType::UpdateSettingContract,           // Update Contract Parameters
             ContractType::ExchangeCreateContract,          // Create Bancor Transaction
             ContractType::ExchangeInjectContract,          // Inject Assets into Bancor Transaction
@@ -101,7 +149,7 @@ impl Default for PermissionTypes {
             ContractType::UpdateEnergyLimitContract, // Update Contract Energy Limit
             ContractType::AccountPermissionUpdateContract, // Update Account Permissions
         ];
-        println!("len {}", contract_ids.len());
+
         PermissionTypes(contract_ids)
     }
 }
@@ -168,5 +216,13 @@ mod tests {
             "7fff1fc0037e0000000000000000000000000000000000000000000000000000",
             permission
         )
+    }
+
+    #[test]
+    pub fn test_recover() {
+        let operations = "000000000000c00f000000000000000000000000000000000000000000000000";
+
+        let res = PermissionTypes::from_hex(&operations).unwrap();
+        println!("{:?}", res)
     }
 }
