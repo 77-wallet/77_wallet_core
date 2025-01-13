@@ -2,7 +2,7 @@
 pub mod btc;
 pub use btc::script;
 pub mod ltc;
-// pub use ltc as ltc_scripts;
+pub use ltc::script as ltc_scripts;
 pub mod eth;
 pub mod factory;
 pub mod sol;
