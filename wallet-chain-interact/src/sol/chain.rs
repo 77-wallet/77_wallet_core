@@ -145,9 +145,12 @@ impl SolanaChain {
         // add fee instruction
         if let Some(fee) = fee_setting {
             if let Some(priority) = fee.priority_fee_per_compute_unit {
-                let fee_instruction =
+                let unit_price =
                     compute_budget::ComputeBudgetInstruction::set_compute_unit_price(priority);
-                instructions.insert(0, fee_instruction);
+                let unit_limit = compute_budget::ComputeBudgetInstruction::set_compute_unit_limit(
+                    fee.compute_units_consumed as u32,
+                );
+                instructions.splice(0..0, vec![unit_limit, unit_price]);
             }
         }
 
