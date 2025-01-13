@@ -47,7 +47,12 @@ impl HttpClient {
     }
 
     pub fn post(&self, endpoint: &str) -> ReqBuilder {
-        let url = format!("{}/{}", self.base_url, endpoint);
+        let url;
+        if !endpoint.is_empty() {
+            url = format!("{}/{}", self.base_url, endpoint);
+        } else {
+            url = self.base_url.to_string();
+        }
         tracing::info!("request url = {}", url);
         let build = self.client.post(url);
         ReqBuilder(build)

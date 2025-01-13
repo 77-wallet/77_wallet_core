@@ -2,6 +2,7 @@ use crate::{errors::NodeResponseError, types::JsonRpcResult, TransportError};
 use reqwest::RequestBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
+use tracing::trace;
 
 pub struct ReqBuilder(pub RequestBuilder);
 
@@ -88,6 +89,7 @@ impl ReqBuilder {
     // 普通请求
     pub async fn send<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
         let res = self.do_request().await?;
+        tracing::info!("{:?}", res);
 
         Ok(wallet_utils::serde_func::serde_from_str(&res)?)
     }
