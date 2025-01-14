@@ -178,17 +178,20 @@ impl<'a> BuildTransactionOpt<'a> {
     ) -> crate::Result<SolFeeSetting> {
         let vault_size = VaultTransactionCreateArgs::size(msg, 0)?;
 
-        let proposal_size = ProposalCreateArgs::size(self.members_len);
-
-        let total_size = vault_size + proposal_size;
-
         let value = self
             .base
             .provider
-            .get_minimum_balance_for_rent(total_size as u64)
+            .get_minimum_balance_for_rent(vault_size as u64)
+            .await?;
+        let proposal_size = ProposalCreateArgs::size(self.members_len);
+
+        let value1 = self
+            .base
+            .provider
+            .get_minimum_balance_for_rent(proposal_size as u64)
             .await?;
 
-        base_fee.extra_fee = Some(value);
+        base_fee.extra_fee = Some(value + value1);
         Ok(base_fee)
     }
 }
