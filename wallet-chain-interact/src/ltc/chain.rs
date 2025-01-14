@@ -1,18 +1,12 @@
-use super::operations::multisig::{BtcMultisigRaw, MultisigAccountOpt, MultisigTransactionOpt};
 use super::params::{FeeSetting, TransferResp};
 use super::provider::{Provider, ProviderConfig};
-use super::script::BtcScript;
-use super::signature::{BtcSignature, SignatureCombiner};
-use super::{network_convert, operations, protocol};
-use crate::types::{ChainPrivateKey, FetchMultisigAddressResp, MultisigSignResp, MultisigTxResp};
+use super::signature::BtcSignature;
+use super::{operations, protocol};
+use crate::types::ChainPrivateKey;
 use crate::{BillResourceConsume, QueryTransactionResult};
 use alloy::primitives::map::HashMap;
 use alloy::primitives::U256;
-use bitcoin::key::{rand, Keypair, Secp256k1};
-use bitcoin::taproot::TaprootBuilder;
-use bitcoin::{consensus, Address, Amount, ScriptBuf, Transaction};
-use wallet_types::chain::address::r#type::BtcAddressType;
-use wallet_utils::{hex_func, unit};
+use bitcoin::Amount;
 
 pub struct BtcChain {
     provider: Provider,
@@ -195,185 +189,185 @@ impl BtcChain {
         Ok(FeeSetting { fee_rate, size })
     }
 
-    pub async fn build_multisig_tx(
-        &self,
-        params: operations::transfer::TransferArg,
-    ) -> crate::Result<MultisigTxResp> {
-        let utxo = self
-            .provider
-            .utxos(&params.from.to_string(), self.network)
-            .await?;
-        let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
+    // pub async fn build_multisig_tx(
+    //     &self,
+    //     params: operations::transfer::TransferArg,
+    // ) -> crate::Result<MultisigTxResp> {
+    //     let utxo = self
+    //         .provider
+    //         .utxos(&params.from.to_string(), self.network)
+    //         .await?;
+    //     let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
 
-        let mut transaction_builder = params.build_transaction(utxo)?;
-        let size = transaction_builder.transactin_size(fee_rate, &params)?;
+    //     let mut transaction_builder = params.build_transaction(utxo)?;
+    //     let size = transaction_builder.transactin_size(fee_rate, &params)?;
 
-        let used_utxo = transaction_builder.utxo.used_utxo_to_hash_map();
+    //     let used_utxo = transaction_builder.utxo.used_utxo_to_hash_map();
 
-        let fee = fee_rate * size as u64;
-        if transaction_builder.exceeds_max_fee(fee) {
-            return Err(crate::UtxoError::ExceedsMaximum.into());
-        }
-        if transaction_builder.is_dust_tx(params.value, fee) {
-            return Err(crate::UtxoError::DustTx.into());
-        }
+    //     let fee = fee_rate * size as u64;
+    //     if transaction_builder.exceeds_max_fee(fee) {
+    //         return Err(crate::UtxoError::ExceedsMaximum.into());
+    //     }
+    //     if transaction_builder.is_dust_tx(params.value, fee) {
+    //         return Err(crate::UtxoError::DustTx.into());
+    //     }
 
-        let raw = BtcMultisigRaw {
-            used_utxo,
-            multisig_address: params.from.to_string(),
-            raw_hex: consensus::encode::serialize_hex(&transaction_builder.transaction),
-        };
+    //     let raw = BtcMultisigRaw {
+    //         used_utxo,
+    //         multisig_address: params.from.to_string(),
+    //         raw_hex: consensus::encode::serialize_hex(&transaction_builder.transaction),
+    //     };
 
-        let raw_hex_str = raw.to_string()?;
-        let resp = MultisigTxResp {
-            tx_hash: "".to_string(),
-            raw_data: raw_hex_str,
-        };
-        Ok(resp)
-    }
+    //     let raw_hex_str = raw.to_string()?;
+    //     let resp = MultisigTxResp {
+    //         tx_hash: "".to_string(),
+    //         raw_data: raw_hex_str,
+    //     };
+    //     Ok(resp)
+    // }
 
-    pub async fn sign_multisig_tx(
-        &self,
-        params: MultisigTransactionOpt,
-        key: ChainPrivateKey,
-    ) -> crate::Result<MultisigSignResp> {
-        let raw_data = BtcMultisigRaw::from_hex_str(&params.raw_data)?;
+    // pub async fn sign_multisig_tx(
+    //     &self,
+    //     params: MultisigTransactionOpt,
+    //     key: ChainPrivateKey,
+    // ) -> crate::Result<MultisigSignResp> {
+    //     let raw_data = BtcMultisigRaw::from_hex_str(&params.raw_data)?;
 
-        let bytes = hex_func::hex_decode(&raw_data.raw_hex)?;
-        let transaction = consensus::deserialize::<Transaction>(&bytes)
-            .map_err(|e| crate::Error::Other(e.to_string()))?;
+    //     let bytes = hex_func::hex_decode(&raw_data.raw_hex)?;
+    //     let transaction = consensus::deserialize::<Transaction>(&bytes)
+    //         .map_err(|e| crate::Error::Other(e.to_string()))?;
 
-        let script = ScriptBuf::from_hex(&params.script_hex)
-            .map_err(|e| crate::Error::BtcScript(e.to_string()))?;
+    //     let script = ScriptBuf::from_hex(&params.script_hex)
+    //         .map_err(|e| crate::Error::BtcScript(e.to_string()))?;
 
-        let signer = BtcSignature::new(&key, raw_data.used_utxo)?;
-        let sign = signer
-            .multisig_sign_v1(params.address_type, script, transaction, &self.provider)
-            .await?;
+    //     let signer = BtcSignature::new(&key, raw_data.used_utxo)?;
+    //     let sign = signer
+    //         .multisig_sign_v1(params.address_type, script, transaction, &self.provider)
+    //         .await?;
 
-        let signature = hex_func::bincode_encode(&sign)?;
-        let resp = MultisigSignResp::new(signature);
+    //     let signature = hex_func::bincode_encode(&sign)?;
+    //     let resp = MultisigSignResp::new(signature);
 
-        Ok(resp)
-    }
+    //     Ok(resp)
+    // }
 
-    pub async fn exec_multisig_tx(
-        &self,
-        params: MultisigTransactionOpt,
-        signatures: Vec<String>,
-        inner_key: String,
-    ) -> crate::Result<TransferResp> {
-        let raw_data = BtcMultisigRaw::from_hex_str(&params.raw_data)?;
+    // pub async fn exec_multisig_tx(
+    //     &self,
+    //     params: MultisigTransactionOpt,
+    //     signatures: Vec<String>,
+    //     inner_key: String,
+    // ) -> crate::Result<TransferResp> {
+    //     let raw_data = BtcMultisigRaw::from_hex_str(&params.raw_data)?;
 
-        let bytes = hex_func::hex_decode(&raw_data.raw_hex)?;
-        let mut transaction = consensus::deserialize::<Transaction>(&bytes)
-            .map_err(|e| crate::Error::Other(e.to_string()))?;
+    //     let bytes = hex_func::hex_decode(&raw_data.raw_hex)?;
+    //     let mut transaction = consensus::deserialize::<Transaction>(&bytes)
+    //         .map_err(|e| crate::Error::Other(e.to_string()))?;
 
-        let redeem_script = ScriptBuf::from_hex(&params.script_hex)
-            .map_err(|e| crate::Error::BtcScript(e.to_string()))?;
+    //     let redeem_script = ScriptBuf::from_hex(&params.script_hex)
+    //         .map_err(|e| crate::Error::BtcScript(e.to_string()))?;
 
-        let combiner = SignatureCombiner::new(signatures, redeem_script);
+    //     let combiner = SignatureCombiner::new(signatures, redeem_script);
 
-        match params.address_type {
-            BtcAddressType::P2sh => combiner.p2sh(&mut transaction)?,
-            BtcAddressType::P2shWsh => combiner.p2sh_wsh(&mut transaction)?,
-            BtcAddressType::P2wsh => combiner.p2wsh(&mut transaction)?,
-            BtcAddressType::P2trSh => combiner.p2tr_sh(&mut transaction, &inner_key)?,
-            _ => {
-                return Err(crate::Error::Other(format!(
-                    "exec transaction not support multisig address type = {}",
-                    params.address_type,
-                )))
-            }
-        };
+    //     match params.address_type {
+    //         BtcAddressType::P2sh => combiner.p2sh(&mut transaction)?,
+    //         BtcAddressType::P2shWsh => combiner.p2sh_wsh(&mut transaction)?,
+    //         BtcAddressType::P2wsh => combiner.p2wsh(&mut transaction)?,
+    //         BtcAddressType::P2trSh => combiner.p2tr_sh(&mut transaction, &inner_key)?,
+    //         _ => {
+    //             return Err(crate::Error::Other(format!(
+    //                 "exec transaction not support multisig address type = {}",
+    //                 params.address_type,
+    //             )))
+    //         }
+    //     };
 
-        // check balance
-        let balance = self.balance(&params.from, None).await?;
-        let value = unit::convert_to_u256(&params.value, super::consts::BTC_DECIMAL)?;
-        if balance < value {
-            return Err(crate::Error::UtxoError(
-                crate::UtxoError::InsufficientBalance,
-            ));
-        }
-        let remain_balance = Amount::from_sat((balance - value).to::<u64>());
+    //     // check balance
+    //     let balance = self.balance(&params.from, None).await?;
+    //     let value = unit::convert_to_u256(&params.value, super::consts::BTC_DECIMAL)?;
+    //     if balance < value {
+    //         return Err(crate::Error::UtxoError(
+    //             crate::UtxoError::InsufficientBalance,
+    //         ));
+    //     }
+    //     let remain_balance = Amount::from_sat((balance - value).to::<u64>());
 
-        // check fee
-        let fee_rate = self
-            .provider
-            .fetch_fee_rate(super::consts::FEE_RATE as u32, self.network)
-            .await?;
-        let size = transaction.vsize();
-        let transaction_fee = fee_rate * size as u64;
-        if remain_balance < transaction_fee {
-            return Err(crate::Error::UtxoError(crate::UtxoError::InsufficientFee));
-        }
+    //     // check fee
+    //     let fee_rate = self
+    //         .provider
+    //         .fetch_fee_rate(super::consts::FEE_RATE as u32, self.network)
+    //         .await?;
+    //     let size = transaction.vsize();
+    //     let transaction_fee = fee_rate * size as u64;
+    //     if remain_balance < transaction_fee {
+    //         return Err(crate::Error::UtxoError(crate::UtxoError::InsufficientFee));
+    //     }
 
-        let hex_raw = consensus::encode::serialize_hex(&transaction);
+    //     let hex_raw = consensus::encode::serialize_hex(&transaction);
 
-        let tx_hash = self.provider.send_raw_transaction(&hex_raw).await?;
-        Ok(TransferResp::new(tx_hash, fee_rate, size))
-    }
+    //     let tx_hash = self.provider.send_raw_transaction(&hex_raw).await?;
+    //     Ok(TransferResp::new(tx_hash, fee_rate, size))
+    // }
 
-    pub async fn multisig_address(
-        &self,
-        params: MultisigAccountOpt,
-    ) -> crate::Result<FetchMultisigAddressResp> {
-        let script = if params.address_type != BtcAddressType::P2trSh {
-            BtcScript::multisig_script(params.threshold, &params.owners)?
-        } else {
-            BtcScript::multisig_p2tr_script(params.threshold, &params.owners)?
-        };
+    // pub async fn multisig_address(
+    //     &self,
+    //     params: MultisigAccountOpt,
+    // ) -> crate::Result<FetchMultisigAddressResp> {
+    //     let script = if params.address_type != BtcAddressType::P2trSh {
+    //         BtcScript::multisig_script(params.threshold, &params.owners)?
+    //     } else {
+    //         BtcScript::multisig_p2tr_script(params.threshold, &params.owners)?
+    //     };
 
-        let network = network_convert(self.network);
+    //     let network = network_convert(self.network);
 
-        let (address, authority_address) = match params.address_type {
-            BtcAddressType::P2sh => {
-                let address = bitcoin::Address::p2sh(&script, network)
-                    .map_err(|e| crate::Error::Other(e.to_string()))?;
-                (address, "".to_string())
-            }
-            BtcAddressType::P2wsh => (Address::p2wsh(&script, network), "".to_string()),
-            BtcAddressType::P2shWsh => (Address::p2shwsh(&script, network), "".to_string()),
-            BtcAddressType::P2trSh => {
-                let secp = Secp256k1::new();
+    //     let (address, authority_address) = match params.address_type {
+    //         BtcAddressType::P2sh => {
+    //             let address = bitcoin::Address::p2sh(&script, network)
+    //                 .map_err(|e| crate::Error::Other(e.to_string()))?;
+    //             (address, "".to_string())
+    //         }
+    //         BtcAddressType::P2wsh => (Address::p2wsh(&script, network), "".to_string()),
+    //         BtcAddressType::P2shWsh => (Address::p2shwsh(&script, network), "".to_string()),
+    //         BtcAddressType::P2trSh => {
+    //             let secp = Secp256k1::new();
 
-                let keypair = Keypair::new(&secp, &mut rand::thread_rng());
-                let (inner_pubkey, _) = keypair.x_only_public_key();
+    //             let keypair = Keypair::new(&secp, &mut rand::thread_rng());
+    //             let (inner_pubkey, _) = keypair.x_only_public_key();
 
-                let builder = TaprootBuilder::with_huffman_tree(vec![(1, script.clone())])
-                    .map_err(|e| crate::Error::Other(e.to_string()))?;
-                let tap_info = builder
-                    .finalize(&secp, inner_pubkey)
-                    .map_err(|e| crate::Error::Other(format!("{e:?}")))?;
+    //             let builder = TaprootBuilder::with_huffman_tree(vec![(1, script.clone())])
+    //                 .map_err(|e| crate::Error::Other(e.to_string()))?;
+    //             let tap_info = builder
+    //                 .finalize(&secp, inner_pubkey)
+    //                 .map_err(|e| crate::Error::Other(format!("{e:?}")))?;
 
-                let address = Address::p2tr(
-                    &secp,
-                    tap_info.internal_key(),
-                    tap_info.merkle_root(),
-                    network,
-                );
-                (address, inner_pubkey.to_string())
-            }
-            _ => return Err(crate::Error::NotSupportApi("not support".to_string())),
-        };
+    //             let address = Address::p2tr(
+    //                 &secp,
+    //                 tap_info.internal_key(),
+    //                 tap_info.merkle_root(),
+    //                 network,
+    //             );
+    //             (address, inner_pubkey.to_string())
+    //         }
+    //         _ => return Err(crate::Error::NotSupportApi("not support".to_string())),
+    //     };
 
-        let resp = FetchMultisigAddressResp {
-            authority_address,
-            multisig_address: address.to_string(),
-            salt: script.to_hex_string(),
-        };
-        Ok(resp)
-    }
+    //     let resp = FetchMultisigAddressResp {
+    //         authority_address,
+    //         multisig_address: address.to_string(),
+    //         salt: script.to_hex_string(),
+    //     };
+    //     Ok(resp)
+    // }
 
-    pub async fn decimals(&self, _token: &str) -> crate::Result<u8> {
-        Ok(super::consts::BTC_DECIMAL)
-    }
+    // pub async fn decimals(&self, _token: &str) -> crate::Result<u8> {
+    //     Ok(super::consts::BTC_DECIMAL)
+    // }
 
-    pub async fn token_symbol(&self, _token: &str) -> crate::Result<String> {
-        Ok("".to_string())
-    }
+    // pub async fn token_symbol(&self, _token: &str) -> crate::Result<String> {
+    //     Ok("".to_string())
+    // }
 
-    pub async fn token_name(&self, _token: &str) -> crate::Result<String> {
-        Ok("".to_string())
-    }
+    // pub async fn token_name(&self, _token: &str) -> crate::Result<String> {
+    //     Ok("".to_string())
+    // }
 }

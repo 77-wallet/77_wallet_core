@@ -2,7 +2,6 @@ use crate::{errors::NodeResponseError, types::JsonRpcResult, TransportError};
 use reqwest::RequestBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
-use tracing::trace;
 
 pub struct ReqBuilder(pub RequestBuilder);
 
@@ -63,7 +62,7 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        tracing::debug!("response = {}", response);
+        tracing::info!("response = {}", response);
         Ok(response)
     }
 

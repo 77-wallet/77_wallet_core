@@ -34,7 +34,7 @@ pub struct Provider {
     http_client: HttpClient,
 }
 
-pub const API_ENPOINT: &'static str = "http/btc_blockbook/api/v2";
+pub const API_ENPOINT: &'static str = "";
 
 impl Provider {
     pub fn new(
@@ -84,7 +84,7 @@ impl Provider {
                 Ok(UtxoList(utxo))
             }
             _ => {
-                let url = format!("/{}/utxo/{}", API_ENPOINT, address);
+                let url = format!("{}/utxo/{}", API_ENPOINT, address);
 
                 let mut params = HashMap::new();
                 params.insert("confirmed", "false");
@@ -207,8 +207,6 @@ impl Provider {
             .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
             .await?;
 
-        tracing::info!("result: {:?}", res.result.to_string());
-
         let res = from_value(res.result.clone()).map_err(|e| {
             WalletError::Serde(SerdeError::Deserialize(format!(
                 "error = {} value = {}",
@@ -239,7 +237,6 @@ impl Provider {
         })?;
 
         Ok(res)
-        // Ok(res)
     }
 
     pub async fn get_block_from_json_rpc(&self, hash: &str) -> crate::Result<JsonRpcBlock> {

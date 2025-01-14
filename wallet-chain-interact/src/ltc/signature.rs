@@ -1,19 +1,15 @@
 use super::{provider::Provider, utxos::Usedutxo};
-use crate::{script::BtcScript, Error};
+use crate::script::BtcScript;
 use bitcoin::{
     ecdsa,
     key::{Keypair, Secp256k1, TapTweak, TweakedKeypair},
-    opcodes::OP_0,
     script::{self, PushBytes},
     secp256k1::{self, All, Message},
-    sighash::{Prevouts, ScriptPath, SighashCache},
-    taproot::{LeafVersion, TaprootBuilder},
+    sighash::{Prevouts, SighashCache},
     Amount, CompressedPublicKey, EcdsaSighashType, PrivateKey, ScriptBuf, TapSighashType,
     Transaction, TxOut, Witness,
 };
-use std::str::FromStr as _;
 use wallet_types::chain::address::r#type::BtcAddressType;
-use wallet_utils::hex_func;
 
 pub struct BtcSignature {
     secp: Secp256k1<All>,
@@ -156,72 +152,72 @@ impl BtcSignature {
         Ok(())
     }
 
-    pub async fn multisig_sign_v1(
-        &self,
-        address_type: BtcAddressType,
-        script: ScriptBuf,
-        tx: Transaction,
-        provider: &Provider,
-    ) -> crate::Result<Vec<Vec<u8>>> {
-        match address_type {
-            BtcAddressType::P2sh => self.p2sh(&tx, script),
-            BtcAddressType::P2wsh | BtcAddressType::P2shWsh => self.p2wsh(&tx, script),
-            BtcAddressType::P2trSh => self.p2tr_sh(&tx, script, provider).await,
-            _ => panic!("sign not support multisig address"),
-        }
-    }
+    // pub async fn multisig_sign_v1(
+    //     &self,
+    //     address_type: BtcAddressType,
+    //     script: ScriptBuf,
+    //     tx: Transaction,
+    //     provider: &Provider,
+    // ) -> crate::Result<Vec<Vec<u8>>> {
+    //     match address_type {
+    //         BtcAddressType::P2sh => self.p2sh(&tx, script),
+    //         BtcAddressType::P2wsh | BtcAddressType::P2shWsh => self.p2wsh(&tx, script),
+    //         BtcAddressType::P2trSh => self.p2tr_sh(&tx, script, provider).await,
+    //         _ => panic!("sign not support multisig address"),
+    //     }
+    // }
 
     // p2sh multisig sign
-    pub fn p2sh(&self, tx: &Transaction, script: ScriptBuf) -> crate::Result<Vec<Vec<u8>>> {
-        let sk = self.private_key.inner;
-        let sighash_type = EcdsaSighashType::All;
+    // pub fn p2sh(&self, tx: &Transaction, script: ScriptBuf) -> crate::Result<Vec<Vec<u8>>> {
+    //     let sk = self.private_key.inner;
+    //     let sighash_type = EcdsaSighashType::All;
 
-        let len = tx.input.len();
-        let mut sig = vec![];
-        for i in 0..len {
-            let sighash = SighashCache::new(tx)
-                .legacy_signature_hash(i, &script, sighash_type as u32)
-                .map_err(|e| {
-                    crate::Error::SignError(format!("p2sh failed to compute sighash{e:}"))
-                })?;
+    //     let len = tx.input.len();
+    //     let mut sig = vec![];
+    //     for i in 0..len {
+    //         let sighash = SighashCache::new(tx)
+    //             .legacy_signature_hash(i, &script, sighash_type as u32)
+    //             .map_err(|e| {
+    //                 crate::Error::SignError(format!("p2sh failed to compute sighash{e:}"))
+    //             })?;
 
-            let msg = Message::from(sighash);
-            let signature = bitcoin::ecdsa::Signature {
-                signature: self.secp.sign_ecdsa(&msg, &sk),
-                sighash_type,
-            };
+    //         let msg = Message::from(sighash);
+    //         let signature = bitcoin::ecdsa::Signature {
+    //             signature: self.secp.sign_ecdsa(&msg, &sk),
+    //             sighash_type,
+    //         };
 
-            sig.push(signature.to_vec());
-        }
-        Ok(sig)
-    }
+    //         sig.push(signature.to_vec());
+    //     }
+    //     Ok(sig)
+    // }
 
-    // p2wsh multisig sign
-    pub fn p2wsh(&self, tx: &Transaction, script: ScriptBuf) -> crate::Result<Vec<Vec<u8>>> {
-        let sk = self.private_key.inner;
-        let sighash_type = EcdsaSighashType::All;
+    // // p2wsh multisig sign
+    // pub fn p2wsh(&self, tx: &Transaction, script: ScriptBuf) -> crate::Result<Vec<Vec<u8>>> {
+    //     let sk = self.private_key.inner;
+    //     let sighash_type = EcdsaSighashType::All;
 
-        let mut sig = vec![];
-        for i in 0..tx.input.len() {
-            let previous = &tx.input[i].previous_output;
-            let amount = self.get_amount(previous.txid, previous.vout).unwrap();
+    //     let mut sig = vec![];
+    //     for i in 0..tx.input.len() {
+    //         let previous = &tx.input[i].previous_output;
+    //         let amount = self.get_amount(previous.txid, previous.vout).unwrap();
 
-            let sighash = SighashCache::new(tx)
-                .p2wsh_signature_hash(i, &script, amount, sighash_type)
-                .map_err(|e| {
-                    crate::Error::SignError(format!("p2sh failed to compute sighash{e:}"))
-                })?;
+    //         let sighash = SighashCache::new(tx)
+    //             .p2wsh_signature_hash(i, &script, amount, sighash_type)
+    //             .map_err(|e| {
+    //                 crate::Error::SignError(format!("p2sh failed to compute sighash{e:}"))
+    //             })?;
 
-            let msg = secp256k1::Message::from(sighash);
-            let signature = self.secp.sign_ecdsa(&msg, &sk);
-            let signature = bitcoin::ecdsa::Signature {
-                signature,
-                sighash_type,
-            };
-            sig.push(signature.to_vec());
-        }
-        Ok(sig)
-    }
+    //         let msg = secp256k1::Message::from(sighash);
+    //         let signature = self.secp.sign_ecdsa(&msg, &sk);
+    //         let signature = bitcoin::ecdsa::Signature {
+    //             signature,
+    //             sighash_type,
+    //         };
+    //         sig.push(signature.to_vec());
+    //     }
+    //     Ok(sig)
+    // }
 
     pub fn get_amount(&self, txid: bitcoin::Txid, vout: u32) -> crate::Result<Amount> {
         let key = format!("{}-{}", txid, vout);
@@ -272,176 +268,176 @@ impl BtcSignature {
         Ok(())
     }
 
-    pub async fn p2tr_sh(
-        &self,
-        tx: &Transaction,
-        script: ScriptBuf,
-        provider: &Provider,
-    ) -> crate::Result<Vec<Vec<u8>>> {
-        let keypair = Keypair::from_secret_key(&self.secp, &self.private_key.inner);
+    // pub async fn p2tr_sh(
+    //     &self,
+    //     tx: &Transaction,
+    //     script: ScriptBuf,
+    //     provider: &Provider,
+    // ) -> crate::Result<Vec<Vec<u8>>> {
+    //     let keypair = Keypair::from_secret_key(&self.secp, &self.private_key.inner);
 
-        let mut prevouts = vec![];
-        let len = tx.input.len();
-        for i in 0..len {
-            // TODO： 是否有更好的方式获取签名的script_pubkey,又去rpc node 查询了一次 增加了网络io
-            let tx_id = tx.input[i].previous_output.txid;
-            let index = tx.input[i].previous_output.vout;
-            let out = provider.utxo_out(&tx_id.to_string(), index).await?;
-            let tx_out = TxOut::try_from(out).unwrap();
-            prevouts.push(tx_out);
-        }
-        let prevouts = Prevouts::All(&prevouts);
+    //     let mut prevouts = vec![];
+    //     let len = tx.input.len();
+    //     for i in 0..len {
+    //         // TODO： 是否有更好的方式获取签名的script_pubkey,又去rpc node 查询了一次 增加了网络io
+    //         let tx_id = tx.input[i].previous_output.txid;
+    //         let index = tx.input[i].previous_output.vout;
+    //         let out = provider.utxo_out(&tx_id.to_string(), index).await?;
+    //         let tx_out = TxOut::try_from(out).unwrap();
+    //         prevouts.push(tx_out);
+    //     }
+    //     let prevouts = Prevouts::All(&prevouts);
 
-        let mut sig = vec![];
-        let sighash_type = TapSighashType::Default;
-        let script_path = ScriptPath::with_defaults(&script);
+    //     let mut sig = vec![];
+    //     let sighash_type = TapSighashType::Default;
+    //     let script_path = ScriptPath::with_defaults(&script);
 
-        let mut sighasher = SighashCache::new(tx);
-        for i in 0..len {
-            let sighash = sighasher
-                .taproot_script_spend_signature_hash(
-                    i,
-                    &prevouts,
-                    script_path.clone(),
-                    sighash_type,
-                )
-                .map_err(|e| {
-                    crate::Error::SignError(format!("p2tr-sh failed to compute sighash{e:}"))
-                })?;
+    //     let mut sighasher = SighashCache::new(tx);
+    //     for i in 0..len {
+    //         let sighash = sighasher
+    //             .taproot_script_spend_signature_hash(
+    //                 i,
+    //                 &prevouts,
+    //                 script_path.clone(),
+    //                 sighash_type,
+    //             )
+    //             .map_err(|e| {
+    //                 crate::Error::SignError(format!("p2tr-sh failed to compute sighash{e:}"))
+    //             })?;
 
-            let msg = Message::from(sighash);
-            let signature = bitcoin::taproot::Signature {
-                signature: self.secp.sign_schnorr(&msg, &keypair),
-                sighash_type,
-            };
-            sig.push(signature.to_vec());
-        }
-        Ok(sig)
-    }
+    //         let msg = Message::from(sighash);
+    //         let signature = bitcoin::taproot::Signature {
+    //             signature: self.secp.sign_schnorr(&msg, &keypair),
+    //             sighash_type,
+    //         };
+    //         sig.push(signature.to_vec());
+    //     }
+    //     Ok(sig)
+    // }
 }
 
-pub struct SignatureCombiner {
-    pub signatures: Vec<String>,
-    pub redeem_script: ScriptBuf,
-}
-impl SignatureCombiner {
-    pub fn new(signatures: Vec<String>, redeem_script: ScriptBuf) -> Self {
-        Self {
-            signatures,
-            redeem_script,
-        }
-    }
-}
-impl SignatureCombiner {
-    pub fn p2sh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
-        let len = transaction.input.len();
+// pub struct SignatureCombiner {
+//     pub signatures: Vec<String>,
+//     pub redeem_script: ScriptBuf,
+// }
+// impl SignatureCombiner {
+//     pub fn new(signatures: Vec<String>, redeem_script: ScriptBuf) -> Self {
+//         Self {
+//             signatures,
+//             redeem_script,
+//         }
+//     }
+// }
+// impl SignatureCombiner {
+//     pub fn p2sh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
+//         let len = transaction.input.len();
 
-        for i in 0..len {
-            let mut buf = ScriptBuf::new();
-            buf.push_opcode(OP_0);
-            for sign in self.signatures.iter() {
-                let res = hex_func::bincode_decode::<Vec<Vec<u8>>>(sign)?;
+//         for i in 0..len {
+//             let mut buf = ScriptBuf::new();
+//             buf.push_opcode(OP_0);
+//             for sign in self.signatures.iter() {
+//                 let res = hex_func::bincode_decode::<Vec<Vec<u8>>>(sign)?;
 
-                let sign_bytes = res[i].as_slice();
-                let push_bytes: &PushBytes = sign_bytes.try_into().map_err(|e| {
-                    Error::SignError(format!("p2sh sign bytes to push_bytes err: {e}"))
-                })?;
-                buf.push_slice(push_bytes);
-            }
+//                 let sign_bytes = res[i].as_slice();
+//                 let push_bytes: &PushBytes = sign_bytes.try_into().map_err(|e| {
+//                     Error::SignError(format!("p2sh sign bytes to push_bytes err: {e}"))
+//                 })?;
+//                 buf.push_slice(push_bytes);
+//             }
 
-            let a: &PushBytes =
-                self.redeem_script.as_bytes().try_into().map_err(|e| {
-                    Error::SignError(format!("p2sh sign bytes to push_bytes err: {e}"))
-                })?;
-            buf.push_slice(a);
-            transaction.input[i].script_sig = buf;
-        }
-        Ok(())
-    }
+//             let a: &PushBytes =
+//                 self.redeem_script.as_bytes().try_into().map_err(|e| {
+//                     Error::SignError(format!("p2sh sign bytes to push_bytes err: {e}"))
+//                 })?;
+//             buf.push_slice(a);
+//             transaction.input[i].script_sig = buf;
+//         }
+//         Ok(())
+//     }
 
-    pub fn p2sh_wsh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
-        let len = transaction.input.len();
+//     pub fn p2sh_wsh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
+//         let len = transaction.input.len();
 
-        for i in 0..len {
-            let builder = script::Builder::new()
-                .push_int(0)
-                .push_slice(self.redeem_script.wscript_hash())
-                .into_script();
-            let mut script_sig = ScriptBuf::new();
-            let push_bytes: &PushBytes = builder
-                .as_bytes()
-                .try_into()
-                .map_err(|e| Error::SignError(format!("p2sh sign bytes to push_bytes err: {e}")))?;
-            script_sig.push_slice(push_bytes);
+//         for i in 0..len {
+//             let builder = script::Builder::new()
+//                 .push_int(0)
+//                 .push_slice(self.redeem_script.wscript_hash())
+//                 .into_script();
+//             let mut script_sig = ScriptBuf::new();
+//             let push_bytes: &PushBytes = builder
+//                 .as_bytes()
+//                 .try_into()
+//                 .map_err(|e| Error::SignError(format!("p2sh sign bytes to push_bytes err: {e}")))?;
+//             script_sig.push_slice(push_bytes);
 
-            let mut witness = Witness::new();
-            witness.push(Vec::new());
+//             let mut witness = Witness::new();
+//             witness.push(Vec::new());
 
-            for sign in self.signatures.iter() {
-                let res = hex_func::bincode_decode::<Vec<Vec<u8>>>(sign)?;
-                witness.push(&res[i]);
-            }
+//             for sign in self.signatures.iter() {
+//                 let res = hex_func::bincode_decode::<Vec<Vec<u8>>>(sign)?;
+//                 witness.push(&res[i]);
+//             }
 
-            witness.push(self.redeem_script.as_bytes());
-            transaction.input[i].witness = witness;
-            transaction.input[i].script_sig = script_sig;
-        }
+//             witness.push(self.redeem_script.as_bytes());
+//             transaction.input[i].witness = witness;
+//             transaction.input[i].script_sig = script_sig;
+//         }
 
-        Ok(())
-    }
+//         Ok(())
+//     }
 
-    pub fn p2wsh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
-        let len = transaction.input.len();
+//     pub fn p2wsh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
+//         let len = transaction.input.len();
 
-        for i in 0..len {
-            let mut witness = Witness::new();
-            witness.push(Vec::new());
-            for sign in self.signatures.iter() {
-                let res = hex_func::bincode_decode::<Vec<Vec<u8>>>(sign)?;
-                witness.push(&res[i]);
-            }
-            witness.push(self.redeem_script.as_bytes());
-            transaction.input[i].witness = witness;
-        }
+//         for i in 0..len {
+//             let mut witness = Witness::new();
+//             witness.push(Vec::new());
+//             for sign in self.signatures.iter() {
+//                 let res = hex_func::bincode_decode::<Vec<Vec<u8>>>(sign)?;
+//                 witness.push(&res[i]);
+//             }
+//             witness.push(self.redeem_script.as_bytes());
+//             transaction.input[i].witness = witness;
+//         }
 
-        Ok(())
-    }
+//         Ok(())
+//     }
 
-    pub fn p2tr_sh(
-        &self,
-        transaction: &mut bitcoin::Transaction,
-        inner_key: &str,
-    ) -> crate::Result<()> {
-        let len = transaction.input.len();
+//     pub fn p2tr_sh(
+//         &self,
+//         transaction: &mut bitcoin::Transaction,
+//         inner_key: &str,
+//     ) -> crate::Result<()> {
+//         let len = transaction.input.len();
 
-        for i in 0..len {
-            let secp = Secp256k1::new();
-            let internal_key = bitcoin::XOnlyPublicKey::from_str(inner_key).unwrap();
+//         for i in 0..len {
+//             let secp = Secp256k1::new();
+//             let internal_key = bitcoin::XOnlyPublicKey::from_str(inner_key).unwrap();
 
-            let taproot_builder =
-                TaprootBuilder::with_huffman_tree(vec![(1, self.redeem_script.clone())]).unwrap();
-            let taproot_data = taproot_builder.finalize(&secp, internal_key).unwrap();
-            let control_block = taproot_data
-                .control_block(&(self.redeem_script.clone(), LeafVersion::TapScript))
-                .unwrap();
+//             let taproot_builder =
+//                 TaprootBuilder::with_huffman_tree(vec![(1, self.redeem_script.clone())]).unwrap();
+//             let taproot_data = taproot_builder.finalize(&secp, internal_key).unwrap();
+//             let control_block = taproot_data
+//                 .control_block(&(self.redeem_script.clone(), LeafVersion::TapScript))
+//                 .unwrap();
 
-            let mut witness = Witness::new();
-            for sign in self.signatures.iter() {
-                if sign.is_empty() {
-                    witness.push(Vec::new());
-                } else {
-                    let res = hex_func::bincode_decode::<Vec<Vec<u8>>>(sign)?;
-                    witness.push(&res[i]);
-                }
-            }
-            witness.push(self.redeem_script.as_bytes());
-            witness.push(control_block.serialize());
-            transaction.input[i].witness = witness;
-        }
+//             let mut witness = Witness::new();
+//             for sign in self.signatures.iter() {
+//                 if sign.is_empty() {
+//                     witness.push(Vec::new());
+//                 } else {
+//                     let res = hex_func::bincode_decode::<Vec<Vec<u8>>>(sign)?;
+//                     witness.push(&res[i]);
+//                 }
+//             }
+//             witness.push(self.redeem_script.as_bytes());
+//             witness.push(control_block.serialize());
+//             transaction.input[i].witness = witness;
+//         }
 
-        Ok(())
-    }
-}
+//         Ok(())
+//     }
+// }
 
 /// This method is used to estimate the size of a transaction.
 /// The signature data and witness data used in the calculation are dummy data,

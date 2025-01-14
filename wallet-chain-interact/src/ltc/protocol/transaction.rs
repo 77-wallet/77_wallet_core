@@ -1,4 +1,4 @@
-use std::{clone, fmt::Debug};
+use std::fmt::Debug;
 
 use crate::ltc::{consts::BTC_DECIMAL, utxos::Utxo};
 use serde::{Deserialize, Serialize};
