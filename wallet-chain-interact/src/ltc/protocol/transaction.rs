@@ -268,6 +268,16 @@ pub struct ApiTransaction {
     pub hex: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiUtxo {
+    pub txid: String,
+    pub vout: u64,
+    pub value: String,
+    pub height: u64,
+    pub confirmations: u64,
+}
+
 // #[derive(Debug, Serialize, Deserialize)]
 // pub struct AddressInfo {
 //     pub address: String,

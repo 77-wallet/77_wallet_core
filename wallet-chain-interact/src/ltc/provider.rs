@@ -2,7 +2,8 @@ use super::{
     protocol::{
         other::FeeRate,
         transaction::{
-            ApiBlock, ApiTransaction, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq, LtcJsonRpcRes,
+            ApiBlock, ApiTransaction, ApiUtxo, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq,
+            LtcJsonRpcRes,
         },
         BlockHeader, OutInfo, ScanOut,
     },
@@ -260,6 +261,12 @@ impl Provider {
                 e, res.result
             )))
         })?;
+        Ok(res)
+    }
+
+    pub async fn get_uxto_from_api(&self, addr: &str) -> crate::Result<Vec<ApiUtxo>> {
+        let url = format!("utxo/{}", addr);
+        let res = self.http_client.get_request::<Vec<ApiUtxo>>(&url).await?;
         Ok(res)
     }
 }
