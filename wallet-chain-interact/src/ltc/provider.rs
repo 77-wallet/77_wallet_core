@@ -3,7 +3,11 @@ use super::{
         other::FeeRate,
         transaction::{
             ApiBlock, ApiTransaction, ApiUtxo, EstimateFee, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq,
+<<<<<<< HEAD
             LtcJsonRpcRes, TransactionUtxo, ValidateAddress,
+=======
+            LtcJsonRpcRes, ToAddressValue, TransactionUtxo,
+>>>>>>> 6e0052e (ltc add findfree)
         },
         BlockHeader, OutInfo,
     },
