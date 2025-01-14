@@ -1,9 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{
-    btc::protocol::transaction::AddressInfo,
-    ltc::{consts::BTC_DECIMAL, utxos::Utxo},
-};
+use crate::ltc::{consts::BTC_DECIMAL, utxos::Utxo};
 use serde::{Deserialize, Serialize};
 use wallet_utils::unit;
 
@@ -222,12 +219,6 @@ pub struct EstimateFee {
     pub blocks: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct ToAddressValue {
-    pub address: f64,
-}
-
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Mweb {
@@ -298,11 +289,11 @@ pub struct ApiUtxo {
     pub confirmations: u64,
 }
 
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct AddressInfo {
-//     pub address: String,
-//     pub value: u64,
-// }
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AddressInfo {
+    pub address: String,
+    pub value: u64,
+}
 
 impl ApiTransaction {
     pub fn get_from(&self) -> Vec<AddressInfo> {

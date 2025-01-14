@@ -130,7 +130,7 @@ impl BtcChain {
         Ok(TransferResp::new(tx_hash, fee_rate, size))
     }
 
-    // fee unit is btc
+    // fee unit is ltc
     pub async fn transfer_with_fee(
         &self,
         params: operations::transfer::TransferArg,

@@ -3,7 +3,7 @@ use super::{
         other::FeeRate,
         transaction::{
             ApiBlock, ApiTransaction, ApiUtxo, EstimateFee, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq,
-            LtcJsonRpcRes, ToAddressValue, TransactionUtxo,
+            LtcJsonRpcRes, TransactionUtxo,
         },
         BlockHeader, OutInfo, ScanOut,
     },
@@ -200,9 +200,14 @@ impl Provider {
         Ok(res)
     }
 
-    pub async fn get_block_from_api(&self, hash: &str, page: u32) -> crate::Result<ApiBlock> {
-        let url = format!("{}/block/{}?page={}", API_ENPOINT, hash, page);
-        let res = self.http_client.get_request::<ApiBlock>(&url).await?;
+    pub async fn get_block_from_api(&self, height: u64) -> crate::Result<ApiBlock> {
+        let url = format!("block/{}", height);
+        let res = self.api_client.get_request::<ApiBlock>(&url).await?;
+        Ok(res)
+    }
+    pub async fn get_uxto_from_api(&self, addr: &str) -> crate::Result<Vec<ApiUtxo>> {
+        let url = format!("utxo/{}", addr);
+        let res = self.api_client.get_request::<Vec<ApiUtxo>>(&url).await?;
         Ok(res)
     }
 
@@ -271,12 +276,6 @@ impl Provider {
                 e, res.result
             )))
         })?;
-        Ok(res)
-    }
-
-    pub async fn get_uxto_from_api(&self, addr: &str) -> crate::Result<Vec<ApiUtxo>> {
-        let url = format!("utxo/{}", addr);
-        let res = self.api_client.get_request::<Vec<ApiUtxo>>(&url).await?;
         Ok(res)
     }
 
