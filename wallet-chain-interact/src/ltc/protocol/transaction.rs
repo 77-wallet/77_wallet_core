@@ -208,6 +208,26 @@ pub struct JsonRpcBlock {
     pub weight: u64,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionUtxo {
+    pub txid: String,
+    pub vout: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct EstimateFee {
+    pub feerate: f64,
+    pub blocks: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ToAddressValue {
+    pub address: f64,
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Mweb {

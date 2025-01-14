@@ -2,8 +2,8 @@ use super::{
     protocol::{
         other::FeeRate,
         transaction::{
-            ApiBlock, ApiTransaction, ApiUtxo, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq,
-            LtcJsonRpcRes,
+            ApiBlock, ApiTransaction, ApiUtxo, EstimateFee, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq,
+            LtcJsonRpcRes, ToAddressValue, TransactionUtxo,
         },
         BlockHeader, OutInfo, ScanOut,
     },
@@ -22,6 +22,7 @@ use wallet_transport::{
 pub struct ProviderConfig {
     pub rpc_url: String,
     pub rpc_auth: Option<RpcAuth>,
+    pub access_key: Option<String>,
     pub http_url: String,
     pub http_api_key: Option<String>,
 }
@@ -33,6 +34,7 @@ pub struct RpcAuth {
 pub struct Provider {
     client: RpcClient,
     http_client: HttpClient,
+    api_client: HttpClient,
 }
 
 pub const API_ENPOINT: &'static str = "";
@@ -49,17 +51,25 @@ impl Provider {
             RpcClient::new(&config.rpc_url, header_opt.clone(), timeout)?
         };
 
-        let mut header_map = header_opt.unwrap_or_else(HashMap::new);
+        let mut header_map_http = header_opt.clone().unwrap_or_else(HashMap::new);
+        if let Some(access_key) = config.access_key {
+            header_map_http.insert("access-key".to_owned(), access_key);
+        }
+        let mut header_map_api = header_opt.unwrap_or_else(HashMap::new);
         if let Some(api_key) = config.http_api_key {
-            header_map.insert("api-key".to_owned(), api_key);
+            header_map_api.insert("api-key".to_owned(), api_key);
         }
 
-        let header_map = (!header_map.is_empty()).then_some(header_map);
-        let http_client = HttpClient::new(&config.http_url, header_map, timeout)?;
+        let header_map_http = (!header_map_http.is_empty()).then_some(header_map_http);
+        let http_client = HttpClient::new(&config.rpc_url, header_map_http, timeout)?;
+
+        let header_map_api = (!header_map_api.is_empty()).then_some(header_map_api);
+        let api_client = HttpClient::new(&config.http_url, header_map_api, timeout)?;
 
         Ok(Self {
             client,
             http_client,
+            api_client,
         })
     }
 
@@ -266,7 +276,58 @@ impl Provider {
 
     pub async fn get_uxto_from_api(&self, addr: &str) -> crate::Result<Vec<ApiUtxo>> {
         let url = format!("utxo/{}", addr);
-        let res = self.http_client.get_request::<Vec<ApiUtxo>>(&url).await?;
+        let res = self.api_client.get_request::<Vec<ApiUtxo>>(&url).await?;
+        Ok(res)
+    }
+
+    pub async fn estimate_fee_from_json_rpc(&self, blocks: u64) -> crate::Result<EstimateFee> {
+        let payload = LtcJsonRpcReq {
+            jsonrpc: "2.0".to_string(),
+            id: "1".to_string(),
+            method: "estimatesmartfee".to_string(),
+            params: vec![json!(blocks)],
+        };
+        let res = self
+            .http_client
+            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
+            .await?;
+
+        let res = from_value(res.result.clone()).map_err(|e| {
+            WalletError::Serde(SerdeError::Deserialize(format!(
+                "error = {} value = {}",
+                e, res.result
+            )))
+        })?;
+
+        Ok(res)
+    }
+
+    pub async fn create_raw_transaction_from_json_rpc(
+        &self,
+        txs: &Vec<TransactionUtxo>,
+        addr: &str,
+        value: f64,
+    ) -> crate::Result<String> {
+        let addr_value = HashMap::from([(addr, value)]);
+
+        let payload = LtcJsonRpcReq {
+            jsonrpc: "2.0".to_string(),
+            id: "1".to_string(),
+            method: "createrawtransaction".to_string(),
+            params: vec![json!(txs), json!(addr_value)],
+        };
+        let res = self
+            .http_client
+            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
+            .await?;
+
+        let res = from_value(res.result.clone()).map_err(|e| {
+            WalletError::Serde(SerdeError::Deserialize(format!(
+                "error = {} value = {}",
+                e, res.result
+            )))
+        })?;
+
         Ok(res)
     }
 }
