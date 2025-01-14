@@ -9,15 +9,17 @@ use std::fmt::Display;
 use btc::BitcoinInstance;
 use chain::ChainCode;
 use eth::EthereumInstance;
+use ltc::LitecoinInstance;
 use sol::SolanaInstance;
 use trx::TronInstance;
-use wallet_core::derive::{Derive, GenDerivation};
+use wallet_core::derive::{Derive, GenDerivation, GenDerivationLtc};
 use wallet_types::chain::{address::r#type::AddressType, chain, network};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub enum Address {
     EthAddress(alloy::primitives::Address),
     BtcAddress(String),
+    LtcAddress(String),
     SolAddress(solana_sdk::pubkey::Pubkey),
     TrxAddress(anychain_tron::TronAddress),
     BnbAddress(alloy::primitives::Address),
@@ -28,6 +30,7 @@ impl Display for Address {
         match self {
             Address::EthAddress(address) => write!(f, "{}", address),
             Address::BtcAddress(address) => write!(f, "{}", address),
+            Address::LtcAddress(address) => write!(f, "{}", address),
             Address::SolAddress(address) => write!(f, "{}", address),
             Address::TrxAddress(address) => write!(f, "{}", address.to_base58()),
             Address::BnbAddress(address) => write!(f, "{}", address),
@@ -42,6 +45,7 @@ pub enum ChainObject {
     Sol(crate::instance::sol::SolanaInstance),
     Bnb(crate::instance::eth::EthereumInstance),
     Btc(crate::instance::btc::BitcoinInstance),
+    Ltc(crate::instance::ltc::LitecoinInstance),
 }
 
 impl ChainObject {
@@ -63,6 +67,7 @@ impl ChainObject {
             ChainObject::Sol(i) => &i.chain_code,
             ChainObject::Bnb(i) => &i.chain_code,
             ChainObject::Btc(i) => &i.chain_code,
+            ChainObject::Ltc(i) => &i.chain_code,
         }
     }
 
@@ -73,6 +78,7 @@ impl ChainObject {
             | ChainObject::Sol(_)
             | ChainObject::Bnb(_) => AddressType::Other,
             ChainObject::Btc(i) => AddressType::Btc(i.address_type),
+            ChainObject::Ltc(i) => AddressType::Ltc(i.address_type),
         }
     }
 
@@ -113,6 +119,13 @@ impl ChainObject {
                 let res = Box::new(res);
                 Ok(res)
             }
+            ChainObject::Ltc(i) => {
+                let derivation_path =
+                    LitecoinInstance::generate(&Some(i.address_type), input_index)?;
+                let res = i.derive_with_derivation_path(seed.to_vec(), &derivation_path)?;
+                let res = Box::new(res);
+                Ok(res)
+            }
         }
     }
 
@@ -148,6 +161,11 @@ impl ChainObject {
                 let res = Box::new(res);
                 Ok(res)
             }
+            ChainObject::Ltc(i) => {
+                let res = i.derive_with_derivation_path(seed.to_vec(), derivation_path)?;
+                let res = Box::new(res);
+                Ok(res)
+            }
         }
     }
 
@@ -172,6 +190,10 @@ impl ChainObject {
                 chain::ChainCode::BnbSmartChain,
             )),
             ChainObject::Btc(i) => Box::new(crate::instance::btc::address::BtcGenAddress {
+                address_type: i.address_type,
+                network: i.network,
+            }),
+            ChainObject::Ltc(i) => Box::new(crate::instance::ltc::address::LtcGenAddress {
                 address_type: i.address_type,
                 network: i.network,
             }),
@@ -208,8 +230,27 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
                     AddressType::Other => {
                         return Err(crate::Error::Types(wallet_types::Error::BtcNeedAddressType));
                     }
+                    AddressType::Ltc(btc_address_type) => {
+                        return Err(crate::Error::Types(wallet_types::Error::BtcNeedAddressType));
+                    }
                 };
                 ChainObject::Btc(crate::instance::btc::BitcoinInstance {
+                    chain_code: value.to_owned(),
+                    address_type: btc_address_type.to_owned(),
+                    network,
+                })
+            }
+            ChainCode::Litecoin => {
+                let btc_address_type = match typ {
+                    AddressType::Ltc(ltc_address_type) => ltc_address_type,
+                    AddressType::Other => {
+                        return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
+                    }
+                    AddressType::Btc(btc_address_type) => {
+                        return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
+                    }
+                };
+                ChainObject::Ltc(crate::instance::ltc::LitecoinInstance {
                     chain_code: value.to_owned(),
                     address_type: btc_address_type.to_owned(),
                     network,

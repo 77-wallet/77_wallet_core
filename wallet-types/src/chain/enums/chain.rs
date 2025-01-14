@@ -5,6 +5,7 @@ pub enum ChainCode {
     Solana,
     Ethereum,
     BnbSmartChain,
+    Litecoin,
     // Ton,
 }
 
@@ -18,6 +19,7 @@ impl TryFrom<&str> for ChainCode {
             crate::constant::chain_code::SOLANA => ChainCode::Solana,
             crate::constant::chain_code::ETHEREUM => ChainCode::Ethereum,
             crate::constant::chain_code::BNB => ChainCode::BnbSmartChain,
+            crate::constant::chain_code::LTC => ChainCode::Litecoin,
             _ => return Err(crate::Error::UnknownChainCode),
         };
         Ok(res)
@@ -32,6 +34,7 @@ impl std::fmt::Display for ChainCode {
             ChainCode::Solana => write!(f, "{}", crate::constant::chain_code::SOLANA),
             ChainCode::BnbSmartChain => write!(f, "{}", crate::constant::chain_code::BNB),
             ChainCode::Bitcoin => write!(f, "{}", crate::constant::chain_code::BTC),
+            ChainCode::Litecoin => write!(f, "{}", crate::constant::chain_code::LTC),
             // ChainCode::Unknown => write!(f, "Unknown"),
         }
     }

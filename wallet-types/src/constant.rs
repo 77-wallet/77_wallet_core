@@ -23,6 +23,23 @@ pub const BTC_SEG_WIT_HARD_DERIVATION_PATH: &str = "m/49'/0'/0'/0/0";
 
 pub const BTC_86_TEST_DERIVATION_PATH: &str = "m/86'/1'/0'/0/0";
 
+/// legacy
+pub const LTC_DERIVATION_PATH: &str = "m/44'/0'/0'/0/0";
+pub const LTC_HARD_DERIVATION_PATH: &str = "m/44'/0'/0'/0/0";
+
+/// 隔离见证（原生）
+pub const LTC_SEG_WIT_NATIVE_DERIVATION_PATH: &str = "m/84'/0'/0'/0/0";
+pub const LTC_SEG_WIT_NATIVE_HARD_DERIVATION_PATH: &str = "m/84'/0'/0'/0/0";
+
+/// Taproot
+pub const LTC_TAPROOT_DERIVATION_PATH: &str = "m/86'/0'/0'/0/0";
+pub const LTC_TAPROOT_HARD_DERIVATION_PATH: &str = "m/86'/0'/0'/0/0";
+/// 隔离见证（兼容）
+pub const LTC_SEG_WIT_DERIVATION_PATH: &str = "m/49'/0'/0'/0/0";
+pub const LTC_SEG_WIT_HARD_DERIVATION_PATH: &str = "m/49'/0'/0'/0/0";
+
+pub const LTC_86_TEST_DERIVATION_PATH: &str = "m/86'/1'/0'/0/0";
+
 pub const ETH_DERIVATION_PATH_START: &str = "m/44'/60'/";
 pub const TRON_DERIVATION_PATH_START: &str = "m/44'/195'/";
 pub const SOLANA_DERIVATION_PATH_START: &str = "m/44'/501'/";
@@ -41,6 +58,7 @@ pub mod chain_code {
     pub const SOLANA: &str = "sol";
     pub const BNB: &str = "bnb";
     pub const BTC: &str = "btc";
+    pub const LTC: &str = "ltc";
 }
 
 pub mod coin {

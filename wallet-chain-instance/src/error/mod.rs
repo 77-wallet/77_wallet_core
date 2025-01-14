@@ -4,6 +4,8 @@ pub mod keypair;
 pub enum Error {
     #[error("This btc address type can't generate derivation path")]
     BtcAddressTypeCantGenDerivationPath,
+    #[error("This ltc address type can't generate derivation path")]
+    LtcAddressTypeCantGenDerivationPath,
     #[error("Core error: {0}")]
     Core(#[from] wallet_core::Error),
     #[error("Utils error: {0}")]

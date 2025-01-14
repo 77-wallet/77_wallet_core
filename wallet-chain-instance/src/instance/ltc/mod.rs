@@ -8,11 +8,11 @@ use bitcoin::{
     key::Secp256k1,
 };
 use wallet_core::KeyPair;
-use wallet_types::chain::{address::r#type::BtcAddressType, chain::ChainCode, network};
+use wallet_types::chain::{address::r#type::LtcAddressType, chain::ChainCode, network};
 
 // const NET: Network = Network::Testnet;
 
-pub struct BitcoinKeyPair {
+pub struct LitcoinKeyPair {
     bitcoin_family: ChainCode,
     pub xpriv: Xpriv,
     pubkey: String,
@@ -22,34 +22,34 @@ pub struct BitcoinKeyPair {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct LitcoinInstance {
+pub struct LitecoinInstance {
     pub(crate) chain_code: ChainCode,
-    pub(crate) address_type: BtcAddressType,
+    pub(crate) address_type: LtcAddressType,
     pub network: network::NetworkKind,
 }
 
-impl wallet_core::derive::GenDerivation for LitcoinInstance {
+impl wallet_core::derive::GenDerivationLtc for LitecoinInstance {
     type Error = crate::Error;
 
     fn generate(
-        address_type: &Option<BtcAddressType>,
+        address_type: &Option<LtcAddressType>,
         input_index: i32,
     ) -> Result<String, crate::Error> {
         let path = if input_index < 0 {
             let i = wallet_utils::address::i32_index_to_unhardened_u32(input_index)?;
             let path = if let Some(address_type) = address_type {
                 match address_type {
-                    BtcAddressType::P2pkh => wallet_types::constant::BTC_HARD_DERIVATION_PATH,
+                    LtcAddressType::P2pkh => wallet_types::constant::BTC_HARD_DERIVATION_PATH,
                     // BtcAddressType::P2sh => todo!(),
                     // BtcAddressType::P2shWpkh => todo!(),
-                    BtcAddressType::P2shWpkh => {
+                    LtcAddressType::P2shWpkh => {
                         wallet_types::constant::BTC_SEG_WIT_HARD_DERIVATION_PATH
                     }
-                    BtcAddressType::P2wpkh => {
+                    LtcAddressType::P2wpkh => {
                         wallet_types::constant::BTC_SEG_WIT_NATIVE_HARD_DERIVATION_PATH
                     }
                     // BtcAddressType::P2wsh => todo!(),
-                    BtcAddressType::P2tr => {
+                    LtcAddressType::P2tr => {
                         wallet_types::constant::BTC_TAPROOT_HARD_DERIVATION_PATH
                     }
                     // BtcAddressType::P2trSh => todo!(),
@@ -63,15 +63,15 @@ impl wallet_core::derive::GenDerivation for LitcoinInstance {
             let i = input_index as u32;
             let path = if let Some(address_type) = address_type {
                 match address_type {
-                    BtcAddressType::P2pkh => wallet_types::constant::BTC_DERIVATION_PATH,
+                    LtcAddressType::P2pkh => wallet_types::constant::BTC_DERIVATION_PATH,
                     // BtcAddressType::P2sh => todo!(),
                     // BtcAddressType::P2shWpkh => todo!(),
-                    BtcAddressType::P2shWpkh => wallet_types::constant::BTC_SEG_WIT_DERIVATION_PATH,
-                    BtcAddressType::P2wpkh => {
+                    LtcAddressType::P2shWpkh => wallet_types::constant::BTC_SEG_WIT_DERIVATION_PATH,
+                    LtcAddressType::P2wpkh => {
                         wallet_types::constant::BTC_SEG_WIT_NATIVE_DERIVATION_PATH
                     }
                     // BtcAddressType::P2wsh => todo!(),
-                    BtcAddressType::P2tr => wallet_types::constant::BTC_TAPROOT_DERIVATION_PATH,
+                    LtcAddressType::P2tr => wallet_types::constant::BTC_TAPROOT_DERIVATION_PATH,
                     // BtcAddressType::P2trSh => todo!(),
                     _ => return Err(crate::Error::BtcAddressTypeCantGenDerivationPath),
                 }
@@ -86,10 +86,10 @@ impl wallet_core::derive::GenDerivation for LitcoinInstance {
     }
 }
 
-impl wallet_core::derive::Derive for LitcoinInstance {
+impl wallet_core::derive::Derive for LitecoinInstance {
     type Error = crate::Error;
 
-    type Item = BitcoinKeyPair;
+    type Item = LitcoinKeyPair;
 
     // fn derive(&self, seed: Vec<u8>, index: u32) -> Result<Self::Item, Self::Error> {
     //     BitcoinKeyPair::generate(seed, index, &self.chain_code)
@@ -102,7 +102,7 @@ impl wallet_core::derive::Derive for LitcoinInstance {
     ) -> Result<Self::Item, Self::Error> {
         let address =
             address::generate_address(&self.address_type, &seed, derivation_path, self.network)?;
-        let mut res = BitcoinKeyPair::generate_with_derivation(
+        let mut res = LitcoinKeyPair::generate_with_derivation(
             seed,
             derivation_path,
             &self.chain_code,
@@ -113,7 +113,7 @@ impl wallet_core::derive::Derive for LitcoinInstance {
     }
 }
 
-impl KeyPair for BitcoinKeyPair {
+impl KeyPair for LitcoinKeyPair {
     type Error = crate::Error;
 
     fn generate_with_derivation(
@@ -174,7 +174,7 @@ fn generate(
     derivation_path: &str,
     chain_code: &ChainCode,
     network: network::NetworkKind,
-) -> Result<BitcoinKeyPair, crate::Error> {
+) -> Result<LitcoinKeyPair, crate::Error> {
     let xpriv = Xpriv::new_master(network, &seed).unwrap();
 
     // let pri_key = XPriv::root_from_seed(seed.as_slice(), None).unwrap();
@@ -198,7 +198,7 @@ fn generate(
     // };
     let keypair = derive_key.to_keypair(&secp);
     let pubkey = keypair.public_key().to_string();
-    Ok(BitcoinKeyPair {
+    Ok(LitcoinKeyPair {
         bitcoin_family: chain_code.to_owned(),
         xpriv: derive_key,
         pubkey,

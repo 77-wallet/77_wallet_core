@@ -1,10 +1,11 @@
 use crate::constant::btc_address_catecory::*;
 
-use super::r#type::{AddressType, BtcAddressType};
+use super::r#type::{AddressType, BtcAddressType, LtcAddressType};
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(untagged)]
 pub enum AddressCategory {
     Btc(BtcAddressCategory),
+    Ltc(LtcAddressCategory),
     Other,
 }
 
@@ -64,10 +65,67 @@ impl From<BtcAddressType> for BtcAddressCategory {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
+pub enum LtcAddressCategory {
+    Taproot,
+    #[serde(rename = "Nested SegWit")]
+    NestedSegWit,
+    #[serde(rename = "Native SegWit")]
+    NativeSegWit,
+    Legacy,
+}
+
+impl AsRef<str> for LtcAddressCategory {
+    fn as_ref(&self) -> &str {
+        match self {
+            LtcAddressCategory::Taproot => TAPROOT,
+            LtcAddressCategory::NestedSegWit => NESTED_SEG_WIT,
+            LtcAddressCategory::NativeSegWit => NATIVE_SEG_WIT,
+            LtcAddressCategory::Legacy => LEGACY,
+        }
+    }
+}
+impl TryFrom<String> for LtcAddressCategory {
+    type Error = crate::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            TAPROOT => Ok(LtcAddressCategory::Taproot),
+            NESTED_SEG_WIT => Ok(LtcAddressCategory::NestedSegWit),
+            NATIVE_SEG_WIT => Ok(LtcAddressCategory::NativeSegWit),
+            LEGACY => Ok(LtcAddressCategory::Legacy),
+            other => Err(crate::Error::LtcAddressCategoryInvalid(other.to_string())),
+        }
+    }
+}
+
+impl std::fmt::Display for LtcAddressCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            LtcAddressCategory::Taproot => TAPROOT,
+            LtcAddressCategory::NestedSegWit => NESTED_SEG_WIT,
+            LtcAddressCategory::NativeSegWit => NATIVE_SEG_WIT,
+            LtcAddressCategory::Legacy => LEGACY,
+        })
+    }
+}
+
+impl From<LtcAddressType> for LtcAddressCategory {
+    fn from(addr_type: LtcAddressType) -> Self {
+        match addr_type {
+            LtcAddressType::P2pkh | LtcAddressType::P2sh => LtcAddressCategory::Legacy,
+            LtcAddressType::P2shWpkh | LtcAddressType::P2shWsh => LtcAddressCategory::NestedSegWit,
+            LtcAddressType::P2wpkh | LtcAddressType::P2wsh => LtcAddressCategory::NativeSegWit,
+            LtcAddressType::P2tr | LtcAddressType::P2trSh => LtcAddressCategory::Taproot,
+        }
+    }
+}
+
 impl From<AddressType> for AddressCategory {
     fn from(address: AddressType) -> Self {
         match address {
             AddressType::Btc(addr_type) => AddressCategory::Btc(addr_type.into()),
+            AddressType::Ltc(addr_type) => AddressCategory::Ltc(addr_type.into()),
             AddressType::Other => AddressCategory::Other,
         }
     }

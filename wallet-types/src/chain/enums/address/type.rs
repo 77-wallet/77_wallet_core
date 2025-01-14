@@ -1,6 +1,8 @@
+use std::fmt::Display;
+
 use crate::constant::btc_address_type::*;
 
-use super::category::BtcAddressCategory;
+use super::category::{BtcAddressCategory, LtcAddressCategory};
 
 use once_cell::sync::Lazy;
 
@@ -13,10 +15,20 @@ pub static BTC_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
     ]
 });
 
+pub static LTC_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
+    vec![
+        AddressType::Ltc(LtcAddressType::P2wpkh),
+        AddressType::Ltc(LtcAddressType::P2shWpkh),
+        AddressType::Ltc(LtcAddressType::P2tr),
+        AddressType::Ltc(LtcAddressType::P2pkh),
+    ]
+});
+
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(untagged)]
 pub enum AddressType {
     Btc(BtcAddressType),
+    Ltc(LtcAddressType),
     Other,
 }
 
@@ -28,6 +40,25 @@ pub enum AddressType {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 pub enum BtcAddressType {
+    /// Pay to public hash (legacy)
+    P2pkh,
+    /// Pay to script hash
+    P2sh,
+    /// bech32（Pay to public hash）
+    P2shWpkh,
+    /// 隔离见证（兼容）
+    P2shWsh,
+    /// 隔离见证（原生）
+    P2wpkh,
+    P2wsh,
+    /// taproot 单签
+    P2tr,
+    /// taproot 多签
+    P2trSh,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
+pub enum LtcAddressType {
     /// Pay to public hash (legacy)
     P2pkh,
     /// Pay to script hash
@@ -60,6 +91,21 @@ impl AsRef<str> for BtcAddressType {
     }
 }
 
+impl AsRef<str> for LtcAddressType {
+    fn as_ref(&self) -> &str {
+        match self {
+            LtcAddressType::P2pkh => P2PKH,
+            LtcAddressType::P2sh => P2SH,
+            LtcAddressType::P2shWpkh => P2SH_WPKH,
+            LtcAddressType::P2shWsh => P2SH_WSH,
+            LtcAddressType::P2wpkh => P2WPKH,
+            LtcAddressType::P2wsh => P2WSH,
+            LtcAddressType::P2tr => P2TR,
+            LtcAddressType::P2trSh => P2TR_SH,
+        }
+    }
+}
+
 impl From<BtcAddressCategory> for BtcAddressType {
     fn from(addr_scheme: BtcAddressCategory) -> Self {
         match addr_scheme {
@@ -71,16 +117,34 @@ impl From<BtcAddressCategory> for BtcAddressType {
     }
 }
 
+impl From<LtcAddressCategory> for LtcAddressType {
+    fn from(addr_scheme: LtcAddressCategory) -> Self {
+        match addr_scheme {
+            LtcAddressCategory::Legacy => LtcAddressType::P2sh,
+            LtcAddressCategory::NestedSegWit => LtcAddressType::P2shWsh,
+            LtcAddressCategory::NativeSegWit => LtcAddressType::P2wsh,
+            LtcAddressCategory::Taproot => LtcAddressType::P2trSh,
+        }
+    }
+}
+
 impl std::fmt::Display for AddressType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AddressType::Btc(btc_address_type) => write!(f, "{}", btc_address_type),
+            AddressType::Ltc(ltc_address_type) => write!(f, "{}", ltc_address_type),
             AddressType::Other => write!(f, ""),
         }
     }
 }
 
 impl std::fmt::Display for BtcAddressType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_ref())
+    }
+}
+
+impl std::fmt::Display for LtcAddressType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_ref())
     }
@@ -100,6 +164,7 @@ impl AsRef<str> for AddressType {
     fn as_ref(&self) -> &str {
         match self {
             AddressType::Btc(btc_address_type) => btc_address_type.as_ref(),
+            AddressType::Ltc(ltc_address_type) => ltc_address_type.as_ref(),
             AddressType::Other => "",
         }
     }
@@ -132,3 +197,9 @@ impl TryFrom<&str> for BtcAddressType {
         })
     }
 }
+
+// impl AddressType {
+//     pub fn get_btc_address_types() -> Vec<AddressType> {
+//         BTC_ADDRESS_TYPES.to_vec()
+//     }
+// }

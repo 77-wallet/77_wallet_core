@@ -3,15 +3,15 @@ use std::str::FromStr as _;
 use bitcoin::hashes::{Hash as _, HashEngine as _};
 use ripemd160::Digest as _;
 use secp256k1::Secp256k1;
-use wallet_types::chain::{address::r#type::BtcAddressType, chain, network};
+use wallet_types::chain::{address::r#type::LtcAddressType, chain, network};
 
 #[derive(Clone)]
-pub struct BtcGenAddress {
-    pub address_type: BtcAddressType,
+pub struct LtcGenAddress {
+    pub address_type: LtcAddressType,
     pub network: network::NetworkKind,
 }
 
-impl wallet_core::address::GenAddress for BtcGenAddress {
+impl wallet_core::address::GenAddress for LtcGenAddress {
     type Address = crate::instance::Address;
     type Error = crate::Error;
     fn generate(&self, pkey: &[u8]) -> Result<Self::Address, Self::Error>
@@ -24,8 +24,8 @@ impl wallet_core::address::GenAddress for BtcGenAddress {
         let keypair = secp256k1::Keypair::from_secret_key(&secp, &secret_key);
 
         let network = self.network;
-        Ok(crate::instance::Address::BtcAddress(
-            crate::generate_address_with_xpriv(&self.address_type, &secp, keypair, network)?,
+        Ok(crate::instance::Address::LtcAddress(
+            generate_address_with_xpriv(&self.address_type, &secp, keypair, network)?,
         ))
     }
 
@@ -67,7 +67,7 @@ fn generate_xpriv(
 }
 
 pub(crate) fn generate_address(
-    address_type: &BtcAddressType,
+    address_type: &LtcAddressType,
     seed: &[u8],
     derivation_path: &str,
     network: network::NetworkKind,
@@ -79,22 +79,22 @@ pub(crate) fn generate_address(
 }
 
 pub fn generate_address_with_xpriv(
-    address_type: &BtcAddressType,
+    address_type: &LtcAddressType,
     secp: &Secp256k1<secp256k1::All>,
     // xpriv: bitcoin::bip32::Xpriv,
     keypair: secp256k1::Keypair,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
     match address_type {
-        BtcAddressType::P2pkh => legacy(keypair, network),
-        // BtcAddressType::P2sh => todo!(),
-        // BtcAddressType::P2shWpkh => todo!(),
-        BtcAddressType::P2shWpkh => p2sh_p2wpkh_address(keypair, network),
-        BtcAddressType::P2wpkh => p2wpkh_address(keypair, network),
-        // BtcAddressType::P2wsh => todo!(),
-        BtcAddressType::P2tr => p2tr_address(keypair, secp, network),
-        // BtcAddressType::P2trSh => todo!(),
-        _ => Err(crate::Error::BtcAddressTypeCantGenDerivationPath),
+        LtcAddressType::P2pkh => legacy(keypair, network),
+        // LtcAddressType::P2sh => todo!(),
+        // LtcAddressType::P2shWpkh => todo!(),
+        LtcAddressType::P2shWpkh => p2sh_p2wpkh_address(keypair, network),
+        LtcAddressType::P2wpkh => p2wpkh_address(keypair, network),
+        // LtcAddressType::P2wsh => todo!(),
+        LtcAddressType::P2tr => p2tr_address(keypair, secp, network),
+        // LtcAddressType::P2trSh => todo!(),
+        _ => Err(crate::Error::LtcAddressTypeCantGenDerivationPath),
     }
 }
 
@@ -122,8 +122,8 @@ fn get_bech32_hrp(network: network::NetworkKind) -> Result<bech32::Hrp, crate::E
 /// 获取 P2SH 的版本前缀根据网络类型
 fn get_p2sh_version(network: network::NetworkKind) -> u8 {
     match network {
-        network::NetworkKind::Mainnet => 0x0f, // P2SH mainnet
-        network::NetworkKind::Testnet => 0xc4, // P2SH testnet/regtest
+        network::NetworkKind::Mainnet => 0x32, // P2SH mainnet
+        network::NetworkKind::Testnet => 0x3a, // P2SH testnet/regtest
         network::NetworkKind::Regtest => 0xC4, // P2SH testnet/regtest
     }
 }
