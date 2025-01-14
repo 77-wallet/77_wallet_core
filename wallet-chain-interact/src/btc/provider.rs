@@ -81,7 +81,7 @@ impl Provider {
                 let url = format!("/{}/utxo/{}", API_ENPOINT, address);
 
                 let mut params = HashMap::new();
-                params.insert("confirmed", "false");
+                params.insert("confirmed", "true");
 
                 let mut utxo = self
                     .http_client
