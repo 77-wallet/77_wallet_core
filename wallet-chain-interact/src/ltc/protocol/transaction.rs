@@ -1,9 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{
-    btc::protocol::transaction::AddressInfo,
-    ltc::{consts::BTC_DECIMAL, utxos::Utxo},
-};
+use crate::ltc::{consts::BTC_DECIMAL, utxos::Utxo};
 use serde::{Deserialize, Serialize};
 use wallet_types::chain::address::r#type::LtcAddressType;
 use wallet_utils::unit;
