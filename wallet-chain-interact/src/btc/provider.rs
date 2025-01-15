@@ -1,4 +1,5 @@
 use super::{
+    consts::{EXPEND_FEE_RATE, MAX_FEE_RATE},
     protocol::{
         other::FeeRate,
         transaction::{ApiBlock, ApiTransaction},
@@ -6,6 +7,7 @@ use super::{
     },
     utxos::{Utxo, UtxoList},
 };
+use bitcoin::Amount;
 use std::collections::HashMap;
 use wallet_transport::{
     client::{HttpClient, RpcClient},
@@ -101,9 +103,17 @@ impl Provider {
         network: wallet_types::chain::network::NetworkKind,
     ) -> crate::Result<bitcoin::Amount> {
         let res = self.estimate_smart_fee(blocks, network).await?;
-        Ok(bitcoin::Amount::from_sat(
-            (res.fee_rate * 100_000.0).round() as u64,
-        ))
+
+        let fee_rate = bitcoin::Amount::from_sat((res.fee_rate * 100_000.0).round() as u64);
+
+        // 扩大推荐费用,加快打包
+        let fee_rate = fee_rate * EXPEND_FEE_RATE;
+        let max_fee_rate = Amount::from_sat(MAX_FEE_RATE);
+        if fee_rate > max_fee_rate {
+            return Err(crate::UtxoError::ExceedsMaxFeeRate.into());
+        }
+
+        Ok(fee_rate)
     }
 
     pub async fn estimate_smart_fee(
