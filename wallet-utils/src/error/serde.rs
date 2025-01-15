@@ -10,6 +10,8 @@ pub enum SerdeError {
     TomlSerialize(#[from] toml::ser::Error),
     #[error("Toml deserialize error: {0}")]
     TomlDeserialize(#[from] toml::de::Error),
+    #[error("Yaml serialize error: {0}")]
+    SerdeYamlError(#[from] serde_yaml::Error),
 }
 
 impl SerdeError {
@@ -22,6 +24,7 @@ impl SerdeError {
             SerdeError::Deserialize(_) => 6063,
             SerdeError::TomlSerialize(_) => 6064,
             SerdeError::TomlDeserialize(_) => 6065,
+            SerdeError::SerdeYamlError(_) => 6066,
         }
     }
 }

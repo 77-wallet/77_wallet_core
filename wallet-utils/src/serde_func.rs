@@ -74,3 +74,21 @@ pub fn toml_from_str<'de, T: serde::de::DeserializeOwned>(value: &str) -> Result
 pub fn toml_to_string<T: ?Sized + serde::Serialize>(value: &T) -> Result<String, crate::Error> {
     toml::to_string(value).map_err(|e| crate::Error::Serde(e.into()))
 }
+
+pub fn serde_yaml_from_str<'de, T: serde::de::DeserializeOwned>(
+    value: &str,
+) -> Result<T, crate::Error> {
+    serde_yaml::from_str(value).map_err(|e| crate::Error::Serde(e.into()))
+}
+
+pub fn serde_yaml_to_string<T: ?Sized + serde::Serialize>(
+    value: &T,
+) -> Result<String, crate::Error> {
+    serde_yaml::to_string(value).map_err(|e| crate::Error::Serde(e.into()))
+}
+
+pub fn serde_yaml_from_value<'de, T: serde::de::DeserializeOwned>(
+    value: serde_yaml::Value,
+) -> Result<T, crate::Error> {
+    serde_yaml::from_value(value).map_err(|e| crate::Error::Serde(e.into()))
+}
