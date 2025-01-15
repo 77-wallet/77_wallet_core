@@ -224,9 +224,11 @@ impl BtcChain {
             raw_hex: consensus::encode::serialize_hex(&transaction_builder.transaction),
         };
 
+        let tx_hash = transaction_builder.transaction.compute_txid().to_string();
+
         let raw_hex_str = raw.to_string()?;
         let resp = MultisigTxResp {
-            tx_hash: "".to_string(),
+            tx_hash,
             raw_data: raw_hex_str,
         };
         Ok(resp)
