@@ -321,6 +321,7 @@ impl BtcSignature {
 }
 
 // 用于模拟多签交易签名的参数
+#[derive(Debug)]
 pub struct MultisigSignParams {
     pub threlod: i8,
     pub memember: i8,
@@ -482,7 +483,7 @@ impl SignatureCombiner {
 /// actual transaction validation or signing.
 pub fn predict_transaction_size(
     mut tx: bitcoin::Transaction,
-    change_address: bitcoin::Address,
+    change_address: Option<bitcoin::Address>,
     address_type: BtcAddressType,
     mutlsig_sign_params: &Option<MultisigSignParams>,
 ) -> crate::Result<usize> {
@@ -618,10 +619,12 @@ pub fn predict_transaction_size(
         }
     }
 
-    tx.output.push(TxOut {
-        value: Amount::from_sat(1000),
-        script_pubkey: change_address.script_pubkey(),
-    });
+    if let Some(change_address) = change_address {
+        tx.output.push(TxOut {
+            value: Amount::from_sat(1000),
+            script_pubkey: change_address.script_pubkey(),
+        });
+    }
 
     let size = tx.vsize();
     Ok(size)

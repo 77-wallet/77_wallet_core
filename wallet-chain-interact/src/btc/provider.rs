@@ -30,7 +30,7 @@ pub struct Provider {
     http_client: HttpClient,
 }
 
-pub const API_ENPOINT: &'static str = "book/btc/api/v2";
+pub const API_ENPOINT: &'static str = "book/api/v2";
 
 impl Provider {
     pub fn new(
@@ -80,7 +80,7 @@ impl Provider {
                 Ok(UtxoList(utxo))
             }
             _ => {
-                let url = format!("/{}/utxo/{}", API_ENPOINT, address);
+                let url = format!("{}/utxo/{}", API_ENPOINT, address);
 
                 let mut params = HashMap::new();
                 params.insert("confirmed", "true");

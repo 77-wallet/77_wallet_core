@@ -181,7 +181,7 @@ impl TransferBuilder {
             // 在预估交易大小是使用交易的副本
             let size = signature::predict_transaction_size(
                 self.transaction.clone(),
-                change_address.clone(),
+                Some(change_address.clone()),
                 address_type,
                 &self.multisig_sign_params,
             )?;
@@ -205,7 +205,7 @@ impl TransferBuilder {
         // 模拟交易的大小
         let size = signature::predict_transaction_size(
             self.transaction.clone(),
-            spend_address.clone(),
+            Some(spend_address.clone()),
             address_type,
             &self.multisig_sign_params,
         )?;

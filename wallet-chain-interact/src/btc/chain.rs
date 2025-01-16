@@ -4,6 +4,7 @@ use super::provider::{Provider, ProviderConfig};
 use super::script::BtcScript;
 use super::signature::{BtcSignature, MultisigSignParams, SignatureCombiner};
 use super::{network_convert, operations, protocol};
+use crate::btc::signature::predict_transaction_size;
 use crate::types::{ChainPrivateKey, FetchMultisigAddressResp, MultisigSignResp, MultisigTxResp};
 use crate::{BillResourceConsume, QueryTransactionResult};
 use alloy::primitives::map::HashMap;
@@ -199,18 +200,21 @@ impl BtcChain {
     // 多签手续费
     pub async fn estimate_multisig_fee(
         &self,
-        params: operations::transfer::TransferArg,
+        raw_data: &str,
         multisig_sign_params: MultisigSignParams,
+        address_type: &str,
     ) -> crate::Result<FeeSetting> {
-        let utxo = self
-            .provider
-            .utxos(&params.from.to_string(), self.network)
-            .await?;
-        let mut transaction_builder = params.build_transaction(utxo)?;
-        transaction_builder.set_multisig_params(multisig_sign_params);
+        let raw_data = BtcMultisigRaw::from_hex_str(&raw_data)?;
+        let tx = raw_data.get_raw_tx()?;
 
-        let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
-        let size = transaction_builder.transactin_size(fee_rate, &params)?;
+        let address_type = BtcAddressType::try_from(address_type)?;
+
+        let size = predict_transaction_size(tx, None, address_type, &Some(multisig_sign_params))?;
+
+        let fee_rate = self
+            .provider
+            .fetch_fee_rate(super::consts::FEE_RATE as u32, self.network)
+            .await?;
 
         Ok(FeeSetting { fee_rate, size })
     }

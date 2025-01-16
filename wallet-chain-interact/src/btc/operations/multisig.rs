@@ -1,3 +1,4 @@
+use bitcoin::consensus;
 use wallet_types::{chain::address::r#type::BtcAddressType, valueobject::AddressPubkey};
 use wallet_utils::hex_func;
 
@@ -42,6 +43,14 @@ impl BtcMultisigRaw {
         // let bytes = hex::decode(hex_str).unwrap();
         // Ok(bincode::deserialize::<BtcMultisigRaw>(&bytes).unwrap())
         Ok(hex_func::bincode_decode::<Self>(hex_str)?)
+    }
+
+    pub fn get_raw_tx(&self) -> crate::Result<bitcoin::Transaction> {
+        let bytes = hex_func::hex_decode(&self.raw_hex)?;
+
+        let tx = consensus::deserialize::<bitcoin::Transaction>(&bytes)
+            .map_err(|e| crate::Error::Other(e.to_string()))?;
+        Ok(tx)
     }
 }
 
