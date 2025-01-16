@@ -128,13 +128,9 @@ impl From<LtcAddressCategory> for LtcAddressType {
     }
 }
 
-impl std::fmt::Display for AddressType {
+impl std::fmt::Display for LtcAddressType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AddressType::Btc(btc_address_type) => write!(f, "{}", btc_address_type),
-            AddressType::Ltc(ltc_address_type) => write!(f, "{}", ltc_address_type),
-            AddressType::Other => write!(f, ""),
-        }
+        write!(f, "{}", self.as_ref())
     }
 }
 
@@ -144,9 +140,13 @@ impl std::fmt::Display for BtcAddressType {
     }
 }
 
-impl std::fmt::Display for LtcAddressType {
+impl std::fmt::Display for AddressType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_ref())
+        match self {
+            AddressType::Btc(btc_address_type) => write!(f, "{}", btc_address_type),
+            AddressType::Ltc(ltc_address_type) => write!(f, "{}", ltc_address_type),
+            AddressType::Other => write!(f, ""),
+        }
     }
 }
 
@@ -194,6 +194,34 @@ impl TryFrom<&str> for BtcAddressType {
             P2TR => BtcAddressType::P2tr,
             P2TR_SH => BtcAddressType::P2trSh,
             other => return Err(crate::Error::BtcAddressTypeInvalid(other.to_string())),
+        })
+    }
+}
+
+impl<T: AsRef<str>> TryFrom<Option<T>> for LtcAddressType {
+    type Error = crate::Error;
+    fn try_from(value: Option<T>) -> Result<Self, Self::Error> {
+        match value {
+            Some(v) => LtcAddressType::try_from(v.as_ref()),
+            None => Err(crate::Error::BtcNeedAddressType),
+        }
+    }
+}
+
+impl TryFrom<&str> for LtcAddressType {
+    type Error = crate::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value.to_lowercase().as_ref() {
+            P2PKH => LtcAddressType::P2pkh,
+            P2SH => LtcAddressType::P2sh,
+            P2SH_WPKH => LtcAddressType::P2shWpkh,
+            P2SH_WSH => LtcAddressType::P2shWsh,
+            P2WPKH => LtcAddressType::P2wpkh,
+            P2WSH => LtcAddressType::P2wsh,
+            P2TR => LtcAddressType::P2tr,
+            P2TR_SH => LtcAddressType::P2trSh,
+            other => return Err(crate::Error::LtcAddressTypeInvalid(other.to_string())),
         })
     }
 }

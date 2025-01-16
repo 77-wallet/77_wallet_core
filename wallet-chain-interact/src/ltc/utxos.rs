@@ -1,4 +1,4 @@
-use bitcoin::TxIn;
+use litecoin::TxIn;
 use serde::Deserialize;
 use std::{collections::HashMap, str::FromStr as _};
 
@@ -6,12 +6,12 @@ pub type Usedutxo = HashMap<String, Utxo>;
 pub struct UtxoList(pub Vec<Utxo>);
 
 impl UtxoList {
-    pub fn inputs_from_utxo(&mut self, amount: bitcoin::Amount) -> crate::Result<Vec<TxIn>> {
-        let mut total_value = bitcoin::Amount::default();
+    pub fn inputs_from_utxo(&mut self, amount: litecoin::Amount) -> crate::Result<Vec<TxIn>> {
+        let mut total_value = litecoin::Amount::default();
 
         let mut inputs = Vec::new();
         for tx in self.0.iter_mut() {
-            total_value += bitcoin::Amount::from_sat(tx.value);
+            total_value += litecoin::Amount::from_sat(tx.value);
             tx.selected = true;
             inputs.push(TxIn::from(tx.clone()));
 
@@ -41,11 +41,11 @@ impl UtxoList {
         Ok(inputs)
     }
 
-    pub fn total_input_amount(&self) -> bitcoin::Amount {
+    pub fn total_input_amount(&self) -> litecoin::Amount {
         self.0
             .iter()
             .filter(|u| u.selected)
-            .map(|item| bitcoin::Amount::from_sat(item.value))
+            .map(|item| litecoin::Amount::from_sat(item.value))
             .sum()
     }
 
@@ -111,16 +111,16 @@ where
 }
 
 // utxo to transaction tx_in
-impl From<Utxo> for bitcoin::TxIn {
+impl From<Utxo> for litecoin::TxIn {
     fn from(value: Utxo) -> Self {
         Self {
-            previous_output: bitcoin::OutPoint {
-                txid: bitcoin::Txid::from_str(&value.txid).unwrap(),
+            previous_output: litecoin::OutPoint {
+                txid: litecoin::Txid::from_str(&value.txid).unwrap(),
                 vout: value.vout,
             },
-            script_sig: bitcoin::ScriptBuf::default(),
-            sequence: bitcoin::Sequence::ENABLE_RBF_NO_LOCKTIME,
-            witness: bitcoin::Witness::default(),
+            script_sig: litecoin::ScriptBuf::default(),
+            sequence: litecoin::Sequence::ENABLE_RBF_NO_LOCKTIME,
+            witness: litecoin::Witness::default(),
         }
     }
 }

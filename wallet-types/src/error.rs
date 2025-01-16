@@ -12,6 +12,8 @@ pub enum Error {
     LtcNeedAddressType,
     #[error("Invalid BtcAddressType: {0}")]
     BtcAddressTypeInvalid(String),
+    #[error("Invalid LtcAddressType: {0}")]
+    LtcAddressTypeInvalid(String),
     #[error("Invalid BtcAddressCategory: {0}")]
     BtcAddressCategoryInvalid(String),
     #[error("Invalid LtcAddressCategory: {0}")]

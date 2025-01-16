@@ -2,6 +2,7 @@ use std::fmt::Debug;
 
 use crate::ltc::{consts::BTC_DECIMAL, utxos::Utxo};
 use serde::{Deserialize, Serialize};
+use wallet_types::chain::address::r#type::LtcAddressType;
 use wallet_utils::unit;
 
 #[derive(Deserialize, Debug)]
@@ -219,6 +220,21 @@ pub struct EstimateFee {
     pub blocks: u64,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ValidateAddress {
+    pub isvalid: bool,
+    pub address: String,
+    pub isscript: Option<bool>,
+    pub iswitness: Option<bool>,
+    pub ismweb: Option<bool>,
+    #[serde(rename = "scriptPubKey")]
+    pub script_pub_key: Option<String>,
+    pub witness_program: Option<String>,
+    pub witness_version: Option<u64>,
+    pub error: Option<String>,
+    pub error_locations: Option<Vec<u64>>,
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Mweb {
@@ -352,4 +368,32 @@ pub struct ApiVout {
     pub n: u64,
     pub addresses: Vec<String>,
     pub is_address: bool,
+}
+
+impl ValidateAddress {
+    pub fn address_type(&self) -> Option<LtcAddressType> {
+        if self.isscript.is_some()
+            && self.iswitness.is_some()
+            && !self.isscript.unwrap()
+            && !self.iswitness.unwrap()
+        {
+            return Some(LtcAddressType::P2pkh);
+        } else if self.isscript.is_some() && self.isscript.unwrap() {
+            return Some(LtcAddressType::P2shWpkh);
+        } else if self.iswitness.is_some()
+            && self.iswitness.unwrap()
+            && self.witness_version.is_some()
+            && self.witness_version.unwrap() == 0
+        {
+            return Some(LtcAddressType::P2wpkh);
+        } else if self.iswitness.is_some()
+            && self.witness_version.is_some()
+            && self.iswitness.unwrap()
+            && self.witness_version.unwrap() == 1
+        {
+            return Some(LtcAddressType::P2tr);
+        } else {
+            return None;
+        }
+    }
 }

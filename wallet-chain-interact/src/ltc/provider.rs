@@ -3,7 +3,7 @@ use super::{
         other::FeeRate,
         transaction::{
             ApiBlock, ApiTransaction, ApiUtxo, EstimateFee, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq,
-            LtcJsonRpcRes, TransactionUtxo,
+            LtcJsonRpcRes, TransactionUtxo, ValidateAddress,
         },
         BlockHeader, OutInfo, ScanOut,
     },
@@ -285,6 +285,31 @@ impl Provider {
             id: "1".to_string(),
             method: "estimatesmartfee".to_string(),
             params: vec![json!(blocks)],
+        };
+        let res = self
+            .http_client
+            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
+            .await?;
+
+        let res = from_value(res.result.clone()).map_err(|e| {
+            WalletError::Serde(SerdeError::Deserialize(format!(
+                "error = {} value = {}",
+                e, res.result
+            )))
+        })?;
+
+        Ok(res)
+    }
+
+    pub async fn validate_address_from_json_rpc(
+        &self,
+        addr: &str,
+    ) -> crate::Result<ValidateAddress> {
+        let payload = LtcJsonRpcReq {
+            jsonrpc: "2.0".to_string(),
+            id: "1".to_string(),
+            method: "validateaddress".to_string(),
+            params: vec![json!(addr)],
         };
         let res = self
             .http_client

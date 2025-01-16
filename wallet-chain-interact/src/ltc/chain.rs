@@ -1,6 +1,6 @@
 use super::params::{FeeSetting, TransferResp};
 use super::provider::{Provider, ProviderConfig};
-use super::signature::BtcSignature;
+use super::signature::LtcSignature;
 use super::{operations, protocol};
 use crate::types::ChainPrivateKey;
 use crate::{BillResourceConsume, QueryTransactionResult};
@@ -112,7 +112,7 @@ impl BtcChain {
 
         // 签名
         let utxo = transaction_builder.utxo.used_utxo_to_hash_map();
-        let signer = BtcSignature::new(&key, utxo)?;
+        let signer = LtcSignature::new(&key, utxo)?;
         signer
             .sign(
                 params.address_type,
@@ -148,7 +148,7 @@ impl BtcChain {
         let mut transaction_builder = params.build_with_fee(utxo, fee)?;
         let utxo = transaction_builder.utxo.used_utxo_to_hash_map();
 
-        let signer = BtcSignature::new(&key, utxo)?;
+        let signer = LtcSignature::new(&key, utxo)?;
         signer
             .sign(
                 params.address_type,

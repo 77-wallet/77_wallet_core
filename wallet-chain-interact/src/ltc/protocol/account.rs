@@ -1,5 +1,5 @@
 use crate::ltc::utxos::Utxo;
-use bitcoin::{Amount, ScriptBuf, TxOut};
+use litecoin::{Amount, ScriptBuf, TxOut};
 use serde::Deserialize;
 
 // used regiet network to scan out utxo

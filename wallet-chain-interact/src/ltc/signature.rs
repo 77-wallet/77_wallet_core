@@ -1,6 +1,6 @@
 use super::{provider::Provider, utxos::Usedutxo};
-use crate::script::BtcScript;
-use bitcoin::{
+use crate::ltc::script::BtcScript;
+use litecoin::{
     ecdsa,
     key::{Keypair, Secp256k1, TapTweak, TweakedKeypair},
     script::{self, PushBytes},
@@ -9,19 +9,19 @@ use bitcoin::{
     Amount, CompressedPublicKey, EcdsaSighashType, PrivateKey, ScriptBuf, TapSighashType,
     Transaction, TxOut, Witness,
 };
-use wallet_types::chain::address::r#type::BtcAddressType;
+use wallet_types::chain::address::r#type::LtcAddressType;
 
-pub struct BtcSignature {
+pub struct LtcSignature {
     secp: Secp256k1<All>,
     used_utxo: Usedutxo,
     private_key: PrivateKey,
 }
 
-impl BtcSignature {
+impl LtcSignature {
     pub fn new(key_str: &str, used_utxo: Usedutxo) -> crate::Result<Self> {
         let secp = Secp256k1::new();
 
-        let private_key = bitcoin::PrivateKey::from_wif(key_str)
+        let private_key = litecoin::PrivateKey::from_wif(key_str)
             .map_err(|e| crate::Error::SignError(e.to_string()))?;
 
         Ok(Self {
@@ -33,15 +33,15 @@ impl BtcSignature {
 
     pub async fn sign(
         self,
-        address_type: BtcAddressType,
+        address_type: LtcAddressType,
         provider: &Provider,
         transaction: &mut Transaction,
     ) -> crate::Result<()> {
         match address_type {
-            BtcAddressType::P2pkh => self.p2pkh(transaction)?,
-            BtcAddressType::P2wpkh => self.p2wpkh(transaction)?,
-            BtcAddressType::P2shWpkh => self.p2sh_wpkh(transaction)?,
-            BtcAddressType::P2tr => self.p2tr(transaction, provider).await?,
+            LtcAddressType::P2pkh => self.p2pkh(transaction)?,
+            LtcAddressType::P2wpkh => self.p2wpkh(transaction)?,
+            LtcAddressType::P2shWpkh => self.p2sh_wpkh(transaction)?,
+            LtcAddressType::P2tr => self.p2tr(transaction, provider).await?,
             _ => {
                 return Err(crate::Error::SignError(format!(
                     "address type not support {address_type:?}",
@@ -65,7 +65,7 @@ impl BtcSignature {
                 .map_err(|e| crate::Error::SignError(format!("p2pkh build sign hash err{e:}")))?;
 
             let msg = secp256k1::Message::from(sighash);
-            let signature = bitcoin::ecdsa::Signature {
+            let signature = litecoin::ecdsa::Signature {
                 signature: self.secp.sign_ecdsa(&msg, &sk),
                 sighash_type: EcdsaSighashType::All,
             };
@@ -98,7 +98,7 @@ impl BtcSignature {
                 })?;
 
             let msg = secp256k1::Message::from(sighash);
-            let signature = bitcoin::ecdsa::Signature {
+            let signature = litecoin::ecdsa::Signature {
                 signature: self.secp.sign_ecdsa(&msg, &sk),
                 sighash_type,
             };
@@ -182,7 +182,7 @@ impl BtcSignature {
     //             })?;
 
     //         let msg = Message::from(sighash);
-    //         let signature = bitcoin::ecdsa::Signature {
+    //         let signature = litecoin::ecdsa::Signature {
     //             signature: self.secp.sign_ecdsa(&msg, &sk),
     //             sighash_type,
     //         };
@@ -210,7 +210,7 @@ impl BtcSignature {
 
     //         let msg = secp256k1::Message::from(sighash);
     //         let signature = self.secp.sign_ecdsa(&msg, &sk);
-    //         let signature = bitcoin::ecdsa::Signature {
+    //         let signature = litecoin::ecdsa::Signature {
     //             signature,
     //             sighash_type,
     //         };
@@ -219,7 +219,7 @@ impl BtcSignature {
     //     Ok(sig)
     // }
 
-    pub fn get_amount(&self, txid: bitcoin::Txid, vout: u32) -> crate::Result<Amount> {
+    pub fn get_amount(&self, txid: litecoin::Txid, vout: u32) -> crate::Result<Amount> {
         let key = format!("{}-{}", txid, vout);
 
         let utxo = self.used_utxo.get(&key).ok_or(crate::Error::Other(
@@ -258,7 +258,7 @@ impl BtcSignature {
             let tweaked: TweakedKeypair = keypair.tap_tweak(&self.secp, None);
             let msg = Message::from(sighash);
             let signature = self.secp.sign_schnorr(&msg, &tweaked.to_inner());
-            let signature = bitcoin::taproot::Signature {
+            let signature = litecoin::taproot::Signature {
                 signature,
                 sighash_type,
             };
@@ -306,7 +306,7 @@ impl BtcSignature {
     //             })?;
 
     //         let msg = Message::from(sighash);
-    //         let signature = bitcoin::taproot::Signature {
+    //         let signature = litecoin::taproot::Signature {
     //             signature: self.secp.sign_schnorr(&msg, &keypair),
     //             sighash_type,
     //         };
@@ -329,7 +329,7 @@ impl BtcSignature {
 //     }
 // }
 // impl SignatureCombiner {
-//     pub fn p2sh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
+//     pub fn p2sh(&self, transaction: &mut litecoin::Transaction) -> crate::Result<()> {
 //         let len = transaction.input.len();
 
 //         for i in 0..len {
@@ -355,7 +355,7 @@ impl BtcSignature {
 //         Ok(())
 //     }
 
-//     pub fn p2sh_wsh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
+//     pub fn p2sh_wsh(&self, transaction: &mut litecoin::Transaction) -> crate::Result<()> {
 //         let len = transaction.input.len();
 
 //         for i in 0..len {
@@ -386,7 +386,7 @@ impl BtcSignature {
 //         Ok(())
 //     }
 
-//     pub fn p2wsh(&self, transaction: &mut bitcoin::Transaction) -> crate::Result<()> {
+//     pub fn p2wsh(&self, transaction: &mut litecoin::Transaction) -> crate::Result<()> {
 //         let len = transaction.input.len();
 
 //         for i in 0..len {
@@ -405,14 +405,14 @@ impl BtcSignature {
 
 //     pub fn p2tr_sh(
 //         &self,
-//         transaction: &mut bitcoin::Transaction,
+//         transaction: &mut litecoin::Transaction,
 //         inner_key: &str,
 //     ) -> crate::Result<()> {
 //         let len = transaction.input.len();
 
 //         for i in 0..len {
 //             let secp = Secp256k1::new();
-//             let internal_key = bitcoin::XOnlyPublicKey::from_str(inner_key).unwrap();
+//             let internal_key = litecoin::XOnlyPublicKey::from_str(inner_key).unwrap();
 
 //             let taproot_builder =
 //                 TaprootBuilder::with_huffman_tree(vec![(1, self.redeem_script.clone())]).unwrap();
@@ -445,12 +445,12 @@ impl BtcSignature {
 /// It is mainly intended for estimating the transaction size and does not involve
 /// actual transaction validation or signing.
 pub fn predict_transaction_size(
-    mut tx: bitcoin::Transaction,
-    change_address: bitcoin::Address,
-    address_type: BtcAddressType,
+    mut tx: litecoin::Transaction,
+    change_address: litecoin::Address,
+    address_type: LtcAddressType,
 ) -> crate::Result<usize> {
     match address_type {
-        BtcAddressType::P2pkh => {
+        LtcAddressType::P2pkh => {
             let bytes = [
                 72, 48, 69, 2, 33, 0, 199, 18, 48, 98, 71, 105, 115, 75, 245, 25, 245, 245, 235,
                 127, 226, 94, 203, 186, 149, 42, 87, 185, 68, 252, 65, 245, 220, 187, 178, 212, 30,
@@ -465,7 +465,7 @@ pub fn predict_transaction_size(
                 input.script_sig = script.clone();
             }
         }
-        BtcAddressType::P2sh => {
+        LtcAddressType::P2sh => {
             let bytes = [
                 0, 72, 48, 69, 2, 33, 0, 155, 190, 251, 131, 126, 168, 191, 101, 74, 172, 149, 35,
                 33, 153, 90, 216, 41, 90, 202, 144, 50, 102, 52, 235, 44, 185, 172, 153, 175, 112,
@@ -492,7 +492,7 @@ pub fn predict_transaction_size(
                 input.script_sig = script.clone();
             }
         }
-        BtcAddressType::P2wpkh => {
+        LtcAddressType::P2wpkh => {
             let witness_bytes = [
                 &[
                     0x30, 0x45, 0x02, 0x21, 0x00, 0xc4, 0xfa, 0x6a, 0x60, 0x86, 0x92, 0xa7, 0x25,
@@ -513,7 +513,7 @@ pub fn predict_transaction_size(
                 input.witness = witness.clone();
             }
         }
-        BtcAddressType::P2wsh => {
+        LtcAddressType::P2wsh => {
             let witness_bytes = [
                 &[][..],
                 &[
@@ -556,7 +556,7 @@ pub fn predict_transaction_size(
                 input.witness = witness.clone();
             }
         }
-        BtcAddressType::P2tr => {
+        LtcAddressType::P2tr => {
             let witness_bytes = [[
                 0x0e, 0x30, 0xa4, 0x02, 0xce, 0x97, 0x5a, 0x9e, 0x97, 0xb7, 0x82, 0x2e, 0x0a, 0xff,
                 0xcf, 0x0e, 0x1a, 0xde, 0xef, 0x2c, 0x10, 0x78, 0x9b, 0xa7, 0xa7, 0x5d, 0xd7, 0xd0,
@@ -569,7 +569,7 @@ pub fn predict_transaction_size(
                 input.witness = witness.clone();
             }
         }
-        BtcAddressType::P2shWpkh => {
+        LtcAddressType::P2shWpkh => {
             let bytes = [
                 22, 0, 20, 235, 55, 162, 228, 166, 224, 55, 151, 185, 230, 245, 21, 15, 171, 242,
                 160, 164, 229, 103, 81,
@@ -598,7 +598,7 @@ pub fn predict_transaction_size(
                 input.witness = witness.clone();
             }
         }
-        BtcAddressType::P2shWsh => {
+        LtcAddressType::P2shWsh => {
             let bytes = [
                 34, 0, 32, 188, 73, 172, 222, 235, 145, 178, 120, 49, 0, 34, 27, 236, 30, 156, 38,
                 170, 5, 232, 236, 138, 21, 245, 60, 112, 129, 84, 3, 142, 141, 238, 164,
@@ -649,7 +649,7 @@ pub fn predict_transaction_size(
                 input.witness = witness.clone();
             }
         }
-        BtcAddressType::P2trSh => {
+        LtcAddressType::P2trSh => {
             let witness = [
                 &[
                     0x14, 0x19, 0x46, 0xf6, 0x10, 0x59, 0xdf, 0x6b, 0x0d, 0xe0, 0x18, 0x45, 0x5d,

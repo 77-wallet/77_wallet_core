@@ -37,6 +37,8 @@ wallet-keystore = { version = "0.1.0", default-features = false, path = "wallet-
 wallet-utils = { version = "0.1.0", default-features = false, path = "wallet-utils" }
 wallet-types = { version = "0.1.0", default-features = false, path = "wallet-types" }
 
+litecoin = { path = "../rust-bitcoin/bitcoin", package = "bitcoin"}
+
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # time
 chrono = { version = "0.4", features = ["serde"] }

@@ -5,17 +5,17 @@ use crate::ltc::{
     utxos::UtxoList,
     ParseBtcAddress,
 };
-use bitcoin::{consensus, transaction::Version, Amount, TxIn};
-use wallet_types::chain::{self, address::r#type::BtcAddressType};
+use litecoin::{consensus, transaction::Version, Amount, TxIn};
+use wallet_types::chain::{self, address::r#type::LtcAddressType};
 use wallet_utils::unit;
 
 #[derive(Debug)]
 pub struct TransferArg {
-    pub from: bitcoin::Address,
-    pub to: bitcoin::Address,
-    pub value: bitcoin::Amount,
-    pub change_address: bitcoin::Address,
-    pub address_type: BtcAddressType,
+    pub from: litecoin::Address,
+    pub to: litecoin::Address,
+    pub value: litecoin::Amount,
+    pub change_address: litecoin::Address,
+    pub address_type: LtcAddressType,
     pub fee_rate: Option<u64>,
     pub spend_all: bool,
 }
@@ -31,9 +31,9 @@ impl TransferArg {
         let paras = ParseBtcAddress::new(network);
 
         let value = unit::convert_to_u256(value, consts::BTC_DECIMAL)?;
-        let value = bitcoin::Amount::from_sat(value.to::<u64>());
+        let value = litecoin::Amount::from_sat(value.to::<u64>());
 
-        let address_type = BtcAddressType::try_from(address_type)?;
+        let address_type = LtcAddressType::try_from(address_type)?;
         Ok(Self {
             from: paras.parse_address(from)?,
             to: paras.parse_address(to)?,
@@ -55,9 +55,9 @@ impl TransferArg {
         &self,
         provider: &Provider,
         network: wallet_types::chain::network::NetworkKind,
-    ) -> crate::Result<bitcoin::Amount> {
+    ) -> crate::Result<litecoin::Amount> {
         if let Some(fee_rate) = self.fee_rate {
-            Ok(bitcoin::Amount::from_sat(fee_rate))
+            Ok(litecoin::Amount::from_sat(fee_rate))
         } else {
             let fetched_fee_rate = provider
                 .fetch_fee_rate(consts::FEE_RATE as u32, network)
@@ -82,16 +82,16 @@ impl TransferArg {
         } else {
             (
                 utxo.inputs_from_utxo(self.value)?,
-                vec![bitcoin::TxOut {
+                vec![litecoin::TxOut {
                     value: self.value,
                     script_pubkey: self.to.script_pubkey(),
                 }],
             )
         };
 
-        let transaction = bitcoin::Transaction {
+        let transaction = litecoin::Transaction {
             version: Version(2),
-            lock_time: bitcoin::absolute::LockTime::ZERO,
+            lock_time: litecoin::absolute::LockTime::ZERO,
             input,
             output,
         };
@@ -110,7 +110,7 @@ impl TransferArg {
         let input = utxo.inputs_from_utxo(amount)?;
 
         let mut output = vec![];
-        let spend = bitcoin::TxOut {
+        let spend = litecoin::TxOut {
             value: self.value,
             script_pubkey: self.to.script_pubkey(),
         };
@@ -121,16 +121,16 @@ impl TransferArg {
 
         if total_input > amount {
             let change = total_input - amount;
-            let change_output = bitcoin::TxOut {
+            let change_output = litecoin::TxOut {
                 value: change,
                 script_pubkey: self.change_address.script_pubkey(),
             };
             output.push(change_output);
         }
 
-        let transaction = bitcoin::Transaction {
+        let transaction = litecoin::Transaction {
             version: Version(2),
-            lock_time: bitcoin::absolute::LockTime::ZERO,
+            lock_time: litecoin::absolute::LockTime::ZERO,
             input,
             output,
         };
@@ -140,7 +140,7 @@ impl TransferArg {
 }
 
 pub struct TransferBuilder {
-    pub transaction: bitcoin::Transaction,
+    pub transaction: litecoin::Transaction,
     pub utxo: UtxoList,
 }
 
@@ -166,10 +166,10 @@ impl TransferBuilder {
 
     pub fn change_and_fee(
         &mut self,
-        fee_rate: bitcoin::Amount,
-        change_address: bitcoin::Address,
-        address_type: BtcAddressType,
-        value: bitcoin::Amount,
+        fee_rate: litecoin::Amount,
+        change_address: litecoin::Address,
+        address_type: LtcAddressType,
+        value: litecoin::Amount,
     ) -> crate::Result<usize> {
         loop {
             // 在预估交易大小是使用交易的副本
@@ -191,9 +191,9 @@ impl TransferBuilder {
 
     pub fn spent_all_set_fee(
         &mut self,
-        fee_rate: bitcoin::Amount,
-        spend_address: bitcoin::Address,
-        address_type: BtcAddressType,
+        fee_rate: litecoin::Amount,
+        spend_address: litecoin::Address,
+        address_type: LtcAddressType,
     ) -> crate::Result<usize> {
         // 模拟交易的大小
         let size = signature::predict_transaction_size(
@@ -210,7 +210,7 @@ impl TransferBuilder {
         }
 
         // add spend
-        let spend = bitcoin::TxOut {
+        let spend = litecoin::TxOut {
             value: total_input - transaction_fee,
             script_pubkey: spend_address.script_pubkey(),
         };
@@ -221,10 +221,10 @@ impl TransferBuilder {
 
     fn set_transaction_fee(
         &mut self,
-        fee_rate: bitcoin::Amount,
+        fee_rate: litecoin::Amount,
         size: usize,
-        value: bitcoin::Amount,
-    ) -> crate::Result<(bool, bitcoin::Amount)> {
+        value: litecoin::Amount,
+    ) -> crate::Result<(bool, litecoin::Amount)> {
         // The total amount of selected UTXOs
         let total_input = self.utxo.total_input_amount();
 
@@ -242,13 +242,13 @@ impl TransferBuilder {
             let additional_required = required_amount - total_input;
 
             // The total additional input
-            let mut additional_input = bitcoin::Amount::from_sat(0);
+            let mut additional_input = litecoin::Amount::from_sat(0);
 
             // UTXOs that have not been selected
             let available = self.utxo.available_utxo();
 
             for utxo in available {
-                additional_input += bitcoin::Amount::from_sat(utxo.value);
+                additional_input += litecoin::Amount::from_sat(utxo.value);
 
                 self.transaction.input.push(TxIn::from(utxo.clone()));
                 has_new_input = true;
@@ -271,11 +271,11 @@ impl TransferBuilder {
     }
 
     // change
-    fn change(&mut self, required_amount: Amount, change_address: bitcoin::Address) {
+    fn change(&mut self, required_amount: Amount, change_address: litecoin::Address) {
         let total_input = self.utxo.total_input_amount();
         let change = total_input - required_amount;
         if change > Amount::default() {
-            self.transaction.output.push(bitcoin::TxOut {
+            self.transaction.output.push(litecoin::TxOut {
                 value: change,
                 script_pubkey: change_address.script_pubkey(),
             });
@@ -332,7 +332,7 @@ mod tests {
             "select utxo {:?}",
             transaction_build.utxo.used_utxo_to_hash_map()
         );
-        let fee_rate = bitcoin::Amount::from_sat(20);
+        let fee_rate = litecoin::Amount::from_sat(20);
         let _c = transaction_build
             .change_and_fee(fee_rate, params.from, params.address_type, params.value)
             .unwrap();
@@ -350,7 +350,7 @@ mod tests {
 
         let mut transaction_build = params.build_transaction(utxos()).unwrap();
 
-        let fee_rate = bitcoin::Amount::from_sat(2700);
+        let fee_rate = litecoin::Amount::from_sat(2700);
         let c = transaction_build
             .change_and_fee(fee_rate, params.from, params.address_type, params.value)
             .unwrap();
