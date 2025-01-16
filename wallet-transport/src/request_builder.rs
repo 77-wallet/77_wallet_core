@@ -1,4 +1,4 @@
-use crate::{errors::NodeResponseError, TransportError};
+use crate::{errors::NodeResponseError, types::JsonRpcResult, TransportError};
 use reqwest::RequestBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
@@ -33,10 +33,28 @@ impl ReqBuilder {
 
         let status = res.status();
         if !status.is_success() {
-            return Err(TransportError::NodeResponseError(NodeResponseError::new(
-                status.as_u16() as i64,
-                None,
-            )));
+            // 尝试解析出 json respose:: btc now node 返回的不标准。
+            match res.text().await {
+                Ok(response) => {
+                    if let Ok(rs) = Self::try_to_paras_json(&response) {
+                        return Err(TransportError::NodeResponseError(NodeResponseError::new(
+                            rs.0,
+                            Some(rs.1),
+                        )));
+                    } else {
+                        return Err(TransportError::NodeResponseError(NodeResponseError::new(
+                            status.as_u16() as i64,
+                            None,
+                        )));
+                    }
+                }
+                Err(_e) => {
+                    return Err(TransportError::NodeResponseError(NodeResponseError::new(
+                        status.as_u16() as i64,
+                        None,
+                    )));
+                }
+            }
         }
 
         let response = res
@@ -46,6 +64,23 @@ impl ReqBuilder {
 
         tracing::debug!("response = {}", response);
         Ok(response)
+    }
+
+    pub fn try_to_paras_json(res: &str) -> Result<(i64, String), crate::TransportError> {
+        if let Ok(reg) = regex::Regex::new(r#"\{.*\}"#) {
+            let res = reg.find(res).map(|m| m.as_str().to_string());
+            if let Some(res) = res {
+                let res = res.replace("\\\"", "\"");
+                let response = wallet_utils::serde_func::serde_from_str::<JsonRpcResult>(&res);
+
+                if let Ok(res) = response {
+                    if let Some(res) = res.error {
+                        return Ok((res.code, res.message));
+                    }
+                }
+            }
+        }
+        Err(crate::TransportError::EmptyResult)
     }
 }
 
