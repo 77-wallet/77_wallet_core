@@ -1,7 +1,7 @@
 use crate::btc::{
     consts::{self, EXPEND_FEE_RATE},
     provider::Provider,
-    signature::{self},
+    signature::{self, MultisigSignParams},
     utxos::UtxoList,
     ParseBtcAddress,
 };
@@ -88,7 +88,11 @@ impl TransferArg {
             output,
         };
 
-        Ok(TransferBuilder { transaction, utxo })
+        Ok(TransferBuilder {
+            transaction,
+            utxo,
+            multisig_sign_params: None,
+        })
     }
 
     // build transaction with fee  fee unit is Btc
@@ -127,13 +131,23 @@ impl TransferArg {
             output,
         };
 
-        Ok(TransferBuilder { transaction, utxo })
+        Ok(TransferBuilder {
+            transaction,
+            utxo,
+            multisig_sign_params: None,
+        })
     }
 }
 
 pub struct TransferBuilder {
     pub transaction: bitcoin::Transaction,
     pub utxo: UtxoList,
+    pub multisig_sign_params: Option<MultisigSignParams>,
+}
+impl TransferBuilder {
+    pub fn set_multisig_params(&mut self, multisig_sign_params: MultisigSignParams) {
+        self.multisig_sign_params = Some(multisig_sign_params)
+    }
 }
 
 // build
@@ -169,6 +183,7 @@ impl TransferBuilder {
                 self.transaction.clone(),
                 change_address.clone(),
                 address_type,
+                &self.multisig_sign_params,
             )?;
 
             let res = self.set_transaction_fee(fee_rate, size, value)?;
@@ -192,6 +207,7 @@ impl TransferBuilder {
             self.transaction.clone(),
             spend_address.clone(),
             address_type,
+            &self.multisig_sign_params,
         )?;
 
         let total_input = self.utxo.total_input_amount();

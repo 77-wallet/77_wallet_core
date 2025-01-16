@@ -9,6 +9,7 @@ pub mod protocol;
 pub mod provider;
 pub mod script;
 mod signature;
+pub use signature::MultisigSignParams;
 // mod tx_build;
 mod utxos;
 

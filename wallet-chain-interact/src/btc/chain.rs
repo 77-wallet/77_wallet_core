@@ -2,7 +2,7 @@ use super::operations::multisig::{BtcMultisigRaw, MultisigAccountOpt, MultisigTr
 use super::params::{FeeSetting, TransferResp};
 use super::provider::{Provider, ProviderConfig};
 use super::script::BtcScript;
-use super::signature::{BtcSignature, SignatureCombiner};
+use super::signature::{BtcSignature, MultisigSignParams, SignatureCombiner};
 use super::{network_convert, operations, protocol};
 use crate::types::{ChainPrivateKey, FetchMultisigAddressResp, MultisigSignResp, MultisigTxResp};
 use crate::{BillResourceConsume, QueryTransactionResult};
@@ -178,6 +178,7 @@ impl BtcChain {
         Ok(TransferResp::new(tx_hash, Amount::default(), 0))
     }
 
+    // 普通手续费
     pub async fn estimate_fee(
         &self,
         params: operations::transfer::TransferArg,
@@ -195,9 +196,29 @@ impl BtcChain {
         Ok(FeeSetting { fee_rate, size })
     }
 
+    // 多签手续费
+    pub async fn estimate_multisig_fee(
+        &self,
+        params: operations::transfer::TransferArg,
+        multisig_sign_params: MultisigSignParams,
+    ) -> crate::Result<FeeSetting> {
+        let utxo = self
+            .provider
+            .utxos(&params.from.to_string(), self.network)
+            .await?;
+        let mut transaction_builder = params.build_transaction(utxo)?;
+        transaction_builder.set_multisig_params(multisig_sign_params);
+
+        let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
+        let size = transaction_builder.transactin_size(fee_rate, &params)?;
+
+        Ok(FeeSetting { fee_rate, size })
+    }
+
     pub async fn build_multisig_tx(
         &self,
         params: operations::transfer::TransferArg,
+        multisig_sign_params: MultisigSignParams,
     ) -> crate::Result<MultisigTxResp> {
         let utxo = self
             .provider
@@ -206,6 +227,8 @@ impl BtcChain {
         let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
 
         let mut transaction_builder = params.build_transaction(utxo)?;
+        transaction_builder.set_multisig_params(multisig_sign_params);
+
         let size = transaction_builder.transactin_size(fee_rate, &params)?;
 
         let used_utxo = transaction_builder.utxo.used_utxo_to_hash_map();
@@ -306,6 +329,7 @@ impl BtcChain {
             .await?;
         let size = transaction.vsize();
         let transaction_fee = fee_rate * size as u64;
+
         if remain_balance < transaction_fee {
             return Err(crate::Error::UtxoError(crate::UtxoError::InsufficientFee));
         }

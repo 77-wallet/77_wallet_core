@@ -30,7 +30,7 @@ pub struct Provider {
     http_client: HttpClient,
 }
 
-pub const API_ENPOINT: &'static str = "http/btc_blockbook/api/v2";
+pub const API_ENPOINT: &'static str = "book/btc/api/v2";
 
 impl Provider {
     pub fn new(
