@@ -89,7 +89,7 @@ impl MultisigCreateArgsV2 {
             config_authority: None,
             threshold,
             members: member,
-            time_lock: 10,
+            time_lock: 1,
             rent_collector: Some(from),
             memo: None,
         })
