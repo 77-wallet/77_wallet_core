@@ -1,8 +1,10 @@
-use std::str::FromStr as _;
-
-use bitcoin::hashes::{Hash as _, HashEngine as _};
+use bitcoin::{
+    hashes::{Hash as _, HashEngine as _},
+    PrivateKey,
+};
 use ripemd160::Digest as _;
-use secp256k1::Secp256k1;
+use secp256k1::{Keypair, Secp256k1};
+use std::str::FromStr as _;
 use wallet_types::chain::{address::r#type::BtcAddressType, chain, network};
 
 #[derive(Clone)]
@@ -78,33 +80,40 @@ pub(crate) fn generate_address(
     generate_address_with_xpriv(address_type, &secp, keypair, network)
 }
 
+pub fn generate_address_by_seckey(
+    address_type: &BtcAddressType,
+    network: network::NetworkKind,
+    seckey: String,
+) -> Result<String, crate::Error> {
+    let secp = Secp256k1::new();
+
+    let pk = PrivateKey::from_wif(&seckey).unwrap();
+    let b = pk.to_bytes();
+
+    let keypair = Keypair::from_seckey_slice(&secp, b.as_ref()).unwrap();
+
+    generate_address_with_xpriv(&address_type, &secp, keypair, network)
+}
+
 pub fn generate_address_with_xpriv(
     address_type: &BtcAddressType,
     secp: &Secp256k1<secp256k1::All>,
-    // xpriv: bitcoin::bip32::Xpriv,
     keypair: secp256k1::Keypair,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
     match address_type {
         BtcAddressType::P2pkh => legacy(keypair, network),
-        // BtcAddressType::P2sh => todo!(),
-        // BtcAddressType::P2shWpkh => todo!(),
         BtcAddressType::P2shWpkh => p2sh_p2wpkh_address(keypair, network),
         BtcAddressType::P2wpkh => p2wpkh_address(keypair, network),
-        // BtcAddressType::P2wsh => todo!(),
         BtcAddressType::P2tr => p2tr_address(keypair, secp, network),
-        // BtcAddressType::P2trSh => todo!(),
         _ => Err(crate::Error::BtcAddressTypeCantGenDerivationPath),
     }
 }
 
 pub(crate) fn legacy(
-    // xpriv: bitcoin::bip32::Xpriv,
     keypair: secp256k1::Keypair,
-    // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
-    // let keypair = xpriv.to_keypair(secp);
     let pubkey = keypair.public_key().serialize();
     let res = generate_p2pkh_address(&pubkey, network)?;
     Ok(res)
@@ -140,11 +149,8 @@ fn get_p2pkh_version(network: network::NetworkKind) -> u8 {
 // 隔离见证（原生）
 pub(crate) fn p2wpkh_address(
     keypair: secp256k1::Keypair,
-    // xpriv: bitcoin::bip32::Xpriv,
-    // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
-    // let keypair = xpriv.to_keypair(&secp);
     let pubkey = keypair.public_key().serialize();
     let res = generate_p2wpkh_address(&pubkey, network)?;
 
@@ -154,11 +160,9 @@ pub(crate) fn p2wpkh_address(
 // Taproot
 pub(crate) fn p2tr_address(
     keypair: secp256k1::Keypair,
-    // xpriv: bitcoin::bip32::Xpriv,
     secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
-    // let keypair = xpriv.to_keypair(&secp);
     let res = generate_p2tr_address(&keypair, secp, network)?;
 
     Ok(res)
@@ -167,11 +171,8 @@ pub(crate) fn p2tr_address(
 // 隔离见证（兼容）
 pub(crate) fn p2sh_p2wpkh_address(
     keypair: secp256k1::Keypair,
-    // xpriv: bitcoin::bip32::Xpriv,
-    // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
-    // let keypair = xpriv.to_keypair(&secp);
     let pubkey = keypair.public_key().serialize();
 
     let res = generate_p2sh_p2wpkh_address(&pubkey, network);

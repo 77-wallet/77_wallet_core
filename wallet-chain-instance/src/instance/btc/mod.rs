@@ -1,4 +1,6 @@
 pub(crate) mod address;
+pub use address::generate_address_by_seckey;
+
 mod test;
 
 use std::str::FromStr;
@@ -9,8 +11,6 @@ use bitcoin::{
 };
 use wallet_core::KeyPair;
 use wallet_types::chain::{address::r#type::BtcAddressType, chain::ChainCode, network};
-
-// const NET: Network = Network::Testnet;
 
 pub struct BitcoinKeyPair {
     bitcoin_family: ChainCode,
@@ -40,19 +40,15 @@ impl wallet_core::derive::GenDerivation for BitcoinInstance {
             let path = if let Some(address_type) = address_type {
                 match address_type {
                     BtcAddressType::P2pkh => wallet_types::constant::BTC_HARD_DERIVATION_PATH,
-                    // BtcAddressType::P2sh => todo!(),
-                    // BtcAddressType::P2shWpkh => todo!(),
                     BtcAddressType::P2shWpkh => {
                         wallet_types::constant::BTC_SEG_WIT_HARD_DERIVATION_PATH
                     }
                     BtcAddressType::P2wpkh => {
                         wallet_types::constant::BTC_SEG_WIT_NATIVE_HARD_DERIVATION_PATH
                     }
-                    // BtcAddressType::P2wsh => todo!(),
                     BtcAddressType::P2tr => {
                         wallet_types::constant::BTC_TAPROOT_HARD_DERIVATION_PATH
                     }
-                    // BtcAddressType::P2trSh => todo!(),
                     _ => return Err(crate::Error::BtcAddressTypeCantGenDerivationPath),
                 }
             } else {
@@ -64,15 +60,11 @@ impl wallet_core::derive::GenDerivation for BitcoinInstance {
             let path = if let Some(address_type) = address_type {
                 match address_type {
                     BtcAddressType::P2pkh => wallet_types::constant::BTC_DERIVATION_PATH,
-                    // BtcAddressType::P2sh => todo!(),
-                    // BtcAddressType::P2shWpkh => todo!(),
                     BtcAddressType::P2shWpkh => wallet_types::constant::BTC_SEG_WIT_DERIVATION_PATH,
                     BtcAddressType::P2wpkh => {
                         wallet_types::constant::BTC_SEG_WIT_NATIVE_DERIVATION_PATH
                     }
-                    // BtcAddressType::P2wsh => todo!(),
                     BtcAddressType::P2tr => wallet_types::constant::BTC_TAPROOT_DERIVATION_PATH,
-                    // BtcAddressType::P2trSh => todo!(),
                     _ => return Err(crate::Error::BtcAddressTypeCantGenDerivationPath),
                 }
             } else {
@@ -81,7 +73,6 @@ impl wallet_core::derive::GenDerivation for BitcoinInstance {
             crate::add_index(path, i, false)
         };
 
-        // let res = crate::add_index(path, account_id);
         Ok(path)
     }
 }
@@ -90,10 +81,6 @@ impl wallet_core::derive::Derive for BitcoinInstance {
     type Error = crate::Error;
 
     type Item = BitcoinKeyPair;
-
-    // fn derive(&self, seed: Vec<u8>, index: u32) -> Result<Self::Item, Self::Error> {
-    //     BitcoinKeyPair::generate(seed, index, &self.chain_code)
-    // }
 
     fn derive_with_derivation_path(
         &self,
@@ -155,9 +142,7 @@ impl KeyPair for BitcoinKeyPair {
     }
 
     fn private_key_bytes(&self) -> Result<Vec<u8>, Self::Error> {
-        // let network = get_network(&self.chain_code())?;
         Ok(self.xpriv.private_key.secret_bytes().to_vec())
-        // Ok(hex::decode(self.private_key()?).map_err(|e| crate::Error::Parse(e.into()))?)
     }
 }
 
@@ -177,27 +162,13 @@ fn generate(
 ) -> Result<BitcoinKeyPair, crate::Error> {
     let xpriv = Xpriv::new_master(network, &seed).unwrap();
 
-    // let pri_key = XPriv::root_from_seed(seed.as_slice(), None).unwrap();
-
     let path = DerivationPath::from_str(derivation_path).unwrap();
     let secp = Secp256k1::new();
     let derive_key = xpriv.derive_priv(&secp, &path).unwrap();
 
-    // match path.
-
-    // let derive = pri_key.derive_path(path.as_str()).unwrap();
-
-    // let address = BitcoinAddress {
-    //     p2pkh: p2pkh.to_string(),
-    //     p2sh: "".to_string(),
-    //     p2wpkh: p2wpkh.to_string(),
-    //     p2wpsh: "".to_string(),
-    //     p2shwpkh: p2shwpkh.to_string(),
-    //     p2shwsh: "".to_string(),
-    //     p2tr: p2tr.to_string(),
-    // };
     let keypair = derive_key.to_keypair(&secp);
     let pubkey = keypair.public_key().to_string();
+
     Ok(BitcoinKeyPair {
         bitcoin_family: chain_code.to_owned(),
         xpriv: derive_key,

@@ -15,14 +15,6 @@ impl wallet_core::derive::GenDerivation for SolanaInstance {
         _address_type: &Option<BtcAddressType>,
         input_index: i32,
     ) -> Result<String, crate::Error> {
-        // let index = if account_id < 0 {
-        //     account_id
-        //         .checked_add_unsigned(coins_bip32::BIP32_HARDEN)
-        //         .ok_or(crate::Error::AddressIndexOverflowOccured)? as u32
-        // } else {
-        //     account_id as u32
-        // };
-
         let index = wallet_utils::address::i32_index_to_unhardened_u32(input_index)?;
         let path = crate::add_solana_index(wallet_types::constant::SOLANA_DERIVATION_PATH, index);
         Ok(path)
@@ -32,10 +24,6 @@ impl wallet_core::derive::GenDerivation for SolanaInstance {
 impl Derive for SolanaInstance {
     type Error = crate::Error;
     type Item = SolanaKeyPair;
-
-    // fn derive(&self, seed: Vec<u8>, index: u32) -> Result<SolanaKeyPair, Self::Error> {
-    //     SolanaKeyPair::generate(seed, index, &self.chain_code)
-    // }
 
     fn derive_with_derivation_path(
         &self,
@@ -120,14 +108,13 @@ impl KeyPair for SolanaKeyPair {
 }
 
 pub fn secret_key_to_address(pkey: &[u8]) -> Result<solana_sdk::pubkey::Pubkey, crate::Error> {
-    // let private_key = signingkey.to_bytes();
-    // let key = ed25519_dalek::SigningKey::try_from(pkey).unwrap();
-    // let keypair = key.to_keypair_bytes();
     let keypair = solana_sdk::signer::keypair::Keypair::from_bytes(pkey).unwrap();
     Ok(keypair.pubkey())
-    // let private_key = libsecp256k1::SecretKey::parse_slice(&private_key)
-    //     .map_err(|e| crate::Error::Keypair(e.into()))?;
-    // let address = TronAddress::from_secret_key(&private_key, &TronFormat::Standard).unwrap();
+}
+
+pub fn address_from_secret_key(prik: &str) -> Result<solana_sdk::pubkey::Pubkey, crate::Error> {
+    let keypair = solana_sdk::signer::keypair::Keypair::from_base58_string(prik);
+    Ok(keypair.pubkey())
 }
 
 #[cfg(test)]

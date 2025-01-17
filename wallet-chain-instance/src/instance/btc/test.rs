@@ -122,12 +122,16 @@ fn sha256(raw: &[u8]) -> Vec<u8> {
 mod tests {
     use std::str::FromStr;
 
-    use bitcoin::{key::Secp256k1, script::Builder, Address, PubkeyHash, ScriptBuf};
+    use bitcoin::{key::Secp256k1, script::Builder, Address, PrivateKey, PubkeyHash, ScriptBuf};
+    use secp256k1::{Keypair, SecretKey};
     use serde::Serialize;
     use solana_sdk::pubkey;
+    use wallet_types::chain::address::r#type::BtcAddressType;
     use wallet_utils::init_test_log;
 
     // use crate::instance::btc::generate_p2sh_address;
+
+    use crate::{generate_address_with_xpriv, instance::btc::generate_address_by_seckey};
 
     use super::derivate_key;
 
@@ -259,63 +263,21 @@ mod tests {
         println!("script2: {script2}");
         println!("address: {address}");
     }
+
+    // #[test]
+    // fn test_from_secrek_key() {
+    //     let key = "Kzhcorex35iwC7WbTAPw358J1NikHZgBfBqV3v9Xd5YXaQ77qAHd".to_string();
+    //     let address_type = BtcAddressType::P2pkh;
+    //     let network = wallet_types::chain::network::NetworkKind::Mainnet;
+
+    //     // let secp = Secp256k1::new();
+    //     // let c = PrivateKey::from_wif(&key).unwrap();
+    //     // let b = c.to_bytes();
+    //     // let keypair = Keypair::from_seckey_slice(&secp, b.as_ref()).unwrap();
+
+    //     // let address = generate_address_with_xpriv(&address_type, &secp, keypair, network).unwrap();
+
+    //     let addres = generate_address_by_seckey(&address_type, network, key).unwrap();
+    //     println!("address {}", address);
+    // }
 }
-
-/////
-
-// fn generate_keys() -> (SecretKey, PublicKey) {
-//     let secp = Secp256k1::new();
-//     let mut rng = OsRng::new().unwrap();
-//     let (secret_key, public_key) = secp.generate_keypair(&mut rng);
-//     (secret_key, public_key)
-// }
-
-// fn is_even_y(pubkey: &PublicKey) -> bool {
-//     pubkey.serialize()[64] % 2 == 0
-// }
-
-// fn negate_pubkey(pubkey: &PublicKey) -> PublicKey {
-//     let mut serialized = pubkey.serialize();
-//     serialized[64] = 0xff - serialized[64];
-//     PublicKey::from_slice(&serialized).unwrap()
-// }
-
-// fn compute_taproot_pubkey(internal_pubkey: &PublicKey) -> PublicKey {
-//     *internal_pubkey
-// }
-
-// fn convert_bits(data: &[u8], from: u32, to: u32, pad: bool) -> Option<Vec<u8>> {
-//     let mut acc = 0;
-//     let mut bits = 0;
-//     let mut ret = Vec::new();
-//     let maxv: u32 = (1 << to) - 1;
-//     let max_acc: u32 = (1 << (from + to - 1)) - 1;
-
-//     for value in data {
-//         acc = ((acc << from) | (*value as u32)) & max_acc;
-//         bits += from;
-//         while bits >= to {
-//             bits -= to;
-//             ret.push(((acc >> bits) & maxv) as u8);
-//         }
-//     }
-
-//     if pad {
-//         if bits > 0 {
-//             ret.push(((acc << (to - bits)) & maxv) as u8);
-//         }
-//     } else if bits >= from || ((acc << (to - bits)) & maxv) != 0 {
-//         return None;
-//     }
-
-//     Some(ret)
-// }
-
-// fn generate_bech32m_address(taproot_pubkey: &PublicKey) -> String {
-//     let pubkey_bytes = taproot_pubkey.serialize();
-//     let data = convert_bits(&pubkey_bytes[1..], 8, 5, true).unwrap(); // Remove the leading 0x02/0x03 byte
-//     let mut bech32_data = vec![u5::try_from_u8(1).unwrap()]; // witness version 1 for Taproot
-//     bech32_data.extend(data.into_iter().map(|v| u5::try_from_u8(v).unwrap()));
-
-//     encode("bc", bech32_data, Variant::Bech32m).unwrap()
-// }
