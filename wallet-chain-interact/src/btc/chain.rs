@@ -316,27 +316,27 @@ impl BtcChain {
             }
         };
 
-        // check balance
-        let balance = self.balance(&params.from, None).await?;
-        let value = unit::convert_to_u256(&params.value, super::consts::BTC_DECIMAL)?;
-        if balance < value {
-            return Err(crate::Error::UtxoError(
-                crate::UtxoError::InsufficientBalance,
-            ));
-        }
-        let remain_balance = Amount::from_sat((balance - value).to::<u64>());
-
         // check fee
         let fee_rate = self
             .provider
             .fetch_fee_rate(super::consts::FEE_RATE as u32, self.network)
             .await?;
         let size = transaction.vsize();
-        let transaction_fee = fee_rate * size as u64;
 
-        if remain_balance < transaction_fee {
-            return Err(crate::Error::UtxoError(crate::UtxoError::InsufficientFee));
-        }
+        // let transaction_fee = fee_rate * size as u64;
+        // let remain_balance = Amount::from_sat((balance - value).to::<u64>());
+        // if remain_balance < transaction_fee {
+        //     return Err(crate::Error::UtxoError(crate::UtxoError::InsufficientFee));
+        // }
+
+        // check balance
+        // let balance = self.balance(&params.from, None).await?;
+        // let value = unit::convert_to_u256(&params.value, super::consts::BTC_DECIMAL)?;
+        // if balance < value {
+        //     return Err(crate::Error::UtxoError(
+        //         crate::UtxoError::InsufficientBalance,
+        //     ));
+        // }
 
         let hex_raw = consensus::encode::serialize_hex(&transaction);
 
