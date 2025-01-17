@@ -54,6 +54,7 @@ impl TryFrom<u32> for ChainCodes {
             crate::constant::chain_type::TRON_TYPE => vec![ChainCode::Tron],
             crate::constant::chain_type::SOLANA_TYPE => vec![ChainCode::Solana],
             crate::constant::chain_type::BTC_TYPE => vec![ChainCode::Bitcoin],
+            crate::constant::chain_type::LTC_TYPE => vec![ChainCode::Litecoin],
             // crate::constant::chain_type::BTC_86_TYPE => vec![
             //     ChainCode::Btc,
             //     ChainCode::BtcTest,

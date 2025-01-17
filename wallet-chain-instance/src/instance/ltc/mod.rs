@@ -39,21 +39,21 @@ impl wallet_core::derive::GenDerivationLtc for LitecoinInstance {
             let i = wallet_utils::address::i32_index_to_unhardened_u32(input_index)?;
             let path = if let Some(address_type) = address_type {
                 match address_type {
-                    LtcAddressType::P2pkh => wallet_types::constant::BTC_HARD_DERIVATION_PATH,
+                    LtcAddressType::P2pkh => wallet_types::constant::LTC_HARD_DERIVATION_PATH,
                     // BtcAddressType::P2sh => todo!(),
                     // BtcAddressType::P2shWpkh => todo!(),
                     LtcAddressType::P2shWpkh => {
-                        wallet_types::constant::BTC_SEG_WIT_HARD_DERIVATION_PATH
+                        wallet_types::constant::LTC_SEG_WIT_HARD_DERIVATION_PATH
                     }
                     LtcAddressType::P2wpkh => {
-                        wallet_types::constant::BTC_SEG_WIT_NATIVE_HARD_DERIVATION_PATH
+                        wallet_types::constant::LTC_SEG_WIT_NATIVE_HARD_DERIVATION_PATH
                     }
                     // BtcAddressType::P2wsh => todo!(),
                     LtcAddressType::P2tr => {
-                        wallet_types::constant::BTC_TAPROOT_HARD_DERIVATION_PATH
+                        wallet_types::constant::LTC_TAPROOT_HARD_DERIVATION_PATH
                     }
                     // BtcAddressType::P2trSh => todo!(),
-                    _ => return Err(crate::Error::BtcAddressTypeCantGenDerivationPath),
+                    _ => return Err(crate::Error::LtcAddressTypeCantGenDerivationPath),
                 }
             } else {
                 return Err(wallet_types::Error::BtcNeedAddressType.into());
@@ -63,17 +63,17 @@ impl wallet_core::derive::GenDerivationLtc for LitecoinInstance {
             let i = input_index as u32;
             let path = if let Some(address_type) = address_type {
                 match address_type {
-                    LtcAddressType::P2pkh => wallet_types::constant::BTC_DERIVATION_PATH,
+                    LtcAddressType::P2pkh => wallet_types::constant::LTC_DERIVATION_PATH,
                     // BtcAddressType::P2sh => todo!(),
                     // BtcAddressType::P2shWpkh => todo!(),
-                    LtcAddressType::P2shWpkh => wallet_types::constant::BTC_SEG_WIT_DERIVATION_PATH,
+                    LtcAddressType::P2shWpkh => wallet_types::constant::LTC_SEG_WIT_DERIVATION_PATH,
                     LtcAddressType::P2wpkh => {
-                        wallet_types::constant::BTC_SEG_WIT_NATIVE_DERIVATION_PATH
+                        wallet_types::constant::LTC_SEG_WIT_NATIVE_DERIVATION_PATH
                     }
                     // BtcAddressType::P2wsh => todo!(),
-                    LtcAddressType::P2tr => wallet_types::constant::BTC_TAPROOT_DERIVATION_PATH,
+                    LtcAddressType::P2tr => wallet_types::constant::LTC_TAPROOT_DERIVATION_PATH,
                     // BtcAddressType::P2trSh => todo!(),
-                    _ => return Err(crate::Error::BtcAddressTypeCantGenDerivationPath),
+                    _ => return Err(crate::Error::LtcAddressTypeCantGenDerivationPath),
                 }
             } else {
                 return Err(wallet_types::Error::BtcNeedAddressType.into());
