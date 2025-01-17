@@ -5,12 +5,10 @@ use super::{
             ApiBlock, ApiTransaction, ApiUtxo, EstimateFee, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq,
             LtcJsonRpcRes, TransactionUtxo, ValidateAddress,
         },
-        BlockHeader, OutInfo, ScanOut,
+        BlockHeader, OutInfo,
     },
     utxos::{Utxo, UtxoList},
 };
-use protobuf::text_format::ParseError;
-use wallet_utils::error::parse;
 use wallet_utils::Error as WalletError;
 use wallet_utils::SerdeError;
 
@@ -136,10 +134,10 @@ impl Provider {
         &self,
         blocks: u32,
         _network: wallet_types::chain::network::NetworkKind,
-    ) -> crate::Result<bitcoin::Amount> {
+    ) -> crate::Result<litecoin::Amount> {
         let res = self.estimate_fee_from_json_rpc(blocks as u64).await?;
-        Ok(bitcoin::Amount::from_sat(
-            (res.feerate * 100_000.0).round() as u64
+        Ok(litecoin::Amount::from_sat(
+            (res.feerate * 100_000.0).round() as u64,
         ))
     }
 

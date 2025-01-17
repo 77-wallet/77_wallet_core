@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::ltc::{consts::BTC_DECIMAL, utxos::Utxo};
+use crate::ltc::{consts::LTC_DECIMAL, utxos::Utxo};
 use serde::{Deserialize, Serialize};
 use wallet_types::chain::address::r#type::LtcAddressType;
 use wallet_utils::unit;
@@ -341,12 +341,12 @@ impl ApiTransaction {
 
     pub fn get_fees(&self) -> crate::Result<f64> {
         let res = unit::u256_from_str(&self.fees)?;
-        Ok(unit::format_to_f64(res, BTC_DECIMAL)?)
+        Ok(unit::format_to_f64(res, LTC_DECIMAL)?)
     }
 
     pub fn get_value(&self) -> crate::Result<f64> {
         let res = unit::u256_from_str(&self.value)?;
-        Ok(unit::format_to_f64(res, BTC_DECIMAL)?)
+        Ok(unit::format_to_f64(res, LTC_DECIMAL)?)
     }
 }
 

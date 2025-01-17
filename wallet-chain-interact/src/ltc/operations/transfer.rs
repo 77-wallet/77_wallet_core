@@ -30,7 +30,7 @@ impl TransferArg {
     ) -> crate::Result<Self> {
         let paras = ParseLtcAddress::new(network);
 
-        let value = unit::convert_to_u256(value, consts::BTC_DECIMAL)?;
+        let value = unit::convert_to_u256(value, consts::LTC_DECIMAL)?;
         let value = litecoin::Amount::from_sat(value.to::<u64>());
 
         let address_type = LtcAddressType::try_from(address_type)?;

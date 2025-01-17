@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use crate::constant::btc_address_type::*;
 
 use super::category::{BtcAddressCategory, LtcAddressCategory};

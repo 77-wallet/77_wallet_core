@@ -230,7 +230,7 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
                     AddressType::Other => {
                         return Err(crate::Error::Types(wallet_types::Error::BtcNeedAddressType));
                     }
-                    AddressType::Ltc(btc_address_type) => {
+                    AddressType::Ltc(_btc_address_type) => {
                         return Err(crate::Error::Types(wallet_types::Error::BtcNeedAddressType));
                     }
                 };
@@ -246,7 +246,7 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
                     AddressType::Other => {
                         return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
                     }
-                    AddressType::Btc(btc_address_type) => {
+                    AddressType::Btc(_btc_address_type) => {
                         return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
                     }
                 };

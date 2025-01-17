@@ -6,13 +6,13 @@ use crate::types::ChainPrivateKey;
 use crate::{BillResourceConsume, QueryTransactionResult};
 use alloy::primitives::map::HashMap;
 use alloy::primitives::U256;
-use bitcoin::Amount;
+use litecoin::Amount;
 
-pub struct BtcChain {
+pub struct LtcChain {
     provider: Provider,
     pub network: wallet_types::chain::network::NetworkKind,
 }
-impl BtcChain {
+impl LtcChain {
     pub fn new(
         config: ProviderConfig,
         network: wallet_types::chain::network::NetworkKind,
@@ -28,7 +28,7 @@ impl BtcChain {
     }
 }
 
-impl BtcChain {
+impl LtcChain {
     pub async fn balance(&self, addr: &str, _token: Option<String>) -> crate::Result<U256> {
         let utxo = self.provider.utxos(addr, self.network).await?;
         Ok(U256::from(utxo.balance()))
@@ -142,7 +142,7 @@ impl BtcChain {
             .utxos(&params.from.to_string(), self.network)
             .await?;
 
-        let fee = bitcoin::Amount::from_float_in(fee, bitcoin::Denomination::Bitcoin)
+        let fee = litecoin::Amount::from_float_in(fee, litecoin::Denomination::Bitcoin)
             .map_err(|e| crate::Error::Other(e.to_string()))?;
 
         let mut transaction_builder = params.build_with_fee(utxo, fee)?;
@@ -270,10 +270,10 @@ impl BtcChain {
     //     let combiner = SignatureCombiner::new(signatures, redeem_script);
 
     //     match params.address_type {
-    //         BtcAddressType::P2sh => combiner.p2sh(&mut transaction)?,
-    //         BtcAddressType::P2shWsh => combiner.p2sh_wsh(&mut transaction)?,
-    //         BtcAddressType::P2wsh => combiner.p2wsh(&mut transaction)?,
-    //         BtcAddressType::P2trSh => combiner.p2tr_sh(&mut transaction, &inner_key)?,
+    //         LtcAddressType::P2sh => combiner.p2sh(&mut transaction)?,
+    //         LtcAddressType::P2shWsh => combiner.p2sh_wsh(&mut transaction)?,
+    //         LtcAddressType::P2wsh => combiner.p2wsh(&mut transaction)?,
+    //         LtcAddressType::P2trSh => combiner.p2tr_sh(&mut transaction, &inner_key)?,
     //         _ => {
     //             return Err(crate::Error::Other(format!(
     //                 "exec transaction not support multisig address type = {}",
@@ -284,7 +284,7 @@ impl BtcChain {
 
     //     // check balance
     //     let balance = self.balance(&params.from, None).await?;
-    //     let value = unit::convert_to_u256(&params.value, super::consts::BTC_DECIMAL)?;
+    //     let value = unit::convert_to_u256(&params.value, super::consts::LTC_DECIMAL)?;
     //     if balance < value {
     //         return Err(crate::Error::UtxoError(
     //             crate::UtxoError::InsufficientBalance,
@@ -313,7 +313,7 @@ impl BtcChain {
     //     &self,
     //     params: MultisigAccountOpt,
     // ) -> crate::Result<FetchMultisigAddressResp> {
-    //     let script = if params.address_type != BtcAddressType::P2trSh {
+    //     let script = if params.address_type != LtcAddressType::P2trSh {
     //         BtcScript::multisig_script(params.threshold, &params.owners)?
     //     } else {
     //         BtcScript::multisig_p2tr_script(params.threshold, &params.owners)?
@@ -322,14 +322,14 @@ impl BtcChain {
     //     let network = network_convert(self.network);
 
     //     let (address, authority_address) = match params.address_type {
-    //         BtcAddressType::P2sh => {
-    //             let address = bitcoin::Address::p2sh(&script, network)
+    //         LtcAddressType::P2sh => {
+    //             let address = litecoin::Address::p2sh(&script, network)
     //                 .map_err(|e| crate::Error::Other(e.to_string()))?;
     //             (address, "".to_string())
     //         }
-    //         BtcAddressType::P2wsh => (Address::p2wsh(&script, network), "".to_string()),
-    //         BtcAddressType::P2shWsh => (Address::p2shwsh(&script, network), "".to_string()),
-    //         BtcAddressType::P2trSh => {
+    //         LtcAddressType::P2wsh => (Address::p2wsh(&script, network), "".to_string()),
+    //         LtcAddressType::P2shWsh => (Address::p2shwsh(&script, network), "".to_string()),
+    //         LtcAddressType::P2trSh => {
     //             let secp = Secp256k1::new();
 
     //             let keypair = Keypair::new(&secp, &mut rand::thread_rng());
@@ -361,7 +361,7 @@ impl BtcChain {
     // }
 
     // pub async fn decimals(&self, _token: &str) -> crate::Result<u8> {
-    //     Ok(super::consts::BTC_DECIMAL)
+    //     Ok(super::consts::LTC_DECIMAL)
     // }
 
     // pub async fn token_symbol(&self, _token: &str) -> crate::Result<String> {

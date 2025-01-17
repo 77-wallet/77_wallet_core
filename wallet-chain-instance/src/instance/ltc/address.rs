@@ -1,6 +1,6 @@
 use std::str::FromStr as _;
 
-use bitcoin::hashes::{Hash as _, HashEngine as _};
+use litecoin::hashes::{Hash as _, HashEngine as _};
 use ripemd160::Digest as _;
 use secp256k1::Secp256k1;
 use wallet_types::chain::{address::r#type::LtcAddressType, chain, network};
@@ -20,7 +20,7 @@ impl wallet_core::address::GenAddress for LtcGenAddress {
     {
         let secret_key = secp256k1::SecretKey::from_slice(pkey)?;
 
-        let secp = bitcoin::key::Secp256k1::new();
+        let secp = litecoin::key::Secp256k1::new();
         let keypair = secp256k1::Keypair::from_secret_key(&secp, &secret_key);
 
         let network = self.network;
@@ -37,14 +37,14 @@ impl wallet_core::address::GenAddress for LtcGenAddress {
 fn ripemd160_sha256(public_key: &[u8]) -> Vec<u8> {
     let mut hasher = ripemd160::Ripemd160::new();
 
-    let hash_of_bytes = bitcoin::hashes::sha256::Hash::hash(public_key);
+    let hash_of_bytes = litecoin::hashes::sha256::Hash::hash(public_key);
     // process input message
     hasher.update(hash_of_bytes);
     hasher.finalize().to_vec()
 }
 
 fn sha256_twice(raw: &[u8]) -> Vec<u8> {
-    let hash = &bitcoin::hashes::sha256::Hash::hash(raw).hash_again();
+    let hash = &litecoin::hashes::sha256::Hash::hash(raw).hash_again();
     hash.to_byte_array()[..4].to_vec()
 }
 
@@ -60,7 +60,7 @@ fn generate_xpriv(
     path: &str,
     secp: &secp256k1::Secp256k1<bitcoin::secp256k1::All>,
 ) -> Result<bitcoin::bip32::Xpriv, crate::Error> {
-    let xpiri = private_key(seed)?;
+    let xpiri: bitcoin::bip32::Xpriv = private_key(seed)?;
     let path = bitcoin::bip32::DerivationPath::from_str(path)?;
 
     Ok(xpiri.derive_priv(secp, &path)?)
@@ -81,7 +81,7 @@ pub(crate) fn generate_address(
 pub fn generate_address_with_xpriv(
     address_type: &LtcAddressType,
     secp: &Secp256k1<secp256k1::All>,
-    // xpriv: bitcoin::bip32::Xpriv,
+    // xpriv: litecoin::bip32::Xpriv,
     keypair: secp256k1::Keypair,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
@@ -99,7 +99,7 @@ pub fn generate_address_with_xpriv(
 }
 
 pub(crate) fn legacy(
-    // xpriv: bitcoin::bip32::Xpriv,
+    // xpriv: litecoin::bip32::Xpriv,
     keypair: secp256k1::Keypair,
     // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
@@ -140,7 +140,7 @@ fn get_p2pkh_version(network: network::NetworkKind) -> u8 {
 // 隔离见证（原生）
 pub(crate) fn p2wpkh_address(
     keypair: secp256k1::Keypair,
-    // xpriv: bitcoin::bip32::Xpriv,
+    // xpriv: litecoin::bip32::Xpriv,
     // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
@@ -154,7 +154,7 @@ pub(crate) fn p2wpkh_address(
 // Taproot
 pub(crate) fn p2tr_address(
     keypair: secp256k1::Keypair,
-    // xpriv: bitcoin::bip32::Xpriv,
+    // xpriv: litecoin::bip32::Xpriv,
     secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
@@ -167,7 +167,7 @@ pub(crate) fn p2tr_address(
 // 隔离见证（兼容）
 pub(crate) fn p2sh_p2wpkh_address(
     keypair: secp256k1::Keypair,
-    // xpriv: bitcoin::bip32::Xpriv,
+    // xpriv: litecoin::bip32::Xpriv,
     // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
@@ -203,8 +203,8 @@ pub(crate) fn generate_p2pkh_address(
     versioned_payload.extend_from_slice(&pubkey_hash);
 
     // Step 3: 计算校验和 (SHA-256(SHA-256(versioned_payload)))[..4]
-    // let a = &bitcoin::hashes::sha256::Hash::hash(&versioned_payload);
-    // let checksum = bitcoin::hashes::sha256::Hash::hash(a.as_byte_array())[..4].to_vec();
+    // let a = &litecoin::hashes::sha256::Hash::hash(&versioned_payload);
+    // let checksum = litecoin::hashes::sha256::Hash::hash(a.as_byte_array())[..4].to_vec();
     let checksum = sha256_twice(&versioned_payload);
 
     // Step 4: 生成最终地址 (Base58Check编码)
@@ -273,7 +273,7 @@ pub(crate) fn generate_p2wpkh_address(
 // // 7.p2tr
 pub(crate) fn generate_p2tr_address(
     keypair: &secp256k1::Keypair,
-    secp: &Secp256k1<bitcoin::secp256k1::All>,
+    secp: &Secp256k1<litecoin::secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
     // Step 1: 提取 x-only 公钥
@@ -291,9 +291,9 @@ pub(crate) fn generate_p2tr_address(
     );
 
     // Step 2: 计算 Taproot tweak
-    let tweak = bitcoin::TapTweakHash::from_key_and_tweak(xonly_pubkey, None).to_scalar();
+    let tweak = litecoin::TapTweakHash::from_key_and_tweak(xonly_pubkey, None).to_scalar();
 
-    // let mut engine = bitcoin::TapTweakHash::engine();
+    // let mut engine = litecoin::TapTweakHash::engine();
     // let midstate = engine.midstate();
     // println!("midstate: {:?}", midstate);
 
@@ -305,10 +305,10 @@ pub(crate) fn generate_p2tr_address(
 
     let _tweak = secp256k1::Scalar::from_be_bytes(checksum)?;
 
-    // let hash = &bitcoin::hashes::sha256::Hash::hash(xonly_pubkey.to_string().as_bytes());
+    // let hash = &litecoin::hashes::sha256::Hash::hash(xonly_pubkey.to_string().as_bytes());
     // let tweak = hash.to_byte_array();
 
-    // let tweak = bitcoin::secp256k1::Scalar::from_be_bytes(tweak).unwrap();
+    // let tweak = litecoin::secp256k1::Scalar::from_be_bytes(tweak).unwrap();
     // let (mut public_key, _) = keypair.x_only_public_key();
     // let original = public_key;
     let (tweaked_xonly_pubkey, parity) = xonly_pubkey.add_tweak(secp, &tweak)?;
@@ -322,14 +322,14 @@ pub(crate) fn generate_p2tr_address(
 
     // Step 3: 计算 Taproot 哈希 (SHA-256(tweaked_xonly_pubkey))
     // let taproot_hash =
-    //     // &bitcoin::hashes::sha256::Hash::hash(tweaked_xonly_pubkey.to_string().as_bytes())
-    //     &bitcoin::hashes::sha256::Hash::hash(&pubkey)
+    //     // &litecoin::hashes::sha256::Hash::hash(tweaked_xonly_pubkey.to_string().as_bytes())
+    //     &litecoin::hashes::sha256::Hash::hash(&pubkey)
     //         .to_byte_array();
     // let taproot_hash = Sha256::digest(&tweaked_xonly_pubkey);
 
     // Step 4: 创建见证程序 (0x01 + Taproot 哈希)
     // let witness_program = [
-    //     vec![bitcoin::WitnessVersion::V1 as u8],
+    //     vec![litecoin::WitnessVersion::V1 as u8],
     //     taproot_hash.to_vec(),
     // ]
     // .concat();

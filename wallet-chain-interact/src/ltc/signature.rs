@@ -1,5 +1,5 @@
 use super::{provider::Provider, utxos::Usedutxo};
-use crate::ltc::script::BtcScript;
+use crate::ltc::script::LtcScript;
 use litecoin::{
     ecdsa,
     key::{Keypair, Secp256k1, TapTweak, TweakedKeypair},
@@ -70,7 +70,7 @@ impl LtcSignature {
                 sighash_type: EcdsaSighashType::All,
             };
 
-            tx.input[i].script_sig = BtcScript::sign_script_sig(signature, pk);
+            tx.input[i].script_sig = LtcScript::sign_script_sig(signature, pk);
         }
         Ok(())
     }
@@ -154,15 +154,15 @@ impl LtcSignature {
 
     // pub async fn multisig_sign_v1(
     //     &self,
-    //     address_type: BtcAddressType,
+    //     address_type: LtcAddressType,
     //     script: ScriptBuf,
     //     tx: Transaction,
     //     provider: &Provider,
     // ) -> crate::Result<Vec<Vec<u8>>> {
     //     match address_type {
-    //         BtcAddressType::P2sh => self.p2sh(&tx, script),
-    //         BtcAddressType::P2wsh | BtcAddressType::P2shWsh => self.p2wsh(&tx, script),
-    //         BtcAddressType::P2trSh => self.p2tr_sh(&tx, script, provider).await,
+    //         LtcAddressType::P2sh => self.p2sh(&tx, script),
+    //         LtcAddressType::P2wsh | LtcAddressType::P2shWsh => self.p2wsh(&tx, script),
+    //         LtcAddressType::P2trSh => self.p2tr_sh(&tx, script, provider).await,
     //         _ => panic!("sign not support multisig address"),
     //     }
     // }

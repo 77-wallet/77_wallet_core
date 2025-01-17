@@ -7,9 +7,9 @@ use litecoin::{
 use std::str::FromStr;
 use wallet_types::valueobject::AddressPubkey;
 
-pub struct BtcScript;
+pub struct LtcScript;
 
-impl BtcScript {
+impl LtcScript {
     // 时间锁脚本
     pub fn time_lock_script(height: i64, pk: litecoin::PublicKey) -> ScriptBuf {
         Builder::new()

@@ -1,4 +1,4 @@
-use wallet_types::{chain::address::r#type::BtcAddressType, valueobject::AddressPubkey};
+use wallet_types::{chain::address::r#type::LtcAddressType, valueobject::AddressPubkey};
 use wallet_utils::hex_func;
 
 use crate::ltc::utxos::Usedutxo;
@@ -6,7 +6,7 @@ use crate::ltc::utxos::Usedutxo;
 pub struct MultisigAccountOpt {
     pub threshold: u8,
     pub owners: Vec<AddressPubkey>,
-    pub address_type: BtcAddressType,
+    pub address_type: LtcAddressType,
 }
 
 impl MultisigAccountOpt {
@@ -15,7 +15,7 @@ impl MultisigAccountOpt {
         owners: Vec<AddressPubkey>,
         address_type: &str,
     ) -> crate::Result<Self> {
-        let address_type = BtcAddressType::try_from(address_type)?;
+        let address_type = LtcAddressType::try_from(address_type)?;
 
         Ok(Self {
             threshold,
@@ -26,12 +26,12 @@ impl MultisigAccountOpt {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct BtcMultisigRaw {
+pub struct LtcMultisigRaw {
     pub multisig_address: String,
     pub used_utxo: Usedutxo,
     pub raw_hex: String,
 }
-impl BtcMultisigRaw {
+impl LtcMultisigRaw {
     pub fn to_string(&self) -> crate::Result<String> {
         Ok(hex_func::bincode_encode(self)?)
         // let bytes = bincode::serialize(self).unwrap();
@@ -50,7 +50,7 @@ pub struct MultisigTransactionOpt {
     pub value: String,
     pub script_hex: String,
     pub raw_data: String,
-    pub address_type: BtcAddressType,
+    pub address_type: LtcAddressType,
 }
 impl MultisigTransactionOpt {
     pub fn new(
@@ -60,7 +60,7 @@ impl MultisigTransactionOpt {
         raw_data: &str,
         address_type: &str,
     ) -> crate::Result<Self> {
-        let address_type = BtcAddressType::try_from(address_type)?;
+        let address_type = LtcAddressType::try_from(address_type)?;
         Ok(Self {
             from,
             value,

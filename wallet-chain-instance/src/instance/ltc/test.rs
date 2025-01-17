@@ -1,9 +1,11 @@
 #![allow(unused)]
 use bitcoin::{
     bip32::{DerivationPath, Xpriv},
+    Network,
+};
+use litecoin::{
     hashes::Hash as _,
     key::{Keypair, Secp256k1},
-    Network,
 };
 use ripemd160::Digest as _;
 use secp256k1::hashes::HashEngine as _;
@@ -42,7 +44,7 @@ fn derivate_key(
 }
 
 fn sha256(raw: &[u8]) -> Vec<u8> {
-    let hash = &bitcoin::hashes::sha256::Hash::hash(raw);
+    let hash = &litecoin::hashes::sha256::Hash::hash(raw);
     hash.to_byte_array()[..4].to_vec()
 }
 
@@ -122,12 +124,12 @@ fn sha256(raw: &[u8]) -> Vec<u8> {
 mod tests {
     use std::str::FromStr;
 
-    use bitcoin::{key::Secp256k1, script::Builder, Address, PubkeyHash, ScriptBuf};
+    use litecoin::{key::Secp256k1, script::Builder, Address, PubkeyHash, ScriptBuf};
     use serde::Serialize;
     use solana_sdk::pubkey;
     use wallet_utils::init_test_log;
 
-    // use crate::instance::btc::generate_p2sh_address;
+    // use crate::instance::ltc::generate_p2sh_address;
 
     use super::derivate_key;
 
@@ -147,7 +149,7 @@ mod tests {
 
         let pubkey = pubkey.serialize();
         let network = wallet_types::chain::network::NetworkKind::Mainnet;
-        let res = crate::instance::btc::address::generate_p2pkh_address(&pubkey, network);
+        let res = crate::instance::ltc::address::generate_p2pkh_address(&pubkey, network);
 
         println!("res: {res:?}");
         Ok(())
@@ -176,7 +178,7 @@ mod tests {
         let keypair = key.to_keypair(&secp);
         let pubkey = keypair.public_key().serialize();
         let network = wallet_types::chain::network::NetworkKind::Mainnet;
-        let res = crate::instance::btc::address::generate_p2wpkh_address(&pubkey, network);
+        let res = crate::instance::ltc::address::generate_p2wpkh_address(&pubkey, network);
 
         println!("res: {res:?}");
         Ok(())
@@ -192,7 +194,7 @@ mod tests {
         let keypair = key.to_keypair(&secp);
         // let pubkey = keypair.public_key().serialize();
         let network = wallet_types::chain::network::NetworkKind::Mainnet;
-        let res = crate::instance::btc::address::generate_p2tr_address(&keypair, &secp, network);
+        let res = crate::instance::ltc::address::generate_p2tr_address(&keypair, &secp, network);
 
         println!("res: {res:?}");
         Ok(())
@@ -209,7 +211,7 @@ mod tests {
         let pubkey = keypair.public_key().serialize();
 
         let network = wallet_types::chain::network::NetworkKind::Mainnet;
-        let res = crate::instance::btc::address::generate_p2sh_p2wpkh_address(&pubkey, network);
+        let res = crate::instance::ltc::address::generate_p2sh_p2wpkh_address(&pubkey, network);
 
         println!("res: {res}");
         Ok(())
@@ -219,7 +221,7 @@ mod tests {
     fn test_generate_p2wsh() {
         let script1 = ScriptBuf::from_hex("52210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae").unwrap();
 
-        let pubkey1 = bitcoin::PublicKey::from_str(
+        let pubkey1 = litecoin::PublicKey::from_str(
             "022b1c8becf58ce0a7db2eaf5666f295c7c8343077e09a0b2666eb51f1cbc08446",
         )
         .unwrap()
@@ -227,7 +229,7 @@ mod tests {
         let mut pk_bytes1 = [0_u8; 33];
         pk_bytes1.copy_from_slice(&pubkey1);
 
-        let pubkey2 = bitcoin::PublicKey::from_str(
+        let pubkey2 = litecoin::PublicKey::from_str(
             "02923ae9757390d24e39439d7bd337f1cbfdce38048ee004afd88e1cea099719bf",
         )
         .unwrap()
@@ -235,7 +237,7 @@ mod tests {
         let mut pk_bytes2 = [0_u8; 33];
         pk_bytes2.copy_from_slice(&pubkey2);
 
-        let pubkey3 = bitcoin::PublicKey::from_str(
+        let pubkey3 = litecoin::PublicKey::from_str(
             "024a9c26d9c395129c8c097a7b255568410ea9d4c093b229b8c96a25f3435bdc14",
         )
         .unwrap()
@@ -253,7 +255,7 @@ mod tests {
             .into_script();
 
         println!("script1: {}", script2.wscript_hash());
-        let address = Address::p2wsh(&script2, bitcoin::network::Network::Regtest);
+        let address = Address::p2wsh(&script2, litecoin::network::Network::Regtest);
 
         println!("script1: {script1}");
         println!("script2: {script2}");
