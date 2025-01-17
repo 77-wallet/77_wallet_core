@@ -180,6 +180,7 @@ impl BtcChain {
             .provider
             .utxos(&params.from.to_string(), self.network)
             .await?;
+
         let mut transaction_builder = params.build_transaction(utxo)?;
 
         let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;

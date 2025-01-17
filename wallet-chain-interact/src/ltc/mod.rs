@@ -11,10 +11,10 @@ pub mod signature;
 // mod tx_build;
 pub mod utxos;
 
-pub struct ParseBtcAddress {
+pub struct ParseLtcAddress {
     pub network: litecoin::Network,
 }
-impl ParseBtcAddress {
+impl ParseLtcAddress {
     pub fn new(network: wallet_types::chain::network::NetworkKind) -> Self {
         let network = network_convert(network);
         Self { network }

@@ -3,7 +3,7 @@ use crate::ltc::{
     provider::Provider,
     signature::{self},
     utxos::UtxoList,
-    ParseBtcAddress,
+    ParseLtcAddress,
 };
 use litecoin::{consensus, transaction::Version, Amount, TxIn};
 use wallet_types::chain::{self, address::r#type::LtcAddressType};
@@ -28,7 +28,7 @@ impl TransferArg {
         address_type: Option<String>,
         network: chain::network::NetworkKind,
     ) -> crate::Result<Self> {
-        let paras = ParseBtcAddress::new(network);
+        let paras = ParseLtcAddress::new(network);
 
         let value = unit::convert_to_u256(value, consts::BTC_DECIMAL)?;
         let value = litecoin::Amount::from_sat(value.to::<u64>());

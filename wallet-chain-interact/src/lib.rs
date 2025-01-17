@@ -16,3 +16,4 @@ pub use errors::*;
 pub mod types;
 
 pub use bitcoin::AddressType;
+pub use litecoin::AddressType as LtcAddressType;

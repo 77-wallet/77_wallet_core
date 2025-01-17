@@ -9,6 +9,8 @@ use super::{
     },
     utxos::{Utxo, UtxoList},
 };
+use protobuf::text_format::ParseError;
+use wallet_utils::error::parse;
 use wallet_utils::Error as WalletError;
 use wallet_utils::SerdeError;
 
@@ -76,50 +78,68 @@ impl Provider {
     pub async fn utxos(
         &self,
         address: &str,
-        network: wallet_types::chain::network::NetworkKind,
+        _network: wallet_types::chain::network::NetworkKind,
     ) -> crate::Result<UtxoList> {
-        match network {
-            wallet_types::chain::network::NetworkKind::Regtest => {
-                let json_str = format!(r#"["start", [{{"desc":"addr({})"}}]]"#, address);
-                let v: Vec<serde_json::Value> = serde_json::from_str(&json_str).unwrap();
-                let params = JsonRpcParams::default().method("scantxoutset").params(v);
+        let utxo_res = self.get_uxto_from_api(address).await?;
+        let mut utxo = Vec::new();
 
-                let result = self.client.invoke_request::<_, ScanOut>(params).await?;
-
-                let mut utxo = result
-                    .unspents
-                    .iter()
-                    .map(Utxo::from)
-                    .collect::<Vec<Utxo>>();
-                utxo.sort_by(|a, b| a.value.cmp(&b.value));
-                Ok(UtxoList(utxo))
-            }
-            _ => {
-                let url = format!("{}/utxo/{}", API_ENPOINT, address);
-
-                let mut params = HashMap::new();
-                params.insert("confirmed", "false");
-
-                let mut utxo = self
-                    .http_client
-                    .get(&url)
-                    .query(params)
-                    .send::<Vec<Utxo>>()
-                    .await?;
-                utxo.sort_by(|a, b| a.value.cmp(&b.value));
-                Ok(UtxoList(utxo))
-            }
+        for u in utxo_res {
+            utxo.push(Utxo {
+                txid: u.txid,
+                vout: u.vout as u32,
+                value: (u
+                    .value
+                    .parse::<f64>()
+                    .map_err(|e| WalletError::Parse(e.into()))?
+                    * 100_000_000.0) as u64,
+                confirmations: u.confirmations as u32,
+                selected: false,
+            });
         }
+        Ok(UtxoList(utxo))
+
+        // match network {
+        //     wallet_types::chain::network::NetworkKind::Regtest => {
+        //         let json_str = format!(r#"["start", [{{"desc":"addr({})"}}]]"#, address);
+        //         let v: Vec<serde_json::Value> = serde_json::from_str(&json_str).unwrap();
+        //         let params = JsonRpcParams::default().method("scantxoutset").params(v);
+
+        //         let result = self.client.invoke_request::<_, ScanOut>(params).await?;
+
+        //         let mut utxo = result
+        //             .unspents
+        //             .iter()
+        //             .map(Utxo::from)
+        //             .collect::<Vec<Utxo>>();
+        //         utxo.sort_by(|a, b| a.value.cmp(&b.value));
+        //         Ok(UtxoList(utxo))
+        //     }
+        //     _ => {
+        //         let url = format!("{}/utxo/{}", API_ENPOINT, address);
+
+        //         let mut params = HashMap::new();
+        //         params.insert("confirmed", "false");
+
+        //         let mut utxo = self
+        //             .http_client
+        //             .get(&url)
+        //             .query(params)
+        //             .send::<Vec<Utxo>>()
+        //             .await?;
+        //         utxo.sort_by(|a, b| a.value.cmp(&b.value));
+        //         Ok(UtxoList(utxo))
+        //     }
+        // }
     }
 
     pub async fn fetch_fee_rate(
         &self,
         blocks: u32,
-        network: wallet_types::chain::network::NetworkKind,
+        _network: wallet_types::chain::network::NetworkKind,
     ) -> crate::Result<bitcoin::Amount> {
-        let res = self.estimate_smart_fee(blocks, network).await?;
+        let res = self.estimate_fee_from_json_rpc(blocks as u64).await?;
         Ok(bitcoin::Amount::from_sat(
-            (res.fee_rate * 100_000.0).round() as u64,
+            (res.feerate * 100_000.0).round() as u64
         ))
     }
 
