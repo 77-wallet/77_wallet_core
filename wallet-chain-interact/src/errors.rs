@@ -25,8 +25,8 @@ pub enum ParseErr {
 pub enum UtxoError {
     #[error("Insufficient balance")]
     InsufficientBalance,
-    #[error("Insufficient fee")]
-    InsufficientFee,
+    #[error("Insufficient fee need: {0}")]
+    InsufficientFee(f64),
     #[error("Exceeds Maximum")]
     ExceedsMaximum,
     #[error("duct tx")]
