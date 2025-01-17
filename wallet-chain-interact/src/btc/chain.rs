@@ -13,7 +13,7 @@ use bitcoin::key::{rand, Keypair, Secp256k1};
 use bitcoin::taproot::TaprootBuilder;
 use bitcoin::{consensus, Address, Amount, ScriptBuf, Transaction};
 use wallet_types::chain::address::r#type::BtcAddressType;
-use wallet_utils::{hex_func, unit};
+use wallet_utils::hex_func;
 
 pub struct BtcChain {
     provider: Provider,
@@ -179,16 +179,18 @@ impl BtcChain {
         Ok(TransferResp::new(tx_hash, Amount::default(), 0))
     }
 
-    // 普通手续费
+    // 手续费
     pub async fn estimate_fee(
         &self,
         params: operations::transfer::TransferArg,
+        multisig_sign_params: Option<MultisigSignParams>,
     ) -> crate::Result<FeeSetting> {
         let utxo = self
             .provider
             .utxos(&params.from.to_string(), self.network)
             .await?;
         let mut transaction_builder = params.build_transaction(utxo)?;
+        transaction_builder.multisig_sign_params = multisig_sign_params;
 
         let fee_rate = params.get_fee_rate(&self.provider, self.network).await?;
 
@@ -197,7 +199,7 @@ impl BtcChain {
         Ok(FeeSetting { fee_rate, size })
     }
 
-    // 多签手续费
+    // 多签手续费(原始交易)
     pub async fn estimate_multisig_fee(
         &self,
         raw_data: &str,
