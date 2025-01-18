@@ -8,8 +8,6 @@ pub enum Error {
     Core(#[from] wallet_core::Error),
     #[error("Utils error: {0}")]
     Utils(#[from] wallet_utils::Error),
-    // #[error("IO error: {0}")]
-    // IO(#[from] std::io::Error),
     #[error("Keypair error: `{0}`")]
     Keypair(#[from] keypair::KeypairError),
     #[error("Types error: `{0}`")]
@@ -18,11 +16,6 @@ pub enum Error {
     Bech32SegwitEncode(#[from] bech32::segwit::EncodeError),
     #[error("Invalid public key length")]
     InvalidPublicKeyLength, // #[error("Net failed: {0:?}")]
-    // Net(#[from] super::common::net::NetError),
-    // #[error("Service error: {0}")]
-    // Service(String),
-    // #[error("Unknown chain code")]
-    // UnknownChainCode,
     #[error("Bitcoin bip32 error: `{0}`")]
     BitcoinBip32(#[from] bitcoin::bip32::Error),
     #[error("Secp256k1 Out of range error: `{0}`")]
@@ -31,6 +24,8 @@ pub enum Error {
     Secp256k1(#[from] secp256k1::Error),
     #[error("HdPath error: `{0}`")]
     HdPath(String),
+    #[error("parase private key error:: `{0}`")]
+    ParasePrivateKey(String),
 }
 
 impl Error {
