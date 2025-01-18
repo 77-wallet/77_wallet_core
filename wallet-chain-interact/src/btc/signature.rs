@@ -630,6 +630,146 @@ pub fn predict_transaction_size(
     Ok(size)
 }
 
+pub fn predict_transaction_size_v1(
+    mut tx: bitcoin::Transaction,
+    address_type: BtcAddressType,
+    mutlsig_sign_params: &Option<MultisigSignParams>,
+) -> crate::Result<usize> {
+    match address_type {
+        // 普通
+        BtcAddressType::P2pkh => {
+            let bytes = [
+                72, 48, 69, 2, 33, 0, 199, 18, 48, 98, 71, 105, 115, 75, 245, 25, 245, 245, 235,
+                127, 226, 94, 203, 186, 149, 42, 87, 185, 68, 252, 65, 245, 220, 187, 178, 212, 30,
+                122, 2, 32, 55, 187, 187, 179, 154, 112, 87, 248, 204, 12, 230, 75, 34, 115, 214,
+                124, 255, 7, 175, 152, 231, 35, 89, 201, 191, 229, 104, 155, 124, 20, 167, 68, 1,
+                33, 2, 43, 28, 139, 236, 245, 140, 224, 167, 219, 46, 175, 86, 102, 242, 149, 199,
+                200, 52, 48, 119, 224, 154, 11, 38, 102, 235, 81, 241, 203, 192, 132, 70,
+            ]
+            .to_vec();
+            let script = ScriptBuf::from_bytes(bytes);
+            for input in tx.input.iter_mut() {
+                input.script_sig = script.clone();
+            }
+        }
+        // 多签
+        BtcAddressType::P2sh => {
+            let multisig_sign = mutlsig_sign_params
+                .as_ref()
+                .ok_or_else(|| crate::Error::Other("Multisig parameters missing".to_string()))?;
+
+            let buf = estimate_p2sh(multisig_sign)?;
+
+            for input in tx.input.iter_mut() {
+                input.script_sig = buf.clone();
+            }
+        }
+        // 普通
+        BtcAddressType::P2wpkh => {
+            let witness_bytes = [
+                &[
+                    0x30, 0x45, 0x02, 0x21, 0x00, 0xc4, 0xfa, 0x6a, 0x60, 0x86, 0x92, 0xa7, 0x25,
+                    0x76, 0xe2, 0xa3, 0xcd, 0x6f, 0x16, 0x45, 0x2b, 0x9a, 0x92, 0x38, 0x28, 0x1b,
+                    0x3a, 0x4d, 0x77, 0x99, 0x37, 0xcc, 0xcf, 0x54, 0x23, 0x9b, 0x88, 0x02, 0x20,
+                    0x48, 0x15, 0x86, 0x40, 0x6d, 0xcf, 0xe7, 0xf9, 0xbb, 0x5f, 0x19, 0x59, 0x37,
+                    0x25, 0x9d, 0x74, 0x69, 0x5e, 0x2e, 0xce, 0x66, 0x82, 0x84, 0xd8, 0x6b, 0x3b,
+                    0xcf, 0xf4, 0x58, 0xd4, 0xbd, 0xa5, 0x01,
+                ][..],
+                &[
+                    0x02, 0x2b, 0x1c, 0x8b, 0xec, 0xf5, 0x8c, 0xe0, 0xa7, 0xdb, 0x2e, 0xaf, 0x56,
+                    0x66, 0xf2, 0x95, 0xc7, 0xc8, 0x34, 0x30, 0x77, 0xe0, 0x9a, 0x0b, 0x26, 0x66,
+                    0xeb, 0x51, 0xf1, 0xcb, 0xc0, 0x84, 0x46,
+                ][..],
+            ];
+            let witness = Witness::from_slice(witness_bytes.as_slice());
+            for input in tx.input.iter_mut() {
+                input.witness = witness.clone();
+            }
+        }
+        // 多签
+        BtcAddressType::P2wsh => {
+            let multisig_sign = mutlsig_sign_params
+                .as_ref()
+                .ok_or_else(|| crate::Error::Other("Multisig parameters missing".to_string()))?;
+
+            let witness = estimate_p2wsh(multisig_sign)?;
+            for input in tx.input.iter_mut() {
+                input.witness = witness.clone();
+            }
+        }
+        // 普通
+        BtcAddressType::P2tr => {
+            let witness_bytes = [[
+                0x0e, 0x30, 0xa4, 0x02, 0xce, 0x97, 0x5a, 0x9e, 0x97, 0xb7, 0x82, 0x2e, 0x0a, 0xff,
+                0xcf, 0x0e, 0x1a, 0xde, 0xef, 0x2c, 0x10, 0x78, 0x9b, 0xa7, 0xa7, 0x5d, 0xd7, 0xd0,
+                0x32, 0x3d, 0x21, 0x21, 0x91, 0x00, 0xc0, 0x32, 0x85, 0x41, 0xdb, 0x64, 0x52, 0xe8,
+                0xbe, 0xf9, 0x70, 0xf3, 0x02, 0x24, 0x7f, 0x67, 0x33, 0x58, 0x15, 0xa2, 0x15, 0xbe,
+                0x14, 0xf1, 0x26, 0x1f, 0x54, 0x56, 0x8c, 0x8e,
+            ]];
+            let witness = Witness::from_slice(witness_bytes.as_slice());
+            for input in tx.input.iter_mut() {
+                input.witness = witness.clone();
+            }
+        }
+        // 普通
+        BtcAddressType::P2shWpkh => {
+            let bytes = [
+                22, 0, 20, 235, 55, 162, 228, 166, 224, 55, 151, 185, 230, 245, 21, 15, 171, 242,
+                160, 164, 229, 103, 81,
+            ]
+            .to_vec();
+            let script = ScriptBuf::from_bytes(bytes);
+
+            let witness_bytes = [
+                &[
+                    0x30, 0x45, 0x02, 0x21, 0x00, 0xf5, 0x5b, 0x7c, 0x11, 0xc9, 0x06, 0x87, 0x2c,
+                    0xe6, 0x7b, 0xcc, 0xff, 0xc9, 0xac, 0xe1, 0xc2, 0x19, 0xcf, 0xc6, 0x53, 0xbc,
+                    0x6f, 0x86, 0xee, 0x72, 0x17, 0x5d, 0x31, 0x56, 0x81, 0x51, 0x38, 0x02, 0x20,
+                    0x10, 0xc4, 0x81, 0xdb, 0x3c, 0xbf, 0x56, 0x21, 0x78, 0x0d, 0x39, 0x57, 0xf2,
+                    0xba, 0xb5, 0x69, 0xc6, 0x97, 0x5d, 0x76, 0xe3, 0x51, 0x7e, 0xb0, 0x9c, 0xc7,
+                    0x71, 0xac, 0xfe, 0x2a, 0x1d, 0x81, 0x01,
+                ][..],
+                &[
+                    0x02, 0x2b, 0x1c, 0x8b, 0xec, 0xf5, 0x8c, 0xe0, 0xa7, 0xdb, 0x2e, 0xaf, 0x56,
+                    0x66, 0xf2, 0x95, 0xc7, 0xc8, 0x34, 0x30, 0x77, 0xe0, 0x9a, 0x0b, 0x26, 0x66,
+                    0xeb, 0x51, 0xf1, 0xcb, 0xc0, 0x84, 0x46,
+                ][..],
+            ];
+            let witness = Witness::from_slice(witness_bytes.as_slice());
+            for input in tx.input.iter_mut() {
+                input.script_sig = script.clone();
+                input.witness = witness.clone();
+            }
+        }
+        // 多签
+        BtcAddressType::P2shWsh => {
+            let multisig_sign = mutlsig_sign_params
+                .as_ref()
+                .ok_or_else(|| crate::Error::Other("Multisig parameters missing".to_string()))?;
+
+            let (witness, script) = estimate_p2sh_wsh(multisig_sign)?;
+
+            for input in tx.input.iter_mut() {
+                input.script_sig = script.clone();
+                input.witness = witness.clone();
+            }
+        }
+        // 多签
+        BtcAddressType::P2trSh => {
+            let multisig_sign = mutlsig_sign_params
+                .as_ref()
+                .ok_or_else(|| crate::Error::Other("Multisig parameters missing".to_string()))?;
+            let witness = estimate_p2tr_sh(multisig_sign)?;
+
+            for input in tx.input.iter_mut() {
+                input.witness = witness.clone();
+            }
+        }
+    }
+
+    Ok(tx.vsize())
+}
+
 // 默认使用签名的格式
 pub const ESTIMATE_SIGN_BYTES: [u8; 72] = [
     48, 69, 2, 33, 0, 167, 108, 196, 128, 152, 212, 181, 18, 178, 16, 251, 53, 222, 24, 65, 210,
