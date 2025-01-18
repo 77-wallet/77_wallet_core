@@ -87,10 +87,11 @@ pub fn generate_address_by_seckey(
 ) -> Result<String, crate::Error> {
     let secp = Secp256k1::new();
 
-    let pk = PrivateKey::from_wif(&seckey).unwrap();
+    let pk =
+        PrivateKey::from_wif(&seckey).map_err(|e| crate::Error::ParasePrivateKey(e.to_string()))?;
     let b = pk.to_bytes();
 
-    let keypair = Keypair::from_seckey_slice(&secp, b.as_ref()).unwrap();
+    let keypair = Keypair::from_seckey_slice(&secp, b.as_ref())?;
 
     generate_address_with_xpriv(&address_type, &secp, keypair, network)
 }
