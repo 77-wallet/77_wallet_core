@@ -1,8 +1,11 @@
 use std::str::FromStr as _;
 
-use litecoin::hashes::{Hash as _, HashEngine as _};
+use litecoin::{
+    hashes::{Hash as _, HashEngine as _},
+    PrivateKey,
+};
 use ripemd160::Digest as _;
-use secp256k1::Secp256k1;
+use secp256k1::{Keypair, Secp256k1};
 use wallet_types::chain::{address::r#type::LtcAddressType, chain, network};
 
 #[derive(Clone)]
@@ -76,6 +79,21 @@ pub(crate) fn generate_address(
     let xpriv = generate_xpriv(seed.to_vec(), derivation_path, &secp)?;
     let keypair = xpriv.to_keypair(&secp);
     generate_address_with_xpriv(address_type, &secp, keypair, network)
+}
+
+pub fn generate_address_by_seckey(
+    address_type: &LtcAddressType,
+    network: network::NetworkKind,
+    seckey: String,
+) -> Result<String, crate::Error> {
+    let secp = Secp256k1::new();
+
+    let pk = PrivateKey::from_wif(&seckey).unwrap();
+    let b = pk.to_bytes();
+
+    let keypair = Keypair::from_seckey_slice(&secp, b.as_ref()).unwrap();
+
+    generate_address_with_xpriv(&address_type, &secp, keypair, network)
 }
 
 pub fn generate_address_with_xpriv(

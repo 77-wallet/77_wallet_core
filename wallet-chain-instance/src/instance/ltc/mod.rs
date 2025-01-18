@@ -1,4 +1,5 @@
 pub(crate) mod address;
+pub use address::generate_address_by_seckey;
 mod test;
 
 use std::str::FromStr;

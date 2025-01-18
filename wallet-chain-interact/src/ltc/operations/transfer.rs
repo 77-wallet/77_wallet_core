@@ -206,7 +206,7 @@ impl TransferBuilder {
         let transaction_fee = fee_rate * size as u64;
 
         if total_input < transaction_fee {
-            return Err(crate::UtxoError::InsufficientFee.into());
+            return Err(crate::UtxoError::InsufficientFee(transaction_fee.to_btc()).into());
         }
 
         // add spend
@@ -242,13 +242,13 @@ impl TransferBuilder {
             let additional_required = required_amount - total_input;
 
             // The total additional input
-            let mut additional_input = litecoin::Amount::from_sat(0);
+            let mut additional_input = bitcoin::Amount::from_sat(0);
 
             // UTXOs that have not been selected
             let available = self.utxo.available_utxo();
 
             for utxo in available {
-                additional_input += litecoin::Amount::from_sat(utxo.value);
+                additional_input += bitcoin::Amount::from_sat(utxo.value);
 
                 self.transaction.input.push(TxIn::from(utxo.clone()));
                 has_new_input = true;
@@ -264,7 +264,7 @@ impl TransferBuilder {
 
             // If all UTXOs have been iterated and there is still not enough money
             if additional_input < additional_required {
-                return Err(crate::UtxoError::InsufficientFee.into());
+                return Err(crate::UtxoError::InsufficientFee(additional_required.to_btc()).into());
             }
         }
         Ok((has_new_input, required_amount))
