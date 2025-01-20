@@ -112,7 +112,10 @@ cbc = "0.1"
 md5 = "0.7.0"
 uuid = { version = "1.0", features = ["serde", "v4"] }
 coins-bip39 = "0.8.7"
+# coins-bip39 = { path = "../coins/crates/bip39" }
 coins-bip32 = "0.8.7"
+# coins-bip32 = { path = "../coins/crates/bip32" }
+
 
 rand = "0.8.5"
 
