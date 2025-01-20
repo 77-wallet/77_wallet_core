@@ -25,7 +25,7 @@ impl TransferArg {
         from: &str,
         to: &str,
         value: &str,
-        address_type: Option<String>,
+        address_type: LtcAddressType,
         network: chain::network::NetworkKind,
     ) -> crate::Result<Self> {
         let paras = ParseLtcAddress::new(network);
@@ -33,7 +33,7 @@ impl TransferArg {
         let value = unit::convert_to_u256(value, consts::LTC_DECIMAL)?;
         let value = litecoin::Amount::from_sat(value.to::<u64>());
 
-        let address_type = LtcAddressType::try_from(address_type)?;
+        // let address_type = LtcAddressType::try_from(address_type)?;
         Ok(Self {
             from: paras.parse_address(from)?,
             to: paras.parse_address(to)?,
@@ -314,6 +314,8 @@ impl TransferBuilder {
 
 #[cfg(test)]
 mod tests {
+    use wallet_types::chain::address::r#type::LtcAddressType;
+
     use super::TransferArg;
     use crate::ltc::utxos::{Utxo, UtxoList};
 
@@ -324,7 +326,7 @@ mod tests {
         let to = "bcrt1qjx3d2sfu5v0jykpzs3a668nf26cgh9awsh7ek9";
         let value = "0.0051";
         let network = wallet_types::chain::network::NetworkKind::Regtest;
-        let params = TransferArg::new(from, to, value, Some("p2pkh".to_string()), network).unwrap();
+        let params = TransferArg::new(from, to, value, LtcAddressType::P2pkh, network).unwrap();
 
         let mut transaction_build = params.build_transaction(utxos()).unwrap();
 
@@ -346,7 +348,7 @@ mod tests {
         let to = "bcrt1qjx3d2sfu5v0jykpzs3a668nf26cgh9awsh7ek9";
         let value = "0.0051";
         let network = wallet_types::chain::network::NetworkKind::Regtest;
-        let params = TransferArg::new(from, to, value, Some("p2pkh".to_string()), network).unwrap();
+        let params = TransferArg::new(from, to, value, LtcAddressType::P2pkh, network).unwrap();
 
         let mut transaction_build = params.build_transaction(utxos()).unwrap();
 

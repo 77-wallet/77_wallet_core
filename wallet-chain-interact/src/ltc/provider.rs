@@ -88,8 +88,7 @@ impl Provider {
                 value: (u
                     .value
                     .parse::<f64>()
-                    .map_err(|e| WalletError::Parse(e.into()))?
-                    * 100_000_000.0) as u64,
+                    .map_err(|e| WalletError::Parse(e.into()))?) as u64,
                 confirmations: u.confirmations as u32,
                 selected: false,
             });
