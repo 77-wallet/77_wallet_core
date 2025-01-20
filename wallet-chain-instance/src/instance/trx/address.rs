@@ -28,7 +28,7 @@ mod test {
             "member diesel marine culture boat differ spirit patient drum fix chunk sadness";
         let password = "1234qwer";
         let (key, _) =
-            wallet_core::xpriv::phrase_to_master_key(language, &phrase, password).unwrap();
+            wallet_core::xpriv::generate_master_key(language, &phrase, password).unwrap();
 
         // let i: i32 = -1221;
         // let index = if i < 0 {

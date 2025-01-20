@@ -16,3 +16,5 @@ serde_json = { workspace = true }
 coins-bip32 = { workspace = true }
 coins-bip39 = { workspace = true }
 rand = { workspace = true }
+pbkdf2 = { workspace = true }
+hmac.workspace = true

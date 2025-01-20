@@ -69,8 +69,7 @@ impl KeystoreApi {
         salt: &str,
         address: wallet_chain_instance::instance::Address,
     ) -> Result<(), crate::Error> {
-        let (master_key, _) =
-            wallet_core::xpriv::phrase_to_master_key(language_code, phrase, salt)?;
+        let (master_key, _) = wallet_core::xpriv::generate_master_key(language_code, phrase, salt)?;
         let signingkey: &coins_bip32::ecdsa::SigningKey = master_key.as_ref();
         let pkey = signingkey.to_bytes();
 
@@ -177,7 +176,7 @@ impl KeystoreApi {
         salt: &str,
     ) -> Result<RootInfo, crate::Error> {
         let (master_key, seed) =
-            wallet_core::xpriv::phrase_to_master_key(language_code, phrase, salt)?;
+            wallet_core::xpriv::generate_master_key(language_code, phrase, salt)?;
         let signingkey: &coins_bip32::ecdsa::SigningKey = master_key.as_ref();
         let private_key = signingkey.to_bytes();
         let address = alloy::signers::utils::secret_key_to_address(signingkey);
