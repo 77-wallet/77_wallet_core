@@ -1,5 +1,5 @@
 use crate::ltc::{
-    consts::{self, EXPEND_FEE_RATE, MAX_FEE_RATE},
+    consts::{self, EXPEND_FEE_RATE},
     provider::Provider,
     signature::{self},
     utxos::UtxoList,
@@ -54,23 +54,14 @@ impl TransferArg {
     pub async fn get_fee_rate(
         &self,
         provider: &Provider,
-        network: wallet_types::chain::network::NetworkKind,
+        _network: wallet_types::chain::network::NetworkKind,
     ) -> crate::Result<litecoin::Amount> {
         if let Some(fee_rate) = self.fee_rate {
             Ok(litecoin::Amount::from_sat(fee_rate))
         } else {
-            let fetched_fee_rate = provider
-                .fetch_fee_rate(consts::FEE_RATE as u32, network)
-                .await?;
+            let fetched_fee_rate = provider.fetch_fee_rate(consts::FEE_RATE as u32).await?;
 
-            // 扩大推荐费用,加快打包
-            let fee_rate = fetched_fee_rate * EXPEND_FEE_RATE;
-            let max_fee_rate = Amount::from_sat(MAX_FEE_RATE);
-            if fee_rate > max_fee_rate {
-                return Err(crate::UtxoError::ExceedsMaxFeeRate.into());
-            }
-
-            Ok(fee_rate)
+            Ok(fetched_fee_rate)
         }
     }
 }
