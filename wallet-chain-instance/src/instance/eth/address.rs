@@ -33,7 +33,7 @@ mod test {
         let phrase = "fan swamp loop mesh enact tennis priority artefact canal hour skull joy";
         let password = "123";
         let (key, _) =
-            wallet_core::xpriv::phrase_to_master_key(language, &phrase, password).unwrap();
+            wallet_core::xpriv::generate_master_key(language, &phrase, password).unwrap();
 
         let i: i32 = -1221;
         let index = if i < 0 {
