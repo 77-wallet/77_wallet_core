@@ -1,18 +1,14 @@
 use super::{
+    consts::{EXPEND_FEE_RATE, MAX_FEE_RATE},
     protocol::{
         other::FeeRate,
-        transaction::{
-            ApiBlock, ApiTransaction, ApiUtxo, EstimateFee, JsonRpcBlock, JsonRpcTx, LtcJsonRpcReq,
-            LtcJsonRpcRes, TransactionUtxo, ValidateAddress,
-        },
+        transaction::{ApiBlock, ApiTransaction, JsonRpcTx, TransactionUtxo, ValidateAddress},
         BlockHeader, OutInfo,
     },
     utxos::{Utxo, UtxoList},
 };
-use wallet_utils::Error as WalletError;
-use wallet_utils::SerdeError;
 
-use serde_json::{from_value, json};
+use serde_json::json;
 use std::collections::HashMap;
 use wallet_transport::{
     client::{HttpClient, RpcClient},
@@ -34,7 +30,6 @@ pub struct RpcAuth {
 pub struct Provider {
     client: RpcClient,
     http_client: HttpClient,
-    api_client: HttpClient,
 }
 
 pub const API_ENPOINT: &'static str = "";
@@ -51,25 +46,17 @@ impl Provider {
             RpcClient::new(&config.rpc_url, header_opt.clone(), timeout)?
         };
 
-        let mut header_map_http = header_opt.clone().unwrap_or_else(HashMap::new);
-        if let Some(access_key) = config.access_key {
-            header_map_http.insert("access-key".to_owned(), access_key);
-        }
         let mut header_map_api = header_opt.unwrap_or_else(HashMap::new);
         if let Some(api_key) = config.http_api_key {
             header_map_api.insert("api-key".to_owned(), api_key);
         }
 
-        let header_map_http = (!header_map_http.is_empty()).then_some(header_map_http);
-        let http_client = HttpClient::new(&config.rpc_url, header_map_http, timeout)?;
-
         let header_map_api = (!header_map_api.is_empty()).then_some(header_map_api);
-        let api_client = HttpClient::new(&config.http_url, header_map_api, timeout)?;
+        let http_client = HttpClient::new(&config.http_url, header_map_api, timeout)?;
 
         Ok(Self {
             client,
             http_client,
-            api_client,
         })
     }
 
@@ -78,90 +65,26 @@ impl Provider {
         address: &str,
         _network: wallet_types::chain::network::NetworkKind,
     ) -> crate::Result<UtxoList> {
-        let utxo_res = self.get_uxto_from_api(address).await?;
-        let mut utxo = Vec::new();
+        let mut utxo = self.get_uxto_from_api(address).await?;
 
-        for u in utxo_res {
-            utxo.push(Utxo {
-                txid: u.txid,
-                vout: u.vout as u32,
-                value: (u
-                    .value
-                    .parse::<f64>()
-                    .map_err(|e| WalletError::Parse(e.into()))?) as u64,
-                confirmations: u.confirmations as u32,
-                selected: false,
-            });
-        }
+        utxo.sort_by(|a, b| a.value.cmp(&b.value));
+
         Ok(UtxoList(utxo))
-
-        // match network {
-        //     wallet_types::chain::network::NetworkKind::Regtest => {
-        //         let json_str = format!(r#"["start", [{{"desc":"addr({})"}}]]"#, address);
-        //         let v: Vec<serde_json::Value> = serde_json::from_str(&json_str).unwrap();
-        //         let params = JsonRpcParams::default().method("scantxoutset").params(v);
-
-        //         let result = self.client.invoke_request::<_, ScanOut>(params).await?;
-
-        //         let mut utxo = result
-        //             .unspents
-        //             .iter()
-        //             .map(Utxo::from)
-        //             .collect::<Vec<Utxo>>();
-        //         utxo.sort_by(|a, b| a.value.cmp(&b.value));
-        //         Ok(UtxoList(utxo))
-        //     }
-        //     _ => {
-        //         let url = format!("{}/utxo/{}", API_ENPOINT, address);
-
-        //         let mut params = HashMap::new();
-        //         params.insert("confirmed", "false");
-
-        //         let mut utxo = self
-        //             .http_client
-        //             .get(&url)
-        //             .query(params)
-        //             .send::<Vec<Utxo>>()
-        //             .await?;
-        //         utxo.sort_by(|a, b| a.value.cmp(&b.value));
-        //         Ok(UtxoList(utxo))
-        //     }
-        // }
     }
 
-    pub async fn fetch_fee_rate(
-        &self,
-        blocks: u32,
-        _network: wallet_types::chain::network::NetworkKind,
-    ) -> crate::Result<litecoin::Amount> {
-        let res = self.estimate_fee_from_json_rpc(blocks as u64).await?;
-        Ok(litecoin::Amount::from_sat(
-            (res.feerate * 100_000.0).round() as u64,
-        ))
-    }
+    pub async fn fetch_fee_rate(&self, blocks: u32) -> crate::Result<litecoin::Amount> {
+        let res = self.estimate_fee(blocks as u64).await?;
 
-    pub async fn estimate_smart_fee(
-        &self,
-        blocks: u32,
-        network: wallet_types::chain::network::NetworkKind,
-    ) -> crate::Result<FeeRate> {
-        match network {
-            wallet_types::chain::network::NetworkKind::Regtest => {
-                // 本地回归测试网络写死
-                Ok(FeeRate {
-                    fee_rate: 0.000048779,
-                    blocks: 2,
-                })
-            }
-            _ => {
-                let params = JsonRpcParams::default()
-                    .method("estimatesmartfee")
-                    .params(vec![blocks]);
+        let fee_rate = bitcoin::Amount::from_sat((res.fee_rate * 100_000.0).round() as u64);
 
-                let reuslt = self.client.invoke_request::<_, FeeRate>(params).await?;
-                Ok(reuslt)
-            }
+        // 扩大推荐费用,加快打包
+        let fee_rate = fee_rate * EXPEND_FEE_RATE;
+        let max_fee_rate = litecoin::Amount::from_sat(MAX_FEE_RATE);
+        if fee_rate > max_fee_rate {
+            return Err(crate::UtxoError::ExceedsMaxFeeRate.into());
         }
+
+        Ok(fee_rate)
     }
 
     pub async fn send_raw_transaction(&self, hex_raw: &str) -> crate::Result<String> {
@@ -205,142 +128,61 @@ impl Provider {
         Ok(self.client.invoke_request::<_, T>(params).await?)
     }
 
+    // 1
     pub async fn block_heigh(&self) -> crate::Result<u64> {
         let params = JsonRpcParams::<Vec<String>>::default().method("getblockcount");
 
         Ok(self.client.invoke_request::<_, u64>(params).await?)
     }
 
+    // 2
     pub async fn get_transaction_from_api(&self, hash: &str) -> crate::Result<ApiTransaction> {
         let url = format!("{}/tx/{}", API_ENPOINT, hash);
-        let res = self.http_client.get_request::<ApiTransaction>(&url).await?;
-        Ok(res)
+
+        Ok(self.http_client.get_request::<ApiTransaction>(&url).await?)
     }
 
-    pub async fn get_block_from_api(&self, height: u64) -> crate::Result<ApiBlock> {
-        let url = format!("block/{}", height);
-        let res = self.api_client.get_request::<ApiBlock>(&url).await?;
+    // 2
+    pub async fn get_block_from_api(&self, height: u64, page: u32) -> crate::Result<ApiBlock> {
+        let url = format!("{}/block/{}?page={}", API_ENPOINT, height, page);
+        let res = self.http_client.get_request::<ApiBlock>(&url).await?;
         Ok(res)
     }
-    pub async fn get_uxto_from_api(&self, addr: &str) -> crate::Result<Vec<ApiUtxo>> {
-        let url = format!("utxo/{}", addr);
-        let res = self.api_client.get_request::<Vec<ApiUtxo>>(&url).await?;
-        Ok(res)
+    pub async fn get_uxto_from_api(&self, addr: &str) -> crate::Result<Vec<Utxo>> {
+        let url = format!("{}/utxo/{}", API_ENPOINT, addr);
+
+        Ok(self.http_client.get_request::<Vec<Utxo>>(&url).await?)
     }
 
     pub async fn get_transaction_from_json_rpc(&self, hash: &str) -> crate::Result<JsonRpcTx> {
-        let payload = LtcJsonRpcReq {
-            jsonrpc: "2.0".to_string(),
-            id: "1".to_string(),
-            method: "getrawtransaction".to_string(),
-            params: vec![json!(hash), json!(true)],
-        };
-        let res = self
-            .http_client
-            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
-            .await?;
+        let params = JsonRpcParams::default()
+            .params(vec![json!(hash), json!(true)])
+            .method("getrawtransaction");
 
-        let res = from_value(res.result.clone()).map_err(|e| {
-            WalletError::Serde(SerdeError::Deserialize(format!(
-                "error = {} value = {}",
-                e, res.result
-            )))
-        })?;
-
-        Ok(res)
+        Ok(self.client.invoke_request::<_, JsonRpcTx>(params).await?)
     }
 
-    pub async fn get_block_hash_from_json_rpc(&self, height: u32) -> crate::Result<String> {
-        let payload = LtcJsonRpcReq {
-            jsonrpc: "2.0".to_string(),
-            id: "1".to_string(),
-            method: "getblockhash".to_string(),
-            params: vec![json!(height)],
-        };
-        let res = self
-            .http_client
-            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
-            .await?;
+    // 获取原始的费率
+    pub async fn estimate_fee(&self, blocks: u64) -> crate::Result<FeeRate> {
+        let params = JsonRpcParams::default()
+            .method("estimatesmartfee")
+            .params(vec![blocks]);
 
-        let res = from_value(res.result.clone()).map_err(|e| {
-            WalletError::Serde(SerdeError::Deserialize(format!(
-                "error = {} value = {}",
-                e, res.result
-            )))
-        })?;
-
-        Ok(res)
-    }
-
-    pub async fn get_block_from_json_rpc(&self, hash: &str) -> crate::Result<JsonRpcBlock> {
-        let payload = LtcJsonRpcReq {
-            jsonrpc: "2.0".to_string(),
-            id: "1".to_string(),
-            method: "getblock".to_string(),
-            params: vec![json!(hash), json!(2)],
-        };
-
-        let res = self
-            .http_client
-            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
-            .await?;
-
-        tracing::debug!("block result: {:?}", res.result.to_string());
-
-        let res = from_value(res.result.clone()).map_err(|e| {
-            WalletError::Serde(SerdeError::Deserialize(format!(
-                "error = {} value = {}",
-                e, res.result
-            )))
-        })?;
-        Ok(res)
-    }
-
-    pub async fn estimate_fee_from_json_rpc(&self, blocks: u64) -> crate::Result<EstimateFee> {
-        let payload = LtcJsonRpcReq {
-            jsonrpc: "2.0".to_string(),
-            id: "1".to_string(),
-            method: "estimatesmartfee".to_string(),
-            params: vec![json!(blocks)],
-        };
-        let res = self
-            .http_client
-            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
-            .await?;
-
-        let res = from_value(res.result.clone()).map_err(|e| {
-            WalletError::Serde(SerdeError::Deserialize(format!(
-                "error = {} value = {}",
-                e, res.result
-            )))
-        })?;
-
-        Ok(res)
+        Ok(self.client.invoke_request::<_, FeeRate>(params).await?)
     }
 
     pub async fn validate_address_from_json_rpc(
         &self,
         addr: &str,
     ) -> crate::Result<ValidateAddress> {
-        let payload = LtcJsonRpcReq {
-            jsonrpc: "2.0".to_string(),
-            id: "1".to_string(),
-            method: "validateaddress".to_string(),
-            params: vec![json!(addr)],
-        };
-        let res = self
-            .http_client
-            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
-            .await?;
+        let params = JsonRpcParams::default()
+            .method("validateaddress")
+            .params(vec![addr]);
 
-        let res = from_value(res.result.clone()).map_err(|e| {
-            WalletError::Serde(SerdeError::Deserialize(format!(
-                "error = {} value = {}",
-                e, res.result
-            )))
-        })?;
-
-        Ok(res)
+        Ok(self
+            .client
+            .invoke_request::<_, ValidateAddress>(params)
+            .await?)
     }
 
     pub async fn create_raw_transaction_from_json_rpc(
@@ -351,24 +193,10 @@ impl Provider {
     ) -> crate::Result<String> {
         let addr_value = HashMap::from([(addr, value)]);
 
-        let payload = LtcJsonRpcReq {
-            jsonrpc: "2.0".to_string(),
-            id: "1".to_string(),
-            method: "createrawtransaction".to_string(),
-            params: vec![json!(txs), json!(addr_value)],
-        };
-        let res = self
-            .http_client
-            .post_request::<LtcJsonRpcReq, LtcJsonRpcRes>("", payload)
-            .await?;
+        let params = JsonRpcParams::default()
+            .method("createrawtransaction")
+            .params(vec![json!(txs), json!(addr_value)]);
 
-        let res = from_value(res.result.clone()).map_err(|e| {
-            WalletError::Serde(SerdeError::Deserialize(format!(
-                "error = {} value = {}",
-                e, res.result
-            )))
-        })?;
-
-        Ok(res)
+        Ok(self.client.invoke_request::<_, String>(params).await?)
     }
 }

@@ -1,7 +1,6 @@
-use std::fmt::Debug;
-
 use crate::ltc::{consts::LTC_DECIMAL, utxos::Utxo};
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use wallet_types::chain::address::r#type::LtcAddressType;
 use wallet_utils::unit;
 
@@ -21,19 +20,6 @@ pub struct Transaction {
     pub confirmations: u32,
     pub time: u32,
     pub blocktime: u32,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct SignTransaction {
-    pub txid: String,
-    pub hash: String,
-    pub version: u32,
-    pub size: u32,
-    pub vsize: u32,
-    pub weight: u32,
-    pub locktime: u32,
-    pub vin: Vec<Vin>,
-    pub vout: Vec<Vout>,
 }
 
 impl Transaction {
@@ -147,21 +133,6 @@ pub struct JsonRpcScriptPubKey {
     pub addresses: Option<Vec<String>>,
 }
 
-// #[derive(Deserialize, Debug)]
-// #[serde(rename_all = "camelCase")]
-// pub struct JsonRpcTx {
-//     pub hash: String,
-//     pub hex: String,
-//     pub locktime: i32,
-//     pub size: i32,
-//     pub txid: String,
-//     pub version: i32,
-//     pub vin: Vec<JsonRpcVin>,
-//     pub vout: Vec<JsonRpcVout>,
-//     pub vsize: i32,
-//     pub weight: i32,
-// }
-
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct JsonRpcTx {
@@ -210,14 +181,7 @@ pub struct JsonRpcBlock {
 #[serde(rename_all = "camelCase")]
 pub struct TransactionUtxo {
     pub txid: String,
-    pub vout: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct EstimateFee {
-    pub feerate: f64,
-    pub blocks: u64,
+    pub vout: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -293,16 +257,6 @@ pub struct ApiTransaction {
     pub value_in: String,
     pub fees: String,
     pub hex: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ApiUtxo {
-    pub txid: String,
-    pub vout: u64,
-    pub value: String,
-    pub height: u64,
-    pub confirmations: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
