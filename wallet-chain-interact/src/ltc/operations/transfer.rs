@@ -168,6 +168,7 @@ impl TransferBuilder {
                 self.transaction.clone(),
                 change_address.clone(),
                 address_type,
+                &None,
             )?;
 
             let res = self.set_transaction_fee(fee_rate, size, value)?;
@@ -191,6 +192,7 @@ impl TransferBuilder {
             self.transaction.clone(),
             spend_address.clone(),
             address_type,
+            &None,
         )?;
 
         let total_input = self.utxo.total_input_amount();
