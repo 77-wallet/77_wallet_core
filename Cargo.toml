@@ -37,7 +37,7 @@ wallet-keystore = { version = "0.1.0", default-features = false, path = "wallet-
 wallet-utils = { version = "0.1.0", default-features = false, path = "wallet-utils" }
 wallet-types = { version = "0.1.0", default-features = false, path = "wallet-types" }
 
-litecoin = { git = "http://git.ai.com/peter/rust-litecoin.git", package = "bitcoin", rev = "b01526d4e0ed01bbc85891af54b7f80329327c3b" }
+litecoin = { git = "http://git.ai.com/peter/rust-litecoin.git", package = "bitcoin", branch = "master" }
 
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # time
