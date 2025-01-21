@@ -28,6 +28,8 @@ pub enum Error {
     HdPath(String),
     #[error("parase private key error:: `{0}`")]
     ParasePrivateKey(String),
+    #[error("private key error {0}")]
+    PriKey(String),
 }
 
 impl Error {
