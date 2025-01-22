@@ -36,6 +36,8 @@ pub struct TokenPriceChangeBody {
     pub day_change_amount: Option<f64>,
     // 精度
     pub unit: Option<u8>,
+    // 代币别名
+    pub aname: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
