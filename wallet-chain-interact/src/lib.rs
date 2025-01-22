@@ -18,5 +18,5 @@ pub use errors::*;
 pub mod types;
 
 pub use bitcoin::AddressType;
+pub use dogcoin::AddressType as DoAddressType;
 pub use litecoin::AddressType as LtcAddressType;
-pub use litecoin::AddressType as DoAddressType;

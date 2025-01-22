@@ -16,6 +16,7 @@ anychain-tron = "0.2.3"
 solana-sdk = { workspace = true }
 bitcoin = { workspace = true }
 litecoin = { workspace = true }
+dogcoin = { workspace = true }
 
 libsecp256k1 = { workspace = true }
 secp256k1 = { version = "0.29" }

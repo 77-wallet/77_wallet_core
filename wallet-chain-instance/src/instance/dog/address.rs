@@ -1,6 +1,6 @@
 use std::str::FromStr as _;
 
-use litecoin::{
+use dogcoin::{
     hashes::{Hash as _, HashEngine as _},
     PrivateKey,
 };
@@ -23,7 +23,7 @@ impl wallet_core::address::GenAddress for DogGenAddress {
     {
         let secret_key = secp256k1::SecretKey::from_slice(pkey)?;
 
-        let secp = litecoin::key::Secp256k1::new();
+        let secp = dogcoin::key::Secp256k1::new();
         let keypair = secp256k1::Keypair::from_secret_key(&secp, &secret_key);
 
         let network = self.network;
@@ -40,14 +40,14 @@ impl wallet_core::address::GenAddress for DogGenAddress {
 fn ripemd160_sha256(public_key: &[u8]) -> Vec<u8> {
     let mut hasher = ripemd160::Ripemd160::new();
 
-    let hash_of_bytes = litecoin::hashes::sha256::Hash::hash(public_key);
+    let hash_of_bytes = dogcoin::hashes::sha256::Hash::hash(public_key);
     // process input message
     hasher.update(hash_of_bytes);
     hasher.finalize().to_vec()
 }
 
 fn sha256_twice(raw: &[u8]) -> Vec<u8> {
-    let hash = &litecoin::hashes::sha256::Hash::hash(raw).hash_again();
+    let hash = &dogcoin::hashes::sha256::Hash::hash(raw).hash_again();
     hash.to_byte_array()[..4].to_vec()
 }
 
@@ -100,7 +100,7 @@ pub fn generate_address_by_seckey(
 pub fn generate_address_with_xpriv(
     address_type: &DogAddressType,
     secp: &Secp256k1<secp256k1::All>,
-    // xpriv: litecoin::bip32::Xpriv,
+    // xpriv: dogcoin::bip32::Xpriv,
     keypair: secp256k1::Keypair,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
@@ -118,7 +118,7 @@ pub fn generate_address_with_xpriv(
 }
 
 pub(crate) fn legacy(
-    // xpriv: litecoin::bip32::Xpriv,
+    // xpriv: dogcoin::bip32::Xpriv,
     keypair: secp256k1::Keypair,
     // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
@@ -141,8 +141,8 @@ fn get_bech32_hrp(network: network::NetworkKind) -> Result<bech32::Hrp, crate::E
 /// 获取 P2SH 的版本前缀根据网络类型
 fn get_p2sh_version(network: network::NetworkKind) -> u8 {
     match network {
-        network::NetworkKind::Mainnet => 0x32, // P2SH mainnet
-        network::NetworkKind::Testnet => 0x3a, // P2SH testnet/regtest
+        network::NetworkKind::Mainnet => 0x16, // P2SH mainnet
+        network::NetworkKind::Testnet => 0xC4, // P2SH testnet/regtest
         network::NetworkKind::Regtest => 0xC4, // P2SH testnet/regtest
     }
 }
@@ -150,8 +150,8 @@ fn get_p2sh_version(network: network::NetworkKind) -> u8 {
 /// 获取 P2PKH 的版本前缀根据网络类型
 fn get_p2pkh_version(network: network::NetworkKind) -> u8 {
     match network {
-        network::NetworkKind::Mainnet => 0x30, // P2PKH mainnet
-        network::NetworkKind::Testnet => 0x6f, // P2PKH testnet/regtest
+        network::NetworkKind::Mainnet => 0x1E, // P2PKH mainnet
+        network::NetworkKind::Testnet => 0x71, // P2PKH testnet/regtest
         network::NetworkKind::Regtest => 0x6F, // P2PKH testnet/regtest
     }
 }
@@ -159,7 +159,7 @@ fn get_p2pkh_version(network: network::NetworkKind) -> u8 {
 // 隔离见证（原生）
 pub(crate) fn p2wpkh_address(
     keypair: secp256k1::Keypair,
-    // xpriv: litecoin::bip32::Xpriv,
+    // xpriv: dogcoin::bip32::Xpriv,
     // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
@@ -173,7 +173,7 @@ pub(crate) fn p2wpkh_address(
 // Taproot
 pub(crate) fn p2tr_address(
     keypair: secp256k1::Keypair,
-    // xpriv: litecoin::bip32::Xpriv,
+    // xpriv: dogcoin::bip32::Xpriv,
     secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
@@ -186,7 +186,7 @@ pub(crate) fn p2tr_address(
 // 隔离见证（兼容）
 pub(crate) fn p2sh_p2wpkh_address(
     keypair: secp256k1::Keypair,
-    // xpriv: litecoin::bip32::Xpriv,
+    // xpriv: dogcoin::bip32::Xpriv,
     // secp: &Secp256k1<secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
@@ -222,8 +222,8 @@ pub(crate) fn generate_p2pkh_address(
     versioned_payload.extend_from_slice(&pubkey_hash);
 
     // Step 3: 计算校验和 (SHA-256(SHA-256(versioned_payload)))[..4]
-    // let a = &litecoin::hashes::sha256::Hash::hash(&versioned_payload);
-    // let checksum = litecoin::hashes::sha256::Hash::hash(a.as_byte_array())[..4].to_vec();
+    // let a = &dogcoin::hashes::sha256::Hash::hash(&versioned_payload);
+    // let checksum = dogcoin::hashes::sha256::Hash::hash(a.as_byte_array())[..4].to_vec();
     let checksum = sha256_twice(&versioned_payload);
 
     // Step 4: 生成最终地址 (Base58Check编码)
@@ -292,7 +292,7 @@ pub(crate) fn generate_p2wpkh_address(
 // // 7.p2tr
 pub(crate) fn generate_p2tr_address(
     keypair: &secp256k1::Keypair,
-    secp: &Secp256k1<litecoin::secp256k1::All>,
+    secp: &Secp256k1<dogcoin::secp256k1::All>,
     network: network::NetworkKind,
 ) -> Result<String, crate::Error> {
     // Step 1: 提取 x-only 公钥
@@ -310,9 +310,9 @@ pub(crate) fn generate_p2tr_address(
     );
 
     // Step 2: 计算 Taproot tweak
-    let tweak = litecoin::TapTweakHash::from_key_and_tweak(xonly_pubkey, None).to_scalar();
+    let tweak = dogcoin::TapTweakHash::from_key_and_tweak(xonly_pubkey, None).to_scalar();
 
-    // let mut engine = litecoin::TapTweakHash::engine();
+    // let mut engine = dogcoin::TapTweakHash::engine();
     // let midstate = engine.midstate();
     // println!("midstate: {:?}", midstate);
 
@@ -324,10 +324,10 @@ pub(crate) fn generate_p2tr_address(
 
     let _tweak = secp256k1::Scalar::from_be_bytes(checksum)?;
 
-    // let hash = &litecoin::hashes::sha256::Hash::hash(xonly_pubkey.to_string().as_bytes());
+    // let hash = &dogcoin::hashes::sha256::Hash::hash(xonly_pubkey.to_string().as_bytes());
     // let tweak = hash.to_byte_array();
 
-    // let tweak = litecoin::secp256k1::Scalar::from_be_bytes(tweak).unwrap();
+    // let tweak = dogcoin::secp256k1::Scalar::from_be_bytes(tweak).unwrap();
     // let (mut public_key, _) = keypair.x_only_public_key();
     // let original = public_key;
     let (tweaked_xonly_pubkey, parity) = xonly_pubkey.add_tweak(secp, &tweak)?;
@@ -341,14 +341,14 @@ pub(crate) fn generate_p2tr_address(
 
     // Step 3: 计算 Taproot 哈希 (SHA-256(tweaked_xonly_pubkey))
     // let taproot_hash =
-    //     // &litecoin::hashes::sha256::Hash::hash(tweaked_xonly_pubkey.to_string().as_bytes())
-    //     &litecoin::hashes::sha256::Hash::hash(&pubkey)
+    //     // &dogcoin::hashes::sha256::Hash::hash(tweaked_xonly_pubkey.to_string().as_bytes())
+    //     &dogcoin::hashes::sha256::Hash::hash(&pubkey)
     //         .to_byte_array();
     // let taproot_hash = Sha256::digest(&tweaked_xonly_pubkey);
 
     // Step 4: 创建见证程序 (0x01 + Taproot 哈希)
     // let witness_program = [
-    //     vec![litecoin::WitnessVersion::V1 as u8],
+    //     vec![dogcoin::WitnessVersion::V1 as u8],
     //     taproot_hash.to_vec(),
     // ]
     // .concat();

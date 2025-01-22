@@ -72,14 +72,14 @@ impl Provider {
         Ok(UtxoList(utxo))
     }
 
-    pub async fn fetch_fee_rate(&self, blocks: u32) -> crate::Result<litecoin::Amount> {
+    pub async fn fetch_fee_rate(&self, blocks: u32) -> crate::Result<dogcoin::Amount> {
         let res = self.estimate_fee(blocks as u64).await?;
 
         let fee_rate = bitcoin::Amount::from_sat((res.fee_rate * 100_000.0).round() as u64);
 
         // 扩大推荐费用,加快打包
         let fee_rate = fee_rate * EXPEND_FEE_RATE;
-        let max_fee_rate = litecoin::Amount::from_sat(MAX_FEE_RATE);
+        let max_fee_rate = dogcoin::Amount::from_sat(MAX_FEE_RATE);
         if fee_rate > max_fee_rate {
             return Err(crate::UtxoError::ExceedsMaxFeeRate.into());
         }

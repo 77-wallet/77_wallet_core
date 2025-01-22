@@ -17,4 +17,5 @@ serde_json.workspace = true
 thiserror.workspace = true
 bitcoin = { workspace = true }
 litecoin = { workspace = true }
+dogcoin = {workspace = true}
 once_cell = { workspace = true }

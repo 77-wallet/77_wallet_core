@@ -6,7 +6,7 @@ use crate::types::ChainPrivateKey;
 use crate::{BillResourceConsume, QueryTransactionResult};
 use alloy::primitives::map::HashMap;
 use alloy::primitives::U256;
-use litecoin::Amount;
+use dogcoin::Amount;
 
 pub struct DogChain {
     provider: Provider,
@@ -142,7 +142,7 @@ impl DogChain {
             .utxos(&params.from.to_string(), self.network)
             .await?;
 
-        let fee = litecoin::Amount::from_float_in(fee, litecoin::Denomination::Bitcoin)
+        let fee = dogcoin::Amount::from_float_in(fee, dogcoin::Denomination::Bitcoin)
             .map_err(|e| crate::Error::Other(e.to_string()))?;
 
         let mut transaction_builder = params.build_with_fee(utxo, fee)?;
@@ -323,7 +323,7 @@ impl DogChain {
 
     //     let (address, authority_address) = match params.address_type {
     //         DogAddressType::P2sh => {
-    //             let address = litecoin::Address::p2sh(&script, network)
+    //             let address = dogcoin::Address::p2sh(&script, network)
     //                 .map_err(|e| crate::Error::Other(e.to_string()))?;
     //             (address, "".to_string())
     //         }

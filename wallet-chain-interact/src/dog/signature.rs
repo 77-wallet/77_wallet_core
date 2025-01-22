@@ -1,6 +1,6 @@
 use super::{provider::Provider, utxos::Usedutxo};
 use crate::dog::script::DogScript;
-use litecoin::{
+use dogcoin::{
     ecdsa,
     key::{Keypair, Secp256k1, TapTweak, TweakedKeypair},
     script::{self, PushBytes},
@@ -21,7 +21,7 @@ impl DogSignature {
     pub fn new(key_str: &str, used_utxo: Usedutxo) -> crate::Result<Self> {
         let secp = Secp256k1::new();
 
-        let private_key = litecoin::PrivateKey::from_wif(key_str)
+        let private_key = dogcoin::PrivateKey::from_wif(key_str)
             .map_err(|e| crate::Error::SignError(e.to_string()))?;
 
         Ok(Self {
@@ -65,7 +65,7 @@ impl DogSignature {
                 .map_err(|e| crate::Error::SignError(format!("p2pkh build sign hash err{e:}")))?;
 
             let msg = secp256k1::Message::from(sighash);
-            let signature = litecoin::ecdsa::Signature {
+            let signature = dogcoin::ecdsa::Signature {
                 signature: self.secp.sign_ecdsa(&msg, &sk),
                 sighash_type: EcdsaSighashType::All,
             };
@@ -98,7 +98,7 @@ impl DogSignature {
                 })?;
 
             let msg = secp256k1::Message::from(sighash);
-            let signature = litecoin::ecdsa::Signature {
+            let signature = dogcoin::ecdsa::Signature {
                 signature: self.secp.sign_ecdsa(&msg, &sk),
                 sighash_type,
             };
@@ -152,7 +152,7 @@ impl DogSignature {
         Ok(())
     }
 
-    pub fn get_amount(&self, txid: litecoin::Txid, vout: u32) -> crate::Result<Amount> {
+    pub fn get_amount(&self, txid: dogcoin::Txid, vout: u32) -> crate::Result<Amount> {
         let key = format!("{}-{}", txid, vout);
 
         let utxo = self.used_utxo.get(&key).ok_or(crate::Error::Other(
@@ -191,7 +191,7 @@ impl DogSignature {
             let tweaked: TweakedKeypair = keypair.tap_tweak(&self.secp, None);
             let msg = Message::from(sighash);
             let signature = self.secp.sign_schnorr(&msg, &tweaked.to_inner());
-            let signature = litecoin::taproot::Signature {
+            let signature = dogcoin::taproot::Signature {
                 signature,
                 sighash_type,
             };
@@ -239,7 +239,7 @@ impl DogSignature {
     //             })?;
 
     //         let msg = Message::from(sighash);
-    //         let signature = litecoin::taproot::Signature {
+    //         let signature = dogcoin::taproot::Signature {
     //             signature: self.secp.sign_schnorr(&msg, &keypair),
     //             sighash_type,
     //         };
@@ -262,7 +262,7 @@ impl DogSignature {
 //     }
 // }
 // impl SignatureCombiner {
-//     pub fn p2sh(&self, transaction: &mut litecoin::Transaction) -> crate::Result<()> {
+//     pub fn p2sh(&self, transaction: &mut dogcoin::Transaction) -> crate::Result<()> {
 //         let len = transaction.input.len();
 
 //         for i in 0..len {
@@ -288,7 +288,7 @@ impl DogSignature {
 //         Ok(())
 //     }
 
-//     pub fn p2sh_wsh(&self, transaction: &mut litecoin::Transaction) -> crate::Result<()> {
+//     pub fn p2sh_wsh(&self, transaction: &mut dogcoin::Transaction) -> crate::Result<()> {
 //         let len = transaction.input.len();
 
 //         for i in 0..len {
@@ -319,7 +319,7 @@ impl DogSignature {
 //         Ok(())
 //     }
 
-//     pub fn p2wsh(&self, transaction: &mut litecoin::Transaction) -> crate::Result<()> {
+//     pub fn p2wsh(&self, transaction: &mut dogcoin::Transaction) -> crate::Result<()> {
 //         let len = transaction.input.len();
 
 //         for i in 0..len {
@@ -338,14 +338,14 @@ impl DogSignature {
 
 //     pub fn p2tr_sh(
 //         &self,
-//         transaction: &mut litecoin::Transaction,
+//         transaction: &mut dogcoin::Transaction,
 //         inner_key: &str,
 //     ) -> crate::Result<()> {
 //         let len = transaction.input.len();
 
 //         for i in 0..len {
 //             let secp = Secp256k1::new();
-//             let internal_key = litecoin::XOnlyPublicKey::from_str(inner_key).unwrap();
+//             let internal_key = dogcoin::XOnlyPublicKey::from_str(inner_key).unwrap();
 
 //             let taproot_builder =
 //                 TaprootBuilder::with_huffman_tree(vec![(1, self.redeem_script.clone())]).unwrap();
@@ -378,8 +378,8 @@ impl DogSignature {
 /// It is mainly intended for estimating the transaction size and does not involve
 /// actual transaction validation or signing.
 pub fn predict_transaction_size(
-    mut tx: litecoin::Transaction,
-    change_address: litecoin::Address,
+    mut tx: dogcoin::Transaction,
+    change_address: dogcoin::Address,
     address_type: DogAddressType,
 ) -> crate::Result<usize> {
     match address_type {
