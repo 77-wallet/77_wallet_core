@@ -33,7 +33,7 @@ impl wallet_core::address::GenAddress for LtcGenAddress {
     }
 
     fn chain_code(&self) -> &chain::ChainCode {
-        &chain::ChainCode::Bitcoin
+        &chain::ChainCode::Litecoin
     }
 }
 
@@ -51,9 +51,9 @@ fn sha256_twice(raw: &[u8]) -> Vec<u8> {
     hash.to_byte_array()[..4].to_vec()
 }
 
-fn private_key(seed: Vec<u8>) -> Result<bitcoin::bip32::Xpriv, crate::Error> {
-    Ok(bitcoin::bip32::Xpriv::new_master(
-        bitcoin::Network::Bitcoin,
+fn private_key(seed: Vec<u8>) -> Result<litecoin::bip32::Xpriv, crate::Error> {
+    Ok(litecoin::bip32::Xpriv::new_master(
+        litecoin::Network::Bitcoin,
         &seed,
     )?)
 }
@@ -61,10 +61,10 @@ fn private_key(seed: Vec<u8>) -> Result<bitcoin::bip32::Xpriv, crate::Error> {
 fn generate_xpriv(
     seed: Vec<u8>,
     path: &str,
-    secp: &secp256k1::Secp256k1<bitcoin::secp256k1::All>,
-) -> Result<bitcoin::bip32::Xpriv, crate::Error> {
-    let xpiri: bitcoin::bip32::Xpriv = private_key(seed)?;
-    let path = bitcoin::bip32::DerivationPath::from_str(path)?;
+    secp: &secp256k1::Secp256k1<litecoin::secp256k1::All>,
+) -> Result<litecoin::bip32::Xpriv, crate::Error> {
+    let xpiri: litecoin::bip32::Xpriv = private_key(seed)?;
+    let path = litecoin::bip32::DerivationPath::from_str(path)?;
 
     Ok(xpiri.derive_priv(secp, &path)?)
 }

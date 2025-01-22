@@ -1,5 +1,5 @@
 #![allow(unused)]
-use bitcoin::{
+use litecoin::{
     bip32::{DerivationPath, Xpriv},
     Network,
 };
@@ -34,7 +34,7 @@ fn derivation_path(path: &str) -> Result<DerivationPath, crate::Error> {
 }
 
 fn derivate_key(
-    secp: &Secp256k1<bitcoin::secp256k1::All>,
+    secp: &Secp256k1<litecoin::secp256k1::All>,
     path: &str,
 ) -> Result<Xpriv, crate::Error> {
     let xpiri = private_key();

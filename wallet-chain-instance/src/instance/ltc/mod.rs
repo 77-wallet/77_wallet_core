@@ -13,7 +13,7 @@ use wallet_types::chain::{address::r#type::LtcAddressType, chain::ChainCode, net
 
 // const NET: Network = Network::Testnet;
 
-pub struct LitcoinKeyPair {
+pub struct LitecoinKeyPair {
     litecoin_family: ChainCode,
     pub xpriv: Xpriv,
     pubkey: String,
@@ -90,7 +90,7 @@ impl wallet_core::derive::GenDerivationLtc for LitecoinInstance {
 impl wallet_core::derive::Derive for LitecoinInstance {
     type Error = crate::Error;
 
-    type Item = LitcoinKeyPair;
+    type Item = LitecoinKeyPair;
 
     // fn derive(&self, seed: Vec<u8>, index: u32) -> Result<Self::Item, Self::Error> {
     //     LitecoinKeyPair::generate(seed, index, &self.chain_code)
@@ -103,7 +103,7 @@ impl wallet_core::derive::Derive for LitecoinInstance {
     ) -> Result<Self::Item, Self::Error> {
         let address =
             address::generate_address(&self.address_type, &seed, derivation_path, self.network)?;
-        let mut res = LitcoinKeyPair::generate_with_derivation(
+        let mut res = LitecoinKeyPair::generate_with_derivation(
             seed,
             derivation_path,
             &self.chain_code,
@@ -114,7 +114,7 @@ impl wallet_core::derive::Derive for LitecoinInstance {
     }
 }
 
-impl KeyPair for LitcoinKeyPair {
+impl KeyPair for LitecoinKeyPair {
     type Error = crate::Error;
 
     fn generate_with_derivation(
@@ -175,7 +175,7 @@ fn generate(
     derivation_path: &str,
     chain_code: &ChainCode,
     network: network::NetworkKind,
-) -> Result<LitcoinKeyPair, crate::Error> {
+) -> Result<LitecoinKeyPair, crate::Error> {
     let xpriv = Xpriv::new_master(network, &seed).unwrap();
 
     // let pri_key = XPriv::root_from_seed(seed.as_slice(), None).unwrap();
@@ -199,7 +199,7 @@ fn generate(
     // };
     let keypair = derive_key.to_keypair(&secp);
     let pubkey = keypair.public_key().to_string();
-    Ok(LitcoinKeyPair {
+    Ok(LitecoinKeyPair {
         litecoin_family: chain_code.to_owned(),
         xpriv: derive_key,
         pubkey,
