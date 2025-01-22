@@ -26,7 +26,7 @@ mpl-token-metadata = "4.1.2"
 base64 = { workspace = true }
 sha2 = { workspace = true }
 
-
+litecoin = { workspace = true }
 bitcoin = { workspace = true }
 alloy = { workspace = true }
 solana-sdk = { workspace = true }

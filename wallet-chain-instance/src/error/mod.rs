@@ -4,6 +4,10 @@ pub mod keypair;
 pub enum Error {
     #[error("This btc address type can't generate derivation path")]
     BtcAddressTypeCantGenDerivationPath,
+    #[error("This ltc address type can't generate derivation path")]
+    LtcAddressTypeCantGenDerivationPath,
+    #[error("This dog address type can't generate derivation path")]
+    DogAddressTypeCantGenDerivationPath,
     #[error("Core error: {0}")]
     Core(#[from] wallet_core::Error),
     #[error("Utils error: {0}")]
@@ -26,6 +30,8 @@ pub enum Error {
     HdPath(String),
     #[error("parase private key error:: `{0}`")]
     ParasePrivateKey(String),
+    #[error("private key error {0}")]
+    PriKey(String),
 }
 
 impl Error {

@@ -2,6 +2,7 @@ use crate::{errors::NodeResponseError, types::JsonRpcResult, TransportError};
 use reqwest::RequestBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
+use tracing::trace;
 
 pub struct ReqBuilder(pub RequestBuilder);
 
