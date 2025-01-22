@@ -1,11 +1,12 @@
 use crate::constant::btc_address_catecory::*;
 
-use super::r#type::{AddressType, BtcAddressType, LtcAddressType};
+use super::r#type::{AddressType, BtcAddressType, DogAddressType, LtcAddressType};
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(untagged)]
 pub enum AddressCategory {
     Btc(BtcAddressCategory),
     Ltc(LtcAddressCategory),
+    Dog(DogAddressCategory),
     Other,
 }
 
@@ -121,11 +122,68 @@ impl From<LtcAddressType> for LtcAddressCategory {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
+pub enum DogAddressCategory {
+    Taproot,
+    #[serde(rename = "Nested SegWit")]
+    NestedSegWit,
+    #[serde(rename = "Native SegWit")]
+    NativeSegWit,
+    Legacy,
+}
+
+impl AsRef<str> for DogAddressCategory {
+    fn as_ref(&self) -> &str {
+        match self {
+            DogAddressCategory::Taproot => TAPROOT,
+            DogAddressCategory::NestedSegWit => NESTED_SEG_WIT,
+            DogAddressCategory::NativeSegWit => NATIVE_SEG_WIT,
+            DogAddressCategory::Legacy => LEGACY,
+        }
+    }
+}
+impl TryFrom<String> for DogAddressCategory {
+    type Error = crate::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            TAPROOT => Ok(DogAddressCategory::Taproot),
+            NESTED_SEG_WIT => Ok(DogAddressCategory::NestedSegWit),
+            NATIVE_SEG_WIT => Ok(DogAddressCategory::NativeSegWit),
+            LEGACY => Ok(DogAddressCategory::Legacy),
+            other => Err(crate::Error::DogAddressCategoryInvalid(other.to_string())),
+        }
+    }
+}
+
+impl std::fmt::Display for DogAddressCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            DogAddressCategory::Taproot => TAPROOT,
+            DogAddressCategory::NestedSegWit => NESTED_SEG_WIT,
+            DogAddressCategory::NativeSegWit => NATIVE_SEG_WIT,
+            DogAddressCategory::Legacy => LEGACY,
+        })
+    }
+}
+
+impl From<DogAddressType> for DogAddressCategory {
+    fn from(addr_type: DogAddressType) -> Self {
+        match addr_type {
+            DogAddressType::P2pkh | DogAddressType::P2sh => DogAddressCategory::Legacy,
+            DogAddressType::P2shWpkh | DogAddressType::P2shWsh => DogAddressCategory::NestedSegWit,
+            DogAddressType::P2wpkh | DogAddressType::P2wsh => DogAddressCategory::NativeSegWit,
+            DogAddressType::P2tr | DogAddressType::P2trSh => DogAddressCategory::Taproot,
+        }
+    }
+}
+
 impl From<AddressType> for AddressCategory {
     fn from(address: AddressType) -> Self {
         match address {
             AddressType::Btc(addr_type) => AddressCategory::Btc(addr_type.into()),
             AddressType::Ltc(addr_type) => AddressCategory::Ltc(addr_type.into()),
+            AddressType::Dog(addr_type) => AddressCategory::Dog(addr_type.into()),
             AddressType::Other => AddressCategory::Other,
         }
     }

@@ -38,6 +38,21 @@ pub const LTC_TAPROOT_HARD_DERIVATION_PATH: &str = "m/86'/2'/0'/0/0";
 pub const LTC_SEG_WIT_DERIVATION_PATH: &str = "m/49'/2'/0'/0/0";
 pub const LTC_SEG_WIT_HARD_DERIVATION_PATH: &str = "m/49'/2/0'/0/0";
 
+/// legacy
+pub const DOG_DERIVATION_PATH: &str = "m/44'/3'/0'/0/0";
+pub const DOG_HARD_DERIVATION_PATH: &str = "m/44'/3'/0'/0/0";
+
+/// 隔离见证（原生）unused
+pub const DOG_SEG_WIT_NATIVE_DERIVATION_PATH: &str = "m/84'/3'/0'/0/0";
+pub const DOG_SEG_WIT_NATIVE_HARD_DERIVATION_PATH: &str = "m/84'/3'/0'/0/0";
+
+/// Taproot
+pub const DOG_TAPROOT_DERIVATION_PATH: &str = "m/86'/3'/0'/0/0";
+pub const DOG_TAPROOT_HARD_DERIVATION_PATH: &str = "m/86'/3'/0'/0/0";
+/// 隔离见证（兼容）unused
+pub const DOG_SEG_WIT_DERIVATION_PATH: &str = "m/49'/3'/0'/0/0";
+pub const DOG_SEG_WIT_HARD_DERIVATION_PATH: &str = "m/49'/3/0'/0/0";
+
 pub const ETH_DERIVATION_PATH_START: &str = "m/44'/60'/";
 pub const TRON_DERIVATION_PATH_START: &str = "m/44'/195'/";
 pub const SOLANA_DERIVATION_PATH_START: &str = "m/44'/501'/";
@@ -49,6 +64,7 @@ pub mod chain_type {
     pub const BTC_TYPE: u32 = 0;
     pub const BTC_86_TYPE: u32 = 86;
     pub const LTC_TYPE: u32 = 2;
+    pub const DOG_TYPE: u32 = 3;
 }
 
 pub mod chain_code {
@@ -58,6 +74,7 @@ pub mod chain_code {
     pub const BNB: &str = "bnb";
     pub const BTC: &str = "btc";
     pub const LTC: &str = "ltc";
+    pub const DOG: &str = "dog";
 }
 
 pub mod coin {
@@ -107,4 +124,5 @@ pub mod check_black {
     pub const TRON: &[&str] = &["TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"];
     pub const BTC: &[&str] = &[];
     pub const LTC: &[&str] = &[];
+    pub const DOG: &[&str] = &[];
 }

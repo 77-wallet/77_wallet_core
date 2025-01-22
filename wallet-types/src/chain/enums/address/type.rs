@@ -1,6 +1,6 @@
 use crate::constant::btc_address_type::*;
 
-use super::category::{BtcAddressCategory, LtcAddressCategory};
+use super::category::{BtcAddressCategory, DogAddressCategory, LtcAddressCategory};
 
 use once_cell::sync::Lazy;
 
@@ -22,11 +22,21 @@ pub static LTC_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
     ]
 });
 
+pub static DOG_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
+    vec![
+        AddressType::Dog(DogAddressType::P2wpkh),
+        AddressType::Dog(DogAddressType::P2shWpkh),
+        AddressType::Dog(DogAddressType::P2tr),
+        AddressType::Dog(DogAddressType::P2pkh),
+    ]
+});
+
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(untagged)]
 pub enum AddressType {
     Btc(BtcAddressType),
     Ltc(LtcAddressType),
+    Dog(DogAddressType),
     Other,
 }
 
@@ -74,6 +84,25 @@ pub enum LtcAddressType {
     P2trSh,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
+pub enum DogAddressType {
+    /// Pay to public hash (legacy)
+    P2pkh,
+    /// Pay to script hash
+    P2sh,
+    /// bech32（Pay to public hash）
+    P2shWpkh,
+    /// 隔离见证（兼容）
+    P2shWsh,
+    /// 隔离见证（原生）
+    P2wpkh,
+    P2wsh,
+    /// taproot 单签
+    P2tr,
+    /// taproot 多签
+    P2trSh,
+}
+
 impl AsRef<str> for BtcAddressType {
     fn as_ref(&self) -> &str {
         match self {
@@ -104,6 +133,21 @@ impl AsRef<str> for LtcAddressType {
     }
 }
 
+impl AsRef<str> for DogAddressType {
+    fn as_ref(&self) -> &str {
+        match self {
+            DogAddressType::P2pkh => P2PKH,
+            DogAddressType::P2sh => P2SH,
+            DogAddressType::P2shWpkh => P2SH_WPKH,
+            DogAddressType::P2shWsh => P2SH_WSH,
+            DogAddressType::P2wpkh => P2WPKH,
+            DogAddressType::P2wsh => P2WSH,
+            DogAddressType::P2tr => P2TR,
+            DogAddressType::P2trSh => P2TR_SH,
+        }
+    }
+}
+
 impl From<BtcAddressCategory> for BtcAddressType {
     fn from(addr_scheme: BtcAddressCategory) -> Self {
         match addr_scheme {
@@ -126,6 +170,23 @@ impl From<LtcAddressCategory> for LtcAddressType {
     }
 }
 
+impl From<DogAddressCategory> for DogAddressType {
+    fn from(addr_scheme: DogAddressCategory) -> Self {
+        match addr_scheme {
+            DogAddressCategory::Legacy => DogAddressType::P2sh,
+            DogAddressCategory::NestedSegWit => DogAddressType::P2shWsh,
+            DogAddressCategory::NativeSegWit => DogAddressType::P2wsh,
+            DogAddressCategory::Taproot => DogAddressType::P2trSh,
+        }
+    }
+}
+
+impl std::fmt::Display for DogAddressType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_ref())
+    }
+}
+
 impl std::fmt::Display for LtcAddressType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_ref())
@@ -143,6 +204,7 @@ impl std::fmt::Display for AddressType {
         match self {
             AddressType::Btc(btc_address_type) => write!(f, "{}", btc_address_type),
             AddressType::Ltc(ltc_address_type) => write!(f, "{}", ltc_address_type),
+            AddressType::Dog(dog_address_type) => write!(f, "{}", dog_address_type),
             AddressType::Other => write!(f, ""),
         }
     }
@@ -163,6 +225,7 @@ impl AsRef<str> for AddressType {
         match self {
             AddressType::Btc(btc_address_type) => btc_address_type.as_ref(),
             AddressType::Ltc(ltc_address_type) => ltc_address_type.as_ref(),
+            AddressType::Dog(dog_address_type) => dog_address_type.as_ref(),
             AddressType::Other => "",
         }
     }
@@ -220,6 +283,34 @@ impl TryFrom<&str> for LtcAddressType {
             P2TR => LtcAddressType::P2tr,
             P2TR_SH => LtcAddressType::P2trSh,
             other => return Err(crate::Error::LtcAddressTypeInvalid(other.to_string())),
+        })
+    }
+}
+
+impl<T: AsRef<str>> TryFrom<Option<T>> for DogAddressType {
+    type Error = crate::Error;
+    fn try_from(value: Option<T>) -> Result<Self, Self::Error> {
+        match value {
+            Some(v) => DogAddressType::try_from(v.as_ref()),
+            None => Err(crate::Error::BtcNeedAddressType),
+        }
+    }
+}
+
+impl TryFrom<&str> for DogAddressType {
+    type Error = crate::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value.to_lowercase().as_ref() {
+            P2PKH => DogAddressType::P2pkh,
+            P2SH => DogAddressType::P2sh,
+            P2SH_WPKH => DogAddressType::P2shWpkh,
+            P2SH_WSH => DogAddressType::P2shWsh,
+            P2WPKH => DogAddressType::P2wpkh,
+            P2WSH => DogAddressType::P2wsh,
+            P2TR => DogAddressType::P2tr,
+            P2TR_SH => DogAddressType::P2trSh,
+            other => return Err(crate::Error::DogAddressTypeInvalid(other.to_string())),
         })
     }
 }

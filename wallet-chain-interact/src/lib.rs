@@ -3,6 +3,8 @@ pub mod btc;
 pub use btc::script;
 pub mod ltc;
 pub use ltc::script as ltc_scripts;
+pub mod dog;
+pub use dog::script as dog_scripts;
 pub mod eth;
 pub mod factory;
 pub mod sol;
@@ -17,3 +19,4 @@ pub mod types;
 
 pub use bitcoin::AddressType;
 pub use litecoin::AddressType as LtcAddressType;
+pub use litecoin::AddressType as DoAddressType;
