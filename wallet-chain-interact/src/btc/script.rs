@@ -28,7 +28,9 @@ impl BtcScript {
         let mut script = Builder::new().push_int(threshold as i64);
 
         for item in member_lists.iter() {
-            let pk = bitcoin::PublicKey::from_str(&item.pubkey).unwrap();
+            let pk = bitcoin::PublicKey::from_str(&item.pubkey).map_err(|e| {
+                crate::Error::Other(format!("multisig_script get invaild pubkey e {}", e))
+            })?;
             script = script.push_key(&pk);
         }
 
@@ -46,7 +48,9 @@ impl BtcScript {
         let mut builder = Builder::new();
 
         for (i, item) in member_lists.iter().enumerate() {
-            let pk = bitcoin::PublicKey::from_str(&item.pubkey).unwrap();
+            let pk = bitcoin::PublicKey::from_str(&item.pubkey).map_err(|e| {
+                crate::Error::Other(format!("multisig_p2tr_script get invaild pubkey e {}", e))
+            })?;
             builder = builder.push_x_only_key(&pk.into());
             if i == 0 {
                 builder = builder.push_opcode(OP_CHECKSIG);
