@@ -32,7 +32,7 @@ pub struct Provider {
     http_client: HttpClient,
 }
 
-pub const API_ENPOINT: &'static str = "";
+pub const API_ENPOINT: &'static str = "book/api/v2";
 
 impl Provider {
     pub fn new(
