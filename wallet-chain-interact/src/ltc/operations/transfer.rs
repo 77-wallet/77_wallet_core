@@ -235,13 +235,13 @@ impl TransferBuilder {
             let additional_required = required_amount - total_input;
 
             // The total additional input
-            let mut additional_input = bitcoin::Amount::from_sat(0);
+            let mut additional_input = litecoin::Amount::from_sat(0);
 
             // UTXOs that have not been selected
             let available = self.utxo.available_utxo();
 
             for utxo in available {
-                additional_input += bitcoin::Amount::from_sat(utxo.value);
+                additional_input += litecoin::Amount::from_sat(utxo.value);
 
                 self.transaction.input.push(TxIn::from(utxo.clone()));
                 has_new_input = true;

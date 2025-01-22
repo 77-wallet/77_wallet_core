@@ -75,7 +75,7 @@ impl Provider {
     pub async fn fetch_fee_rate(&self, blocks: u32) -> crate::Result<litecoin::Amount> {
         let res = self.estimate_fee(blocks as u64).await?;
 
-        let fee_rate = bitcoin::Amount::from_sat((res.fee_rate * 100_000.0).round() as u64);
+        let fee_rate = litecoin::Amount::from_sat((res.fee_rate * 100_000.0).round() as u64);
 
         // 扩大推荐费用,加快打包
         let fee_rate = fee_rate * EXPEND_FEE_RATE;

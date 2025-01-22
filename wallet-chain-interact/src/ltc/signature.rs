@@ -626,7 +626,7 @@ fn estimate_p2tr_sh(multisig_sign: &MultisigSignParams) -> crate::Result<Witness
     let redeem_script = multisig_sign.to_script()?;
 
     // 控制块
-    let internal_key = bitcoin::XOnlyPublicKey::from_str(&multisig_sign.inner_key).unwrap();
+    let internal_key = litecoin::XOnlyPublicKey::from_str(&multisig_sign.inner_key).unwrap();
     let taproot_builder =
         TaprootBuilder::with_huffman_tree(vec![(1, redeem_script.clone())]).unwrap();
     let taproot_data = taproot_builder.finalize(&secp, internal_key).unwrap();
