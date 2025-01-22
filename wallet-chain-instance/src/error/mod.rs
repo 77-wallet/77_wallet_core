@@ -6,6 +6,8 @@ pub enum Error {
     BtcAddressTypeCantGenDerivationPath,
     #[error("This ltc address type can't generate derivation path")]
     LtcAddressTypeCantGenDerivationPath,
+    #[error("This dog address type can't generate derivation path")]
+    DogAddressTypeCantGenDerivationPath,
     #[error("Core error: {0}")]
     Core(#[from] wallet_core::Error),
     #[error("Utils error: {0}")]
