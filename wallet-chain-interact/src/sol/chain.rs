@@ -87,10 +87,22 @@ impl SolanaChain {
             Status::Err(_) => 3, // 成功
         };
 
+        let crate_account = transaction.meta.may_init_account();
+        let account_fee = crate_account.iter().map(|(_i, v)| v).sum::<u64>();
+
+        let mut transaction_fee = transaction.meta.fee;
+        let has_create_account = transaction
+            .transaction
+            .message
+            .has_create_account(&transaction.get_acccounts());
+        if account_fee > 0 && has_create_account {
+            transaction_fee += account_fee;
+        }
+
+        let transaction_fee = transaction_fee as f64 / super::consts::SOL_VALUE as f64;
         let resource_consume =
             BillResourceConsume::one_resource(transaction.meta.compute_units_consumed as u64)
                 .to_json_str()?;
-        let transaction_fee = transaction.meta.fee as f64 / super::consts::SOL_VALUE as f64;
 
         let res = QueryTransactionResult::new(
             hash.to_string(),
