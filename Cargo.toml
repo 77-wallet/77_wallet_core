@@ -38,7 +38,8 @@ wallet-utils = { version = "0.1.0", default-features = false, path = "wallet-uti
 wallet-types = { version = "0.1.0", default-features = false, path = "wallet-types" }
 
 litecoin = { git = "https://git.nexus58.com/pub/rust-litecoin.git", package = "bitcoin", branch = "master" }
-dogcoin = { git = "http://git.nexus58.com/peter/rust-dogcoin.git", package = "bitcoin", branch = "master"}
+dogcoin = { git = "http://git.nexus58.com/pub/rust-dogcoin.git", package = "bitcoin", branch = "master" }
+
 
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # time
