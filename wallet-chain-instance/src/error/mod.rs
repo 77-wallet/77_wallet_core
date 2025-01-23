@@ -22,6 +22,8 @@ pub enum Error {
     InvalidPublicKeyLength, // #[error("Net failed: {0:?}")]
     #[error("Bitcoin bip32 error: `{0}`")]
     BitcoinBip32(#[from] bitcoin::bip32::Error),
+    #[error("Litecoin bip32 error: `{0}`")]
+    LitecoinBip32(#[from] litecoin::bip32::Error),
     #[error("Secp256k1 Out of range error: `{0}`")]
     Secp256k1OutOfRange(#[from] secp256k1::scalar::OutOfRangeError),
     #[error("Secp256k1 Out of range error: `{0}`")]

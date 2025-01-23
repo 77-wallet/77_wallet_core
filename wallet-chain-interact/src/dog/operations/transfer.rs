@@ -5,16 +5,16 @@ use crate::dog::{
     utxos::UtxoList,
     ParseDogAddress,
 };
-use litecoin::{consensus, transaction::Version, Amount, TxIn};
+use dogcoin::{consensus, transaction::Version, Amount, TxIn};
 use wallet_types::chain::{self, address::r#type::DogAddressType};
 use wallet_utils::unit;
 
 #[derive(Debug)]
 pub struct TransferArg {
-    pub from: litecoin::Address,
-    pub to: litecoin::Address,
-    pub value: litecoin::Amount,
-    pub change_address: litecoin::Address,
+    pub from: dogcoin::Address,
+    pub to: dogcoin::Address,
+    pub value: dogcoin::Amount,
+    pub change_address: dogcoin::Address,
     pub address_type: DogAddressType,
     pub fee_rate: Option<u64>,
     pub spend_all: bool,
@@ -31,7 +31,7 @@ impl TransferArg {
         let paras = ParseDogAddress::new(network);
 
         let value = unit::convert_to_u256(value, consts::DOG_DECIMAL)?;
-        let value = litecoin::Amount::from_sat(value.to::<u64>());
+        let value = dogcoin::Amount::from_sat(value.to::<u64>());
 
         // let address_type = DogAddressType::try_from(address_type)?;
         Ok(Self {
@@ -55,9 +55,9 @@ impl TransferArg {
         &self,
         provider: &Provider,
         _network: wallet_types::chain::network::NetworkKind,
-    ) -> crate::Result<litecoin::Amount> {
+    ) -> crate::Result<dogcoin::Amount> {
         if let Some(fee_rate) = self.fee_rate {
-            Ok(litecoin::Amount::from_sat(fee_rate))
+            Ok(dogcoin::Amount::from_sat(fee_rate))
         } else {
             let fetched_fee_rate = provider.fetch_fee_rate(consts::FEE_RATE as u32).await?;
 
@@ -73,16 +73,16 @@ impl TransferArg {
         } else {
             (
                 utxo.inputs_from_utxo(self.value)?,
-                vec![litecoin::TxOut {
+                vec![dogcoin::TxOut {
                     value: self.value,
                     script_pubkey: self.to.script_pubkey(),
                 }],
             )
         };
 
-        let transaction = litecoin::Transaction {
+        let transaction = dogcoin::Transaction {
             version: Version(2),
-            lock_time: litecoin::absolute::LockTime::ZERO,
+            lock_time: dogcoin::absolute::LockTime::ZERO,
             input,
             output,
         };
@@ -101,7 +101,7 @@ impl TransferArg {
         let input = utxo.inputs_from_utxo(amount)?;
 
         let mut output = vec![];
-        let spend = litecoin::TxOut {
+        let spend = dogcoin::TxOut {
             value: self.value,
             script_pubkey: self.to.script_pubkey(),
         };
@@ -112,16 +112,16 @@ impl TransferArg {
 
         if total_input > amount {
             let change = total_input - amount;
-            let change_output = litecoin::TxOut {
+            let change_output = dogcoin::TxOut {
                 value: change,
                 script_pubkey: self.change_address.script_pubkey(),
             };
             output.push(change_output);
         }
 
-        let transaction = litecoin::Transaction {
+        let transaction = dogcoin::Transaction {
             version: Version(2),
-            lock_time: litecoin::absolute::LockTime::ZERO,
+            lock_time: dogcoin::absolute::LockTime::ZERO,
             input,
             output,
         };
@@ -131,7 +131,7 @@ impl TransferArg {
 }
 
 pub struct TransferBuilder {
-    pub transaction: litecoin::Transaction,
+    pub transaction: dogcoin::Transaction,
     pub utxo: UtxoList,
 }
 
@@ -157,10 +157,10 @@ impl TransferBuilder {
 
     pub fn change_and_fee(
         &mut self,
-        fee_rate: litecoin::Amount,
-        change_address: litecoin::Address,
+        fee_rate: dogcoin::Amount,
+        change_address: dogcoin::Address,
         address_type: DogAddressType,
-        value: litecoin::Amount,
+        value: dogcoin::Amount,
     ) -> crate::Result<usize> {
         loop {
             // 在预估交易大小是使用交易的副本
@@ -182,8 +182,8 @@ impl TransferBuilder {
 
     pub fn spent_all_set_fee(
         &mut self,
-        fee_rate: litecoin::Amount,
-        spend_address: litecoin::Address,
+        fee_rate: dogcoin::Amount,
+        spend_address: dogcoin::Address,
         address_type: DogAddressType,
     ) -> crate::Result<usize> {
         // 模拟交易的大小
@@ -201,7 +201,7 @@ impl TransferBuilder {
         }
 
         // add spend
-        let spend = litecoin::TxOut {
+        let spend = dogcoin::TxOut {
             value: total_input - transaction_fee,
             script_pubkey: spend_address.script_pubkey(),
         };
@@ -212,10 +212,10 @@ impl TransferBuilder {
 
     fn set_transaction_fee(
         &mut self,
-        fee_rate: litecoin::Amount,
+        fee_rate: dogcoin::Amount,
         size: usize,
-        value: litecoin::Amount,
-    ) -> crate::Result<(bool, litecoin::Amount)> {
+        value: dogcoin::Amount,
+    ) -> crate::Result<(bool, dogcoin::Amount)> {
         // The total amount of selected UTXOs
         let total_input = self.utxo.total_input_amount();
 
@@ -262,11 +262,11 @@ impl TransferBuilder {
     }
 
     // change
-    fn change(&mut self, required_amount: Amount, change_address: litecoin::Address) {
+    fn change(&mut self, required_amount: Amount, change_address: dogcoin::Address) {
         let total_input = self.utxo.total_input_amount();
         let change = total_input - required_amount;
         if change > Amount::default() {
-            self.transaction.output.push(litecoin::TxOut {
+            self.transaction.output.push(dogcoin::TxOut {
                 value: change,
                 script_pubkey: change_address.script_pubkey(),
             });
@@ -325,7 +325,7 @@ mod tests {
             "select utxo {:?}",
             transaction_build.utxo.used_utxo_to_hash_map()
         );
-        let fee_rate = litecoin::Amount::from_sat(20);
+        let fee_rate = dogcoin::Amount::from_sat(20);
         let _c = transaction_build
             .change_and_fee(fee_rate, params.from, params.address_type, params.value)
             .unwrap();
@@ -343,7 +343,7 @@ mod tests {
 
         let mut transaction_build = params.build_transaction(utxos()).unwrap();
 
-        let fee_rate = litecoin::Amount::from_sat(2700);
+        let fee_rate = dogcoin::Amount::from_sat(2700);
         let c = transaction_build
             .change_and_fee(fee_rate, params.from, params.address_type, params.value)
             .unwrap();

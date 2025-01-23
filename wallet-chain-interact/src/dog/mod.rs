@@ -12,7 +12,7 @@ pub mod signature;
 pub mod utxos;
 
 pub struct ParseDogAddress {
-    pub network: litecoin::Network,
+    pub network: dogcoin::Network,
 }
 impl ParseDogAddress {
     pub fn new(network: wallet_types::chain::network::NetworkKind) -> Self {
@@ -20,8 +20,8 @@ impl ParseDogAddress {
         Self { network }
     }
 
-    pub fn parse_address(&self, address: &str) -> crate::Result<litecoin::Address> {
-        let address = litecoin::Address::from_str(address)
+    pub fn parse_address(&self, address: &str) -> crate::Result<dogcoin::Address> {
+        let address = dogcoin::Address::from_str(address)
             .map_err(|e| {
                 crate::ParseErr::AddressPraseErr(format!("err:{} address:{}", e, address))
             })?
@@ -35,11 +35,11 @@ impl ParseDogAddress {
 
 pub fn network_convert(
     network: wallet_types::chain::network::NetworkKind,
-) -> litecoin::network::Network {
+) -> dogcoin::network::Network {
     match network {
-        wallet_types::chain::network::NetworkKind::Regtest => litecoin::network::Network::Regtest,
-        wallet_types::chain::network::NetworkKind::Testnet => litecoin::network::Network::Testnet,
-        wallet_types::chain::network::NetworkKind::Mainnet => litecoin::network::Network::Bitcoin,
+        wallet_types::chain::network::NetworkKind::Regtest => dogcoin::network::Network::Regtest,
+        wallet_types::chain::network::NetworkKind::Testnet => dogcoin::network::Network::Testnet,
+        wallet_types::chain::network::NetworkKind::Mainnet => dogcoin::network::Network::Bitcoin,
     }
 }
 
@@ -48,7 +48,7 @@ pub fn wif_private_key(
     network: wallet_types::chain::network::NetworkKind,
 ) -> crate::Result<String> {
     let network = network_convert(network);
-    Ok(litecoin::PrivateKey::from_slice(bytes, network)
+    Ok(dogcoin::PrivateKey::from_slice(bytes, network)
         .map_err(|e| crate::Error::SignError(e.to_string()))?
         .to_wif())
 }

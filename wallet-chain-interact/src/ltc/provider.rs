@@ -51,6 +51,7 @@ impl Provider {
             header_map_api.insert("api-key".to_owned(), api_key);
         }
 
+        header_map_api.insert("Accept-Encoding".to_owned(), "gzip".to_owned());
         let header_map_api = (!header_map_api.is_empty()).then_some(header_map_api);
         let http_client = HttpClient::new(&config.http_url, header_map_api, timeout)?;
 
@@ -75,7 +76,7 @@ impl Provider {
     pub async fn fetch_fee_rate(&self, blocks: u32) -> crate::Result<litecoin::Amount> {
         let res = self.estimate_fee(blocks as u64).await?;
 
-        let fee_rate = bitcoin::Amount::from_sat((res.fee_rate * 100_000.0).round() as u64);
+        let fee_rate = litecoin::Amount::from_sat((res.fee_rate * 100_000.0).round() as u64);
 
         // 扩大推荐费用,加快打包
         let fee_rate = fee_rate * EXPEND_FEE_RATE;

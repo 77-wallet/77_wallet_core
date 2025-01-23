@@ -33,3 +33,12 @@ impl Into<litecoin::NetworkKind> for NetworkKind {
         }
     }
 }
+
+impl Into<dogcoin::NetworkKind> for NetworkKind {
+    fn into(self) -> dogcoin::NetworkKind {
+        match self {
+            NetworkKind::Mainnet => dogcoin::NetworkKind::Main,
+            NetworkKind::Testnet | NetworkKind::Regtest => dogcoin::NetworkKind::Test,
+        }
+    }
+}

@@ -326,26 +326,22 @@ pub struct ApiVout {
 
 impl ValidateAddress {
     pub fn address_type(&self) -> Option<DogAddressType> {
-        if self.isscript.is_some()
-            && self.iswitness.is_some()
-            && !self.isscript.unwrap()
-            && !self.iswitness.unwrap()
-        {
+        if self.isscript.is_some() && !self.isscript.unwrap() {
             return Some(DogAddressType::P2pkh);
-        } else if self.isscript.is_some() && self.isscript.unwrap() {
-            return Some(DogAddressType::P2shWpkh);
-        } else if self.iswitness.is_some()
-            && self.iswitness.unwrap()
-            && self.witness_version.is_some()
-            && self.witness_version.unwrap() == 0
-        {
-            return Some(DogAddressType::P2wpkh);
         } else if self.iswitness.is_some()
             && self.witness_version.is_some()
             && self.iswitness.unwrap()
             && self.witness_version.unwrap() == 1
         {
-            return Some(DogAddressType::P2tr);
+            return None;
+        } else if self.isscript.is_some() && self.isscript.unwrap() {
+            return None;
+        } else if self.iswitness.is_some()
+            && self.iswitness.unwrap()
+            && self.witness_version.is_some()
+            && self.witness_version.unwrap() == 0
+        {
+            return None;
         } else {
             return None;
         }

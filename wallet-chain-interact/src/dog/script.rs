@@ -1,4 +1,4 @@
-use litecoin::{
+use dogcoin::{
     ecdsa,
     opcodes::all::{OP_CHECKMULTISIG, OP_CHECKSIG, OP_CHECKSIGADD, OP_GREATERTHANOREQUAL},
     script::{Builder, PushBytes},
@@ -11,13 +11,13 @@ pub struct DogScript;
 
 impl DogScript {
     // 时间锁脚本
-    pub fn time_lock_script(height: i64, pk: litecoin::PublicKey) -> ScriptBuf {
+    pub fn time_lock_script(height: i64, pk: dogcoin::PublicKey) -> ScriptBuf {
         Builder::new()
             .push_int(height)
-            .push_opcode(litecoin::blockdata::opcodes::all::OP_CHECKMULTISIGVERIFY)
-            .push_opcode(litecoin::blockdata::opcodes::all::OP_DROP)
+            .push_opcode(dogcoin::blockdata::opcodes::all::OP_CHECKMULTISIGVERIFY)
+            .push_opcode(dogcoin::blockdata::opcodes::all::OP_DROP)
             .push_key(&pk)
-            .push_opcode(litecoin::blockdata::opcodes::all::OP_CHECKSIG)
+            .push_opcode(dogcoin::blockdata::opcodes::all::OP_CHECKSIG)
             .into_script()
     }
 
@@ -28,7 +28,7 @@ impl DogScript {
         let mut script = Builder::new().push_int(threshold as i64);
 
         for item in member_lists.iter() {
-            let pk = litecoin::PublicKey::from_str(&item.pubkey).unwrap();
+            let pk = dogcoin::PublicKey::from_str(&item.pubkey).unwrap();
             script = script.push_key(&pk);
         }
 
@@ -46,7 +46,7 @@ impl DogScript {
         let mut builder = Builder::new();
 
         for (i, item) in member_lists.iter().enumerate() {
-            let pk = litecoin::PublicKey::from_str(&item.pubkey).unwrap();
+            let pk = dogcoin::PublicKey::from_str(&item.pubkey).unwrap();
             builder = builder.push_x_only_key(&pk.into());
             if i == 0 {
                 builder = builder.push_opcode(OP_CHECKSIG);
@@ -62,7 +62,7 @@ impl DogScript {
         Ok(script)
     }
 
-    pub fn sign_script_sig(signature: ecdsa::Signature, pk: litecoin::PublicKey) -> ScriptBuf {
+    pub fn sign_script_sig(signature: ecdsa::Signature, pk: dogcoin::PublicKey) -> ScriptBuf {
         let signature_bytes = signature.to_vec();
 
         let bytes: &PushBytes = signature_bytes.as_slice().try_into().unwrap();

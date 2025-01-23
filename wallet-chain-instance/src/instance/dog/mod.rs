@@ -4,7 +4,7 @@ mod test;
 
 use std::str::FromStr;
 
-use litecoin::{
+use dogcoin::{
     bip32::{DerivationPath, Xpriv},
     key::Secp256k1,
 };
@@ -14,7 +14,7 @@ use wallet_types::chain::{address::r#type::DogAddressType, chain::ChainCode, net
 // const NET: Network = Network::Testnet;
 
 pub struct DogcoinKeyPair {
-    litecoin_family: ChainCode,
+    dogcoin_family: ChainCode,
     pub xpriv: Xpriv,
     pubkey: String,
     address: String,
@@ -93,7 +93,7 @@ impl wallet_core::derive::Derive for DogcoinInstance {
     type Item = DogcoinKeyPair;
 
     // fn derive(&self, seed: Vec<u8>, index: u32) -> Result<Self::Item, Self::Error> {
-    //     LitecoinKeyPair::generate(seed, index, &self.chain_code)
+    //     DogcoinKeyPair::generate(seed, index, &self.chain_code)
     // }
 
     fn derive_with_derivation_path(
@@ -135,7 +135,7 @@ impl KeyPair for DogcoinKeyPair {
 
     fn private_key(&self) -> Result<String, Self::Error> {
         let network = self.network();
-        let prikey = litecoin::PrivateKey::new(self.xpriv.private_key, network);
+        let prikey = dogcoin::PrivateKey::new(self.xpriv.private_key, network);
         Ok(prikey.to_string())
     }
 
@@ -147,7 +147,7 @@ impl KeyPair for DogcoinKeyPair {
     }
 
     fn chain_code(&self) -> ChainCode {
-        self.litecoin_family
+        self.dogcoin_family
     }
 
     fn derivation_path(&self) -> String {
@@ -164,7 +164,7 @@ impl KeyPair for DogcoinKeyPair {
 
 // fn get_network(chain_code: &Chain) -> Result<Network, crate::Error> {
 //     let network = match chain_code {
-//         Chain::Dog => Network::Litecoin,
+//         Chain::Dog => Network::Dogcoin,
 //         _ => return Err(wallet_core::Error::UnknownChain.into()),
 //     };
 //     Ok(network)
@@ -188,7 +188,7 @@ fn generate(
 
     // let derive = pri_key.derive_path(path.as_str()).unwrap();
 
-    // let address = LitecoinAddress {
+    // let address = DogAddress {
     //     p2pkh: p2pkh.to_string(),
     //     p2sh: "".to_string(),
     //     p2wpkh: p2wpkh.to_string(),
@@ -200,7 +200,7 @@ fn generate(
     let keypair = derive_key.to_keypair(&secp);
     let pubkey = keypair.public_key().to_string();
     Ok(DogcoinKeyPair {
-        litecoin_family: chain_code.to_owned(),
+        dogcoin_family: chain_code.to_owned(),
         xpriv: derive_key,
         pubkey,
         address: "".to_string(),

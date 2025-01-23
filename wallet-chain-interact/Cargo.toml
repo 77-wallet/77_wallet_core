@@ -27,6 +27,7 @@ base64 = { workspace = true }
 sha2 = { workspace = true }
 
 litecoin = { workspace = true }
+dogcoin = { workspace = true }
 bitcoin = { workspace = true }
 alloy = { workspace = true }
 solana-sdk = { workspace = true }
