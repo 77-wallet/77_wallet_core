@@ -24,7 +24,7 @@ pub static LTC_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
 
 pub static DOG_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
     vec![
-        AddressType::Dog(DogAddressType::P2tr),
+        // AddressType::Dog(DogAddressType::P2tr),
         AddressType::Dog(DogAddressType::P2pkh),
     ]
 });

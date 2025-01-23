@@ -337,7 +337,7 @@ impl ValidateAddress {
             && self.iswitness.unwrap()
             && self.witness_version.unwrap() == 1
         {
-            return Some(DogAddressType::P2tr);
+            return None;
         } else if self.isscript.is_some() && self.isscript.unwrap() {
             return None;
         } else if self.iswitness.is_some()
