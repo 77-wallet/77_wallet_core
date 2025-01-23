@@ -326,11 +326,7 @@ pub struct ApiVout {
 
 impl ValidateAddress {
     pub fn address_type(&self) -> Option<DogAddressType> {
-        if self.isscript.is_some()
-            && self.iswitness.is_some()
-            && !self.isscript.unwrap()
-            && !self.iswitness.unwrap()
-        {
+        if self.isscript.is_some() && !self.isscript.unwrap() {
             return Some(DogAddressType::P2pkh);
         } else if self.iswitness.is_some()
             && self.witness_version.is_some()
