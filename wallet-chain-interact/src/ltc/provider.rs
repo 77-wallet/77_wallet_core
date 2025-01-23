@@ -51,6 +51,7 @@ impl Provider {
             header_map_api.insert("api-key".to_owned(), api_key);
         }
 
+        header_map_api.insert("Accept-Encoding".to_owned(), "gzip".to_owned());
         let header_map_api = (!header_map_api.is_empty()).then_some(header_map_api);
         let http_client = HttpClient::new(&config.http_url, header_map_api, timeout)?;
 
