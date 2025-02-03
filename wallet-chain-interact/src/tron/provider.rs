@@ -40,6 +40,20 @@ struct ContractErrorResult {
     pub message: String,
 }
 
+// 直接调用api错误
+#[derive(Debug, serde::Deserialize)]
+struct ApiError {
+    #[allow(unused)]
+    code: String,
+    message: String,
+}
+// 波场验证错误
+#[derive(Debug, serde::Deserialize)]
+struct ContractValidateException {
+    #[serde(rename = "Error")]
+    error: String,
+}
+
 pub struct Provider {
     client: HttpClient,
 }
@@ -51,7 +65,7 @@ impl Provider {
         })
     }
 
-    // 不去匹配错误与成功的响应(作为过渡使用)
+    // 调用波场api
     pub async fn do_request<T, R>(&self, endpoint: &str, params: Option<T>) -> crate::Result<R>
     where
         T: serde::Serialize + Debug,
@@ -65,7 +79,30 @@ impl Provider {
             request
         };
 
-        Ok(request.send::<R>().await?)
+        let response_str = request.do_request().await?;
+
+        // 处理结果
+        match wallet_utils::serde_func::serde_from_str::<R>(&response_str) {
+            Ok(res) => Ok(res),
+            Err(_) => {
+                // 反序列化失败后，尝试解析错误。
+                let result = wallet_utils::serde_func::serde_from_str::<ApiError>(&response_str);
+
+                let result = match result {
+                    Ok(res) => {
+                        let error_msg = hex_func::hex_to_utf8(&res.message)?;
+                        crate::Error::RpcError(error_msg)
+                    }
+                    Err(_e) => {
+                        let result = wallet_utils::serde_func::serde_from_str::<
+                            ContractValidateException,
+                        >(&response_str)?;
+                        crate::Error::RpcError(result.error)
+                    }
+                };
+                Err(result)
+            }
+        }
     }
 
     // 合约相关的调用、匹配成功和失败的情况
