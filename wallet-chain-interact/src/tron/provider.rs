@@ -97,7 +97,7 @@ impl Provider {
                         let result = wallet_utils::serde_func::serde_from_str::<
                             ContractValidateException,
                         >(&response_str)?;
-                        crate::Error::RpcError(result.error)
+                        crate::Error::ContractValidationError(result.error)
                     }
                 };
                 Err(result)
