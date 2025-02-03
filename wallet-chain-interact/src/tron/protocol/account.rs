@@ -1,6 +1,5 @@
 use crate::tron::{consts, operations::stake::ResourceType};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(default)]
@@ -27,11 +26,7 @@ pub struct TronAccount {
 
 impl TronAccount {
     fn now_time(&self) -> i64 {
-        let start = SystemTime::now();
-        let since_the_epoch = start
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
-        since_the_epoch.as_micros() as i64
+        wallet_utils::time::now().timestamp_millis()
     }
 
     // unit is trx
