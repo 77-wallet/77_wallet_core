@@ -85,7 +85,7 @@ where
         let meta = event.metadata();
 
         // 时间
-        write!(writer, "{} ", Local::now().format("%Y-%m-%d %H:%M:%S"))?;
+        write!(writer, "{} ", Local::now().format("%Y-%m-%d %H:%M:%S%.3f"))?;
 
         // appcode
         write!(writer, "{} ", APP_CODE)?;
