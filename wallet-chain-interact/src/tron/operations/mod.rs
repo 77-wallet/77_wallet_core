@@ -20,7 +20,8 @@ pub trait TronTxOperation<T> {
 
     fn get_to(&self) -> String;
 
-    fn get_value(&self) -> i64;
+    // unit is trx
+    fn get_value(&self) -> f64;
 }
 
 pub trait TronSimulateOperation {

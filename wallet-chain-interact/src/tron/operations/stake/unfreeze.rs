@@ -35,8 +35,9 @@ impl TronTxOperation<UnFreezeBalanceResp> for UnFreezeBalanceArgs {
     fn get_to(&self) -> String {
         String::new()
     }
-    fn get_value(&self) -> i64 {
-        self.unfreeze_balance / consts::TRX_VALUE
+
+    fn get_value(&self) -> f64 {
+        (self.unfreeze_balance / consts::TRX_VALUE) as f64
     }
 }
 
@@ -73,8 +74,8 @@ impl TronTxOperation<CancelAllUnfreezeResp> for CancelAllFreezeBalanceArgs {
     fn get_to(&self) -> String {
         String::new()
     }
-    fn get_value(&self) -> i64 {
-        0
+    fn get_value(&self) -> f64 {
+        0.0
     }
 }
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
@@ -105,7 +106,7 @@ impl TronTxOperation<WithdrawExpireResp> for WithdrawUnfreezeArgs {
         String::new()
     }
 
-    fn get_value(&self) -> i64 {
-        0
+    fn get_value(&self) -> f64 {
+        0.0
     }
 }

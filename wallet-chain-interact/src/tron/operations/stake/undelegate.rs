@@ -45,8 +45,8 @@ impl TronTxOperation<UnDelegateResp> for UnDelegateArgs {
         self.receiver_address.clone()
     }
 
-    fn get_value(&self) -> i64 {
-        self.balance / consts::TRX_VALUE
+    fn get_value(&self) -> f64 {
+        (self.balance / consts::TRX_VALUE) as f64
     }
 }
 
