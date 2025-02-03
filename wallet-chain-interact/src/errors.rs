@@ -60,6 +60,8 @@ pub enum Error {
     NotSupportApi(String),
     #[error("rpc error {0}")]
     RpcError(String),
+    #[error("contract validation error {0}")]
+    ContractValidationError(String),
     #[error("parse error {0}")]
     ParseError(#[from] ParseErr),
     #[error("utxo error")]
