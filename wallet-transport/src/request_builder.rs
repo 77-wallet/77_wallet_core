@@ -48,10 +48,10 @@ impl ReqBuilder {
                         )));
                     }
                 }
-                Err(_e) => {
+                Err(e) => {
                     return Err(TransportError::NodeResponseError(NodeResponseError::new(
                         status.as_u16() as i64,
-                        None,
+                        Some(e.to_string()),
                     )));
                 }
             }
