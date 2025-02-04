@@ -65,11 +65,13 @@ impl TronAccount {
             / consts::TRX_VALUE
     }
 
-    // 所有解冻中的能量或者带宽
+    // 所有解冻中的能量或者带宽(不包含待提取的)
     pub fn un_freeze_amount(&self, resource_type: &str) -> i64 {
+        let now_time = self.now_time();
+
         self.unfreeze_v2
             .iter()
-            .filter(|item| item.types == resource_type)
+            .filter(|item| item.types == resource_type && item.unfreeze_expire_time > now_time)
             .map(|item| item.unfreeze_amount)
             .sum::<i64>()
             / consts::TRX_VALUE
