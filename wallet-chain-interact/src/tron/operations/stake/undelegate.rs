@@ -42,7 +42,11 @@ impl TronTxOperation<UnDelegateResp> for UnDelegateArgs {
     }
 
     fn get_to(&self) -> String {
-        self.receiver_address.clone()
+        if self.receiver_address.starts_with("T") {
+            self.receiver_address.clone()
+        } else {
+            wallet_utils::address::hex_to_bs58_addr(&self.receiver_address).unwrap_or_default()
+        }
     }
 
     fn get_value(&self) -> f64 {
