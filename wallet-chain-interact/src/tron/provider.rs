@@ -51,7 +51,7 @@ struct ApiError {
 #[derive(Debug, serde::Deserialize)]
 struct ContractValidateException {
     #[serde(rename = "Error")]
-    error: String,
+    error: crate::ContractValidationError,
 }
 
 pub struct Provider {
