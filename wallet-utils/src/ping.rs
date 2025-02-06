@@ -25,15 +25,12 @@ pub async fn ping(host: &str, // 支持域名输入
         crate::error::ping::IcmpError::NoIpAddressesResolved,
     ))?;
 
-    println!("Resolved IP: {}", target_ip);
+    tracing::debug!("host: {host}, Resolved IP: {}", target_ip);
     // 创建 Pinger 实例
     let (_packet, duration) = surge_ping::ping(target_ip, &[1, 2, 3, 4, 5, 6, 7, 8])
         .await
         .map_err(|e| crate::Error::Icmp(e.into()))?;
-    //  {
-    //     Ok((_packet, duration)) => println!("_packet: {_packet:#?}, duration: {:.2?}", duration),
-    //     Err(e) => println!("{:?}", e),
-    // };
+    tracing::debug!("ping host {host}: {:?}", duration);
     Ok(duration)
 }
 
@@ -52,7 +49,7 @@ async fn resolve_dns(input: &str) -> Result<Vec<IpAddr>, crate::Error> {
         input.to_string()
     };
 
-    println!("Resolving DNS for host: {}", host);
+    tracing::debug!("input: {input}, Resolving DNS for host: {}", host);
     // 使用 Tokio 的异步 DNS 解析
     let addrs = tokio::net::lookup_host(format!("{}:0", host)).await?;
 
