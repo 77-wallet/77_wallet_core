@@ -5,6 +5,7 @@ pub mod file_func;
 pub mod hex_func;
 pub mod log;
 pub mod parse_func;
+pub mod ping;
 pub mod serde_func;
 pub mod snowflake;
 pub mod system_info;

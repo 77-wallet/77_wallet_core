@@ -38,6 +38,8 @@ pub enum ParseError {
     CustomEnum(String),
     #[error("unit convert failed{0}")]
     UnitConvertFailed(String),
+    #[error("Uri error: {0}")]
+    Uri(#[from] url::ParseError),
 }
 
 impl ParseError {
@@ -62,6 +64,7 @@ impl ParseError {
             ParseError::CustomEnum(_) => 6311,
             ParseError::UnitConvertFailed(_) => 6311,
             ParseError::SolanaSignatureError(_) => 6311,
+            ParseError::Uri(_) => 6311,
         }
     }
 }

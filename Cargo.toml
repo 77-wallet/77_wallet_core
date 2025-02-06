@@ -130,6 +130,8 @@ futures-util = "0.3"
 async-trait = "0.1.80"
 
 regex = "1"
+# icmp
+surge-ping = "0.8.1"
 
 [profile.dev]
 codegen-units = 4
