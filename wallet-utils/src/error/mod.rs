@@ -1,6 +1,7 @@
 pub mod crypto;
 pub mod http;
 pub mod parse;
+pub mod ping;
 pub mod serde;
 pub mod sign_err;
 pub mod snowflake;
@@ -26,10 +27,12 @@ pub enum Error {
     Other(String),
     #[error("Address index overflow occured")]
     AddressIndexOverflowOccured,
+    #[error("Icmp error: `{0}`")]
+    Icmp(#[from] ping::IcmpError),
 }
 
 impl Error {
     pub fn is_network_error(&self) -> bool {
-        matches!(self, Error::Http(_))
+        matches!(self, Error::Http(_) | Error::Icmp(_))
     }
 }

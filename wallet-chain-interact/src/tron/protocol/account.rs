@@ -1,6 +1,5 @@
 use crate::tron::{consts, operations::stake::ResourceType};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(default)]
@@ -27,11 +26,7 @@ pub struct TronAccount {
 
 impl TronAccount {
     fn now_time(&self) -> i64 {
-        let start = SystemTime::now();
-        let since_the_epoch = start
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
-        since_the_epoch.as_micros() as i64
+        wallet_utils::time::now().timestamp_millis()
     }
 
     // unit is trx
@@ -52,7 +47,7 @@ impl TronAccount {
 
         self.unfreeze_v2
             .iter()
-            .filter(|item| item.unfreeze_expire_time >= now)
+            .filter(|item| item.unfreeze_expire_time <= now)
             .map(|item| item.unfreeze_amount)
             .sum::<i64>()
             / consts::TRX_VALUE
@@ -64,17 +59,19 @@ impl TronAccount {
 
         self.unfreeze_v2
             .iter()
-            .filter(|item| item.types == resource_type && item.unfreeze_expire_time >= now_time)
+            .filter(|item| item.types == resource_type && item.unfreeze_expire_time <= now_time)
             .map(|item| item.unfreeze_amount)
             .sum::<i64>()
             / consts::TRX_VALUE
     }
 
-    // 所有解冻中的能量或者带宽
+    // 所有解冻中的能量或者带宽(不包含待提取的)
     pub fn un_freeze_amount(&self, resource_type: &str) -> i64 {
+        let now_time = self.now_time();
+
         self.unfreeze_v2
             .iter()
-            .filter(|item| item.types == resource_type)
+            .filter(|item| item.types == resource_type && item.unfreeze_expire_time > now_time)
             .map(|item| item.unfreeze_amount)
             .sum::<i64>()
             / consts::TRX_VALUE

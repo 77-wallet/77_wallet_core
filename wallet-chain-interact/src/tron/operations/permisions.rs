@@ -198,8 +198,8 @@ impl TronTxOperation<MultisigAccountResp> for PermissionUpdateArgs {
         String::new()
     }
 
-    fn get_value(&self) -> i64 {
-        0
+    fn get_value(&self) -> f64 {
+        0.0
     }
 }
 

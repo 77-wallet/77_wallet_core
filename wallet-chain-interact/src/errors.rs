@@ -1,3 +1,6 @@
+use chrono::TimeZone;
+use regex::Regex;
+use serde::de;
 use thiserror::Error;
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -36,6 +39,65 @@ pub enum UtxoError {
 }
 
 #[derive(Error, Debug)]
+pub enum ContractValidationError {
+    #[error("last withdraw time is {0}, less than 24 hours")]
+    WithdrawTooSoon(String),
+    #[error("witnessAccount does not have any reward")]
+    WitnessAccountDoesNotHaveAnyReward,
+    #[error("The lock period for ENERGY this time cannot be less than the remaining time {0}ms")]
+    EnergyLockPeriodTooShort(i64),
+    #[error("{0}")]
+    Other(String),
+}
+
+impl<'de> serde::Deserialize<'de> for ContractValidationError {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct TronErrorVisitor;
+
+        impl<'de> de::Visitor<'de> for TronErrorVisitor {
+            type Value = ContractValidationError;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(
+                    formatter,
+                    "a string representing a contract validation error"
+                )
+            }
+
+            fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                let withdraw_regex =
+                    Regex::new(r"last withdraw time is (\d+), less than 24 hours").unwrap();
+                let balance_regex = Regex::new(r"witnessAccount does not have any reward").unwrap();
+
+                // The lock period for ENERGY this time cannot be less than the remaining time[259092000ms] of the last lock period for ENERGY!
+                let energy_lock_period_too_short_regex = Regex::new(r"The lock period for ENERGY this time cannot be less than the remaining time\[(\d+)ms\]").unwrap();
+                if let Some(caps) = withdraw_regex.captures(value) {
+                    let timestamp = caps[1].parse::<i64>().unwrap();
+                    // 把时间戳转成 Utc时间
+                    let time = chrono::Utc.timestamp_micros(timestamp).unwrap().to_string();
+                    Ok(ContractValidationError::WithdrawTooSoon(time))
+                } else if let Some(caps) = energy_lock_period_too_short_regex.captures(value) {
+                    let timestamp = caps[1].parse::<i64>().unwrap();
+                    Ok(ContractValidationError::EnergyLockPeriodTooShort(timestamp))
+                } else if balance_regex.is_match(value) {
+                    Ok(ContractValidationError::WitnessAccountDoesNotHaveAnyReward)
+                } else {
+                    Ok(ContractValidationError::Other(value.to_string()))
+                }
+            }
+        }
+
+        deserializer.deserialize_str(TronErrorVisitor)
+    }
+}
+
+#[derive(Error, Debug)]
 pub enum Error {
     #[error("{0}")]
     TransportError(#[from] wallet_transport::errors::TransportError),
@@ -60,6 +122,8 @@ pub enum Error {
     NotSupportApi(String),
     #[error("rpc error {0}")]
     RpcError(String),
+    #[error("contract validation error {0}")]
+    ContractValidationError(ContractValidationError),
     #[error("parse error {0}")]
     ParseError(#[from] ParseErr),
     #[error("utxo error")]

@@ -18,6 +18,8 @@ impl Reward {
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct WithdrawBalanceArgs {
     pub owner_address: String,
+    // 提取的金额 unit is trx
+    pub value: Option<f64>,
 }
 
 #[async_trait::async_trait]
@@ -34,8 +36,8 @@ impl TronTxOperation<WithdrawBalanceResp> for WithdrawBalanceArgs {
         String::new()
     }
 
-    fn get_value(&self) -> i64 {
-        0
+    fn get_value(&self) -> f64 {
+        self.value.unwrap_or_default()
     }
 }
 
@@ -89,8 +91,8 @@ impl TronTxOperation<VoteWitnessArgs> for VoteWitnessArgs {
     fn get_to(&self) -> String {
         String::new()
     }
-    fn get_value(&self) -> i64 {
-        0
+    fn get_value(&self) -> f64 {
+        0.0
     }
 }
 

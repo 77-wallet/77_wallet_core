@@ -50,3 +50,8 @@ reqwest = { workspace = true }
 once_cell = { workspace = true }
 
 pbkdf2 = { version = "0.12", default-features = false }
+
+# icmp
+surge-ping = { workspace = true }
+url = { workspace = true }
+tokio = { workspace = true }

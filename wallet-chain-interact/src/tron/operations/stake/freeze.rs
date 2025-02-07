@@ -38,8 +38,8 @@ impl TronTxOperation<FreezeBalanceResp> for FreezeBalanceArgs {
         String::new()
     }
 
-    fn get_value(&self) -> i64 {
-        self.frozen_balance / consts::TRX_VALUE
+    fn get_value(&self) -> f64 {
+        (self.frozen_balance / consts::TRX_VALUE) as f64
     }
 }
 

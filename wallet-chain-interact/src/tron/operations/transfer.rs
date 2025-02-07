@@ -78,8 +78,8 @@ impl TronTxOperation<TronTransferResp> for TransferOpt {
         self.to.clone()
     }
 
-    fn get_value(&self) -> i64 {
-        self.value / consts::TRX_VALUE
+    fn get_value(&self) -> f64 {
+        (self.value / consts::TRX_VALUE) as f64
     }
 }
 
@@ -214,8 +214,8 @@ impl TronTxOperation<ContractTransferResp> for ContractTransferOpt {
         self.to.clone()
     }
 
-    fn get_value(&self) -> i64 {
-        self.value.to::<i64>() / consts::TRX_VALUE
+    fn get_value(&self) -> f64 {
+        (self.value.to::<i64>() / consts::TRX_VALUE) as f64
     }
 }
 

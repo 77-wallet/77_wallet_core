@@ -83,8 +83,8 @@ impl TronTxOperation<MultisigAccountResp> for MultisigAccountOpt {
         self.from.clone()
     }
 
-    fn get_value(&self) -> i64 {
-        0
+    fn get_value(&self) -> f64 {
+        0.0
     }
 }
 
