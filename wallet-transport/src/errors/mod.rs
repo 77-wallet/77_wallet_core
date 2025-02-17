@@ -10,8 +10,6 @@ pub enum TransportError {
     Utils(#[from] wallet_utils::error::Error),
     #[error("Rumqttc v5 option error: {0}")]
     RumqttcV5Option(#[from] rumqttc::v5::OptionError),
-    #[error("Aliyun oss error: {0}")]
-    AliyunOss(#[from] crate::client::oss_client::error::OssError),
 }
 
 impl std::fmt::Display for NodeResponseError {
