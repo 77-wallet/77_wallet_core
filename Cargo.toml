@@ -26,6 +26,10 @@ rev = "34680a41039a9e108d927b6d8d6647277589c912"
 git = "https://github.com/rust-lang/libc.git"
 rev = "dad00cb00e92baa7e28a542eb94bc2a78762f583"
 
+# [patch.crates-io.solana-zk-token-sdk]
+# git = "https://github.com/anza-xyz/agave"
+# rev = "d9f20e951a06b61e4505da0955228020b96a8915"
+
 
 [workspace.dependencies]
 wallet-chain-interact = { version = "0.1.0", default-features = false, path = "wallet-chain-interact" }
@@ -94,7 +98,8 @@ bitcoin = { version = "0.32.2", features = [
     "rand-std",
     "serde",
 ], default-features = false }
-solana-sdk = "=2.0.0"
+solana-sdk = "=2.1.0"
+spl-token-2022 = "4"
 
 bech32 = "0.11.0"
 once_cell = { version = "1", default-features = false }
