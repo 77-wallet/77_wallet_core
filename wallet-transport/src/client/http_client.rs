@@ -29,6 +29,9 @@ impl HttpClient {
         };
 
         let mut client = reqwest::ClientBuilder::new().default_headers(headers);
+        #[cfg(feature = "accept_invalid_certs")]
+        let mut client = client.danger_accept_invalid_certs(true);
+
         if let Some(timeout) = timeout {
             client = client.timeout(timeout);
         }

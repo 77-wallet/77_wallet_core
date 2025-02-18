@@ -5,6 +5,7 @@ edition = "2021"
 
 [features]
 debug-print = []
+accept_invalid_certs = []
 
 [dependencies]
 wallet-utils = { workspace = true }
