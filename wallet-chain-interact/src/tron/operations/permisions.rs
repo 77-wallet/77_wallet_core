@@ -1,75 +1,85 @@
-use crate::tron::Provider;
-
 use super::{
     multisig::{MultisigAccountResp, Permission},
     RawTransactionParams, TronTransactionResponse, TronTxOperation,
 };
+use crate::tron::Provider;
 use wallet_utils::address;
 
+// https://github.com/tronprotocol/java-tron/blob/1f0aa386212feb7817048aeb436779ddecaca534/protocol/src/main/protos/core/Tron.proto#L337
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContractType {
+    // 创建账号(激活账号)
     AccountCreateContract = 0,
-    // 转账
+    // TRX转账
     TransferContract = 1,
+    // TRC10通证转账
     TransferAssetContract = 2,
     VoteAssetContract = 3,
     // 投票Vote
     VoteWitnessContract = 4,
-    // 成为超级节点
+    // 申请成为超级代表候选人
     WitnessCreateContract = 5,
-    // Issue Contract
+    // 发行TRC10 资产
     AssetIssueContract = 6,
-    // 更新超级节点信息(Update SR Info)
+    // 更新超级代表候选人信息
     WitnessUpdateContract = 8,
     // Participate in TRC10 Issuance
     ParticipateAssetIssueContract = 9,
-    // Update Account Name
+    // 修改账户名称
     AccountUpdateContract = 10,
-    // TRX Stake (1.0)
+    // 质押资产1.0
     FreezeBalanceContract = 11,
-    // TRX Unstake (1.0)
+    // 解锁资产1.0
     UnfreezeBalanceContract = 12,
-    // Claim Voting Rewards
+    // 提取收益
     WithdrawBalanceContract = 13,
-    // Unstake TRC10
+    // Unstake TRC10 ? 锁仓提取
     UnfreezeAssetContract = 14,
-    // Update TRC10 Parameters
+    // 更新TRC10 通证参数
     UpdateAssetContract = 15,
-    // Create Proposal
+    // 发起提议
     ProposalCreateContract = 16,
-    // Approve Proposal
+    // 赞成提议
     ProposalApproveContract = 17,
-    // Cancel Proposal
+    // 撤销提议
     ProposalDeleteContract = 18,
     SetAccountIdContract = 19,
     CustomContract = 20,
-    // Create Smart Contract
+    // 创建智能合约
     CreateSmartContract = 30,
-    // Trigger Smart Contract
+    // 触发智能合约(TRC20/TRC721转账)
     TriggerSmartContract = 31,
     GetContract = 32,
-    // Update Contract Parameters
+    // 更新合约参数
     UpdateSettingContract = 33,
+    // 创建 Bancor 交易
     ExchangeCreateContract = 41,
+    // Bancor 交易注资
     ExchangeInjectContract = 42,
+    // Bancor 交易撤资
     ExchangeWithdrawContract = 43,
+    // 执行 Bancor 交易
     ExchangeTransactionContract = 44,
+    // 更新合约能量限制
     UpdateEnergyLimitContract = 45,
+    // 账号权限管理
     AccountPermissionUpdateContract = 46,
+    // 清除合约ABI
     ClearABIContract = 48,
+    // 更新超级代表佣金比例
     UpdateBrokerageContract = 49,
     ShieldedTransferContract = 51,
     MarketSellAssetContract = 52,
     MarketCancelOrderContract = 53,
-    // freeze v2
+    // 质押资产2.0
     FreezeBalanceV2Contract = 54,
-    // stake v2
+    // 解锁资产2.0
     UnfreezeBalanceV2Contract = 55,
-    // 取款
+    // 提取资产
     WithdrawExpireUnfreezeContract = 56,
-    // 委派
+    // 代理资源
     DelegateResourceContract = 57,
-    // 取消委派
+    // 回收资源
     UnDelegateResourceContract = 58,
     // 全部取消委派
     CancelAllUnfreezeV2Contract = 59,
@@ -83,7 +93,7 @@ impl PermissionTypes {
         let contract_ids = self
             .0
             .iter()
-            .map(|i| i.to_u8() as usize)
+            .map(|i| i.to_i8() as usize)
             .collect::<Vec<usize>>();
 
         let mut operations = [0u8; 32];
@@ -94,7 +104,7 @@ impl PermissionTypes {
         hex::encode(operations)
     }
 
-    pub fn from_hex(hex_str: &str) -> crate::Result<Vec<u8>> {
+    pub fn from_hex(hex_str: &str) -> crate::Result<Vec<i8>> {
         let operations = wallet_utils::hex_func::hex_decode(hex_str)?;
 
         let mut contract_ids = Vec::new();
@@ -108,8 +118,8 @@ impl PermissionTypes {
 
         let original_structure = contract_ids
             .into_iter()
-            .map(|id| id as u8)
-            .collect::<Vec<u8>>();
+            .map(|id| id as i8)
+            .collect::<Vec<i8>>();
 
         Ok(original_structure)
     }
@@ -154,7 +164,7 @@ impl Default for PermissionTypes {
 }
 
 impl ContractType {
-    pub fn to_u8(&self) -> i8 {
+    pub fn to_i8(&self) -> i8 {
         *self as i8
     }
 }
@@ -219,9 +229,10 @@ mod tests {
 
     #[test]
     pub fn test_recover() {
-        let operations = "000000000000c00f000000000000000000000000000000000000000000000000";
+        let operations = "7fff1fc0033ec30f000000000000000000000000000000000000000000000000";
 
         let res = PermissionTypes::from_hex(&operations).unwrap();
-        println!("{:?}", res)
+        println!("{:?}", res);
+        println!("len = {:?}", res.len());
     }
 }

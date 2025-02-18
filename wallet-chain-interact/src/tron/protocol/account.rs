@@ -250,8 +250,8 @@ pub struct PermissionResp {
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct Keys {
-    address: String,
-    weight: i8,
+    pub address: String,
+    pub weight: i8,
 }
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
