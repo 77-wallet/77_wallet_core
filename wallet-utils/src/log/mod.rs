@@ -4,13 +4,10 @@ use std::sync::OnceLock;
 
 use chrono::Local;
 use tracing_subscriber::fmt::{FmtContext, FormatEvent, FormatFields};
-use tracing_subscriber::registry::LookupSpan; // for fmt::Write
+use tracing_subscriber::registry::LookupSpan;
 
 use tracing_subscriber::fmt::format::Writer;
-// use tracing_subscriber::fmt::{format, time::FormatTime};
 
-// pub const APP_CODE: &str = "123123123123123";
-// pub const APP_CODE: &str = "66a7577a2b2f3b0130375e6f";
 pub const APP_CODE: OnceLock<String> = OnceLock::new();
 static SN_CODE: once_cell::sync::Lazy<std::sync::RwLock<Option<String>>> =
     once_cell::sync::Lazy::new(|| std::sync::RwLock::new(None));
@@ -25,6 +22,10 @@ pub fn set_sn_code(sn: &str) {
 pub fn get_sn_code() -> String {
     let sn_lock = SN_CODE.read().unwrap();
     sn_lock.clone().unwrap_or("sn".to_string())
+}
+
+pub fn set_app_code(app_code: &str) {
+    let _ = APP_CODE.set(app_code.to_string());
 }
 
 static LOG_LEVEL: once_cell::sync::Lazy<std::sync::RwLock<Option<String>>> =
