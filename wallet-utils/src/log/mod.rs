@@ -8,7 +8,7 @@ use tracing_subscriber::registry::LookupSpan;
 
 use tracing_subscriber::fmt::format::Writer;
 
-pub const APP_CODE: OnceLock<String> = OnceLock::new();
+pub static APP_CODE: OnceLock<String> = OnceLock::new();
 static SN_CODE: once_cell::sync::Lazy<std::sync::RwLock<Option<String>>> =
     once_cell::sync::Lazy::new(|| std::sync::RwLock::new(None));
 
@@ -25,7 +25,7 @@ pub fn get_sn_code() -> String {
 }
 
 pub fn set_app_code(app_code: &str) {
-    let _ = APP_CODE.set(app_code.to_string());
+    APP_CODE.get_or_init(|| app_code.to_string());
 }
 
 static LOG_LEVEL: once_cell::sync::Lazy<std::sync::RwLock<Option<String>>> =
@@ -92,7 +92,11 @@ where
         write!(writer, "{} ", Local::now().format("%Y-%m-%d %H:%M:%S%.3f"))?;
 
         // appcode
-        write!(writer, "{} ", APP_CODE.get().ok_or(std::fmt::Error)?)?;
+        write!(
+            writer,
+            "{} ",
+            APP_CODE.get().unwrap_or(&"appcode".to_string())
+        )?;
 
         // 日志级别
         write!(writer, "{} ", meta.level())?;
