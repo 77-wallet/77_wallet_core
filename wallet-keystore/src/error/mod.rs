@@ -9,7 +9,7 @@ pub enum Error {
     #[error("Tree error: `{0}`")]
     Tree(#[from] wallet_tree::Error),
     #[error("Keystore error: `{0}`")]
-    Keystore(#[from] crate::eth_keystore::KeystoreError),
+    Keystore(#[from] crate::crypto::KeystoreError),
     #[error("Wallet error: `{0}`")]
     PkWallet(#[from] wallet::WalletError),
 

@@ -29,7 +29,7 @@ mod error;
 // use utils::geth_compat::address_from_pk;
 
 pub use error::KeystoreError;
-pub use keystore::{CipherparamsJson, CryptoJson, EthKeystore, KdfType, KdfparamsType};
+pub use keystore::{CipherparamsJson, CryptoJson, KeystoreJson, KdfType, KdfparamsType};
 
 const DEFAULT_CIPHER: &str = "aes-128-ctr";
 const DEFAULT_KEY_SIZE: usize = 32usize;
@@ -62,7 +62,8 @@ const DEFAULT_KDF_PARAMS_P: u32 = 1u32;
 /// # Ok(())
 /// # }
 /// ```
-pub fn new<P, R, S>(
+#[allow(dead_code)]
+pub(crate) fn new<P, R, S>(
     dir: P,
     rng: &mut R,
     password: S,
@@ -97,7 +98,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-pub fn decrypt_data<P, S>(path: P, password: S) -> Result<Vec<u8>, KeystoreError>
+pub(crate) fn decrypt_data<P, S>(path: P, password: S) -> Result<Vec<u8>, KeystoreError>
 where
     P: AsRef<Path>,
     S: AsRef<[u8]>,
@@ -106,7 +107,7 @@ where
     let mut file = File::open(path)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
-    let keystore: EthKeystore = serde_json::from_str(&contents)?;
+    let keystore: KeystoreJson = serde_json::from_str(&contents)?;
 
     // Derive the key.
     let key = match keystore.crypto.kdfparams {
@@ -179,7 +180,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-pub fn encrypt_data<P, R, B, S>(
+pub(crate) fn encrypt_data<P, R, B, S>(
     dir: P,
     rng: &mut R,
     data: B,
@@ -256,7 +257,7 @@ where
     // );
 
     // Construct and serialize the encrypted JSON keystore.
-    let keystore = EthKeystore {
+    let keystore = KeystoreJson {
         id,
         version: 3,
         crypto: CryptoJson {
@@ -297,7 +298,8 @@ where
     Ok(id.to_string())
 }
 
-pub async fn scrypt_async(
+#[allow(dead_code)]
+pub(crate) async fn scrypt_async(
     password: &[u8],
     salt: &[u8],
     params: &scrypt::Params,

@@ -8,7 +8,7 @@ use uuid::Uuid;
 #[derive(Debug, Deserialize, Serialize)]
 /// This struct represents the deserialized form of an encrypted JSON keystore based on the
 /// [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition).
-pub struct EthKeystore {
+pub struct KeystoreJson {
     // #[cfg(feature = "geth-compat")]
     // pub address: Address,
     pub crypto: CryptoJson,
@@ -108,7 +108,7 @@ mod tests {
             "id" : "3198bc9c-6672-5ab3-d995-4942343ae5b6",
             "version" : 3
         }"#;
-        let keystore: EthKeystore = serde_json::from_str(data).unwrap();
+        let keystore: KeystoreJson = serde_json::from_str(data).unwrap();
         assert_eq!(keystore.version, 3);
         assert_eq!(
             keystore.id,
@@ -167,7 +167,7 @@ mod tests {
             "id" : "3198bc9c-6672-5ab3-d995-4942343ae5b6",
             "version" : 3
         }"#;
-        let keystore: EthKeystore = serde_json::from_str(data).unwrap();
+        let keystore: KeystoreJson = serde_json::from_str(data).unwrap();
         assert_eq!(keystore.version, 3);
         assert_eq!(
             keystore.id,

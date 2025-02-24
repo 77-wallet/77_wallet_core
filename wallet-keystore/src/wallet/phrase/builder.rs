@@ -43,13 +43,8 @@ where
 
     fn encrypt_keystore(self) -> Result<Self::Output, crate::Error> {
         let data = self.data.as_ref();
-        let uuid = crate::eth_keystore::encrypt_data(
-            self.keypath,
-            self.rng,
-            data,
-            self.password,
-            self.name,
-        )?;
+        let uuid =
+            crate::crypto::encrypt_data(self.keypath, self.rng, data, self.password, self.name)?;
         let data = wallet_utils::conversion::vec_to_string(data)?;
         Ok((PhraseWallet::from_phrase(&data)?, uuid))
     }
@@ -78,7 +73,7 @@ where
     type Output = PhraseWallet;
 
     fn decrypt_keystore(self) -> Result<Self::Output, crate::Error> {
-        let phrase = crate::eth_keystore::decrypt_data(self.keypath, self.password)?;
+        let phrase = crate::crypto::decrypt_data(self.keypath, self.password)?;
         let phrase = wallet_utils::conversion::vec_to_string(&phrase)?;
         Ok(PhraseWallet::from_phrase(&phrase)?)
     }

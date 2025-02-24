@@ -57,13 +57,8 @@ where
 
     fn encrypt_keystore(self) -> Result<Self::Output, crate::Error> {
         let data = self.pk.as_ref();
-        let uuid = crate::eth_keystore::encrypt_data(
-            self.keypath,
-            self.rng,
-            data,
-            self.password,
-            self.name,
-        )?;
+        let uuid =
+            crate::crypto::encrypt_data(self.keypath, self.rng, data, self.password, self.name)?;
         Ok((PkWallet::from_slice(data, self.data)?, uuid))
     }
 }
@@ -110,7 +105,7 @@ where
     type Output = PkWallet;
 
     fn decrypt_keystore(self) -> Result<Self::Output, crate::Error> {
-        let secret = crate::eth_keystore::decrypt_data(self.keypath, self.password)?;
+        let secret = crate::crypto::decrypt_data(self.keypath, self.password)?;
         PkWallet::from_slice(&secret, self.data)
     }
 }

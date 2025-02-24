@@ -43,13 +43,8 @@ where
 
     fn encrypt_keystore(self) -> Result<Self::Output, crate::Error> {
         let data = self.data.as_ref();
-        let uuid = crate::eth_keystore::encrypt_data(
-            self.keypath,
-            self.rng,
-            data,
-            self.password,
-            self.name,
-        )?;
+        let uuid =
+            crate::crypto::encrypt_data(self.keypath, self.rng, data, self.password, self.name)?;
         Ok((SeedWallet::from_seed(data.to_vec())?, uuid))
     }
 }
@@ -77,7 +72,7 @@ where
     type Output = SeedWallet;
 
     fn decrypt_keystore(self) -> Result<Self::Output, crate::Error> {
-        let seed = crate::eth_keystore::decrypt_data(self.keypath, self.password)?;
+        let seed = crate::crypto::decrypt_data(self.keypath, self.password)?;
         Ok(SeedWallet::from_seed(seed)?)
     }
 }
