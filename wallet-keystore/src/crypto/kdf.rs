@@ -1,6 +1,6 @@
-use crate::error::crypto::KeystoreError;
+use crate::{error::crypto::KeystoreError, keystore::kdf::ScryptParams};
 use hmac::Hmac;
-use scrypt::{scrypt, Params as ScryptParams};
+use scrypt::{scrypt, Params as ScryptParams_};
 use sha2::Sha256;
 
 pub trait KeyDerivation {
@@ -10,17 +10,31 @@ pub struct ScryptKdf {
     pub params: ScryptParams,
 }
 
+impl ScryptKdf {
+    pub fn new(params: ScryptParams) -> Self {
+        Self { params }
+    }
+}
+
 impl KeyDerivation for ScryptKdf {
     fn derive_key(&self, password: &[u8], salt: &[u8]) -> Result<Vec<u8>, KeystoreError> {
-        let mut key = vec![0u8; self.params.log_n() as usize];
-        scrypt(password, salt, &self.params, &mut key)?;
+        let mut key = vec![0u8; self.params.dklen as usize];
+        let log_n = super::kdf::log2(self.params.n) as u8;
+        let scrypt_params = ScryptParams_::new(log_n, self.params.r, self.params.p)?;
+        scrypt(password, salt, &scrypt_params, &mut key)?;
         Ok(key)
     }
 }
 
 pub struct Pbkdf2Kdf {
     pub iterations: u32,
-    pub dklen: u32,
+    pub dklen: u8,
+}
+
+impl Pbkdf2Kdf {
+    pub fn new(iterations: u32, dklen: u8) -> Self {
+        Self { iterations, dklen }
+    }
 }
 
 impl KeyDerivation for Pbkdf2Kdf {
@@ -28,5 +42,42 @@ impl KeyDerivation for Pbkdf2Kdf {
         let mut key = vec![0u8; self.dklen as usize];
         pbkdf2::pbkdf2::<Hmac<Sha256>>(password, salt, self.iterations, &mut key);
         Ok(key)
+    }
+}
+
+#[allow(unused_assignments)]
+pub(crate) fn log2(mut n: u32) -> u32 {
+    let mut result = 0;
+    if (n & 0xffff0000) != 0 {
+        result += 16;
+        n >>= 16;
+    }
+    if (n & 0x0000ff00) != 0 {
+        result += 8;
+        n >>= 8;
+    }
+    if (n & 0x000000f0) != 0 {
+        result += 4;
+        n >>= 4;
+    }
+    if (n & 0x0000000c) != 0 {
+        result += 2;
+        n >>= 2;
+    }
+    if (n & 0x00000002) != 0 {
+        result += 1;
+        n >>= 1;
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::crypto::kdf::log2;
+
+    #[test]
+    fn test_log2() {
+        let n = 8192;
+        println!("log_n: {}", log2(n));
     }
 }

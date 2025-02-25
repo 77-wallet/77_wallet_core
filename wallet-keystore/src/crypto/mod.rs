@@ -2,36 +2,34 @@
 //! A minimalist library to interact with encrypted JSON keystores as per the
 //! [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition).
 
-use aes::{
-    cipher::{InnerIvInit, KeyInit, StreamCipherCore},
-    Aes128,
-};
 use cipher::SymmetricCipher;
-use digest::{Digest, Update};
-use hmac::Hmac;
+use context::KdfContext;
 use mac::MacCalculator as _;
-use pbkdf2::pbkdf2;
 use rand::{CryptoRng, Rng};
-use scrypt::{scrypt, Params as ScryptParams};
-use sha2::Sha256;
-use sha3::Keccak256;
+use scrypt::{scrypt, Params as ScryptParams_};
 use uuid::Uuid;
 
 use std::{fs::File, io::Write, path::Path};
 
 mod cipher;
+mod context;
 mod io;
 mod kdf;
-mod keystore;
 mod mac;
+// mod pipeline;
+mod rng;
 // mod utils;
 
 // #[cfg(feature = "geth-compat")]
 // use utils::geth_compat::address_from_pk;
 
-pub use keystore::{CipherparamsJson, CryptoJson, KdfType, KdfparamsType, KeystoreJson};
-
-use crate::error::crypto::KeystoreError;
+use crate::{
+    error::crypto::KeystoreError,
+    keystore::{
+        kdf::{KdfAlgorithm, KdfParams, Pbkdf2Params, ScryptParams},
+        CipherparamsJson, CryptoJson, KeystoreJson,
+    },
+};
 
 const DEFAULT_CIPHER: &str = "aes-128-ctr";
 const DEFAULT_KEY_SIZE: usize = 32usize;
@@ -119,36 +117,6 @@ fn generate_random_bytes<R: Rng + CryptoRng>(rng: &mut R, len: usize) -> Vec<u8>
     bytes
 }
 
-fn derive_key(kdfparams: KdfparamsType, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
-    // match keystore.crypto.kdfparams {
-    Ok(match kdfparams {
-        KdfparamsType::Pbkdf2 {
-            c,
-            dklen,
-            prf: _,
-            salt,
-        } => {
-            
-            let mut key = vec![0u8; dklen as usize];
-            pbkdf2::<Hmac<Sha256>>(password.as_ref(), &salt, c, key.as_mut_slice());
-            key
-        }
-        KdfparamsType::Scrypt {
-            dklen,
-            n,
-            p,
-            r,
-            salt,
-        } => {
-            let mut key = vec![0u8; dklen as usize];
-            let log_n = log2(n) as u8;
-            let scrypt_params = ScryptParams::new(log_n, r, p)?;
-            scrypt(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice())?;
-            key
-        }
-    })
-}
-
 /// Decrypts an encrypted JSON keystore at the provided `path` using the provided `password`.
 /// Decryption supports the [Scrypt](https://tools.ietf.org/html/rfc7914.html) and
 /// [PBKDF2](https://ietf.org/rfc/rfc2898.txt) key derivation functions.
@@ -176,7 +144,8 @@ where
     let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(&contents)?;
 
     // Derive the key.
-    let key = derive_key(keystore.crypto.kdfparams, password.as_ref())?;
+    let cx = KdfContext::new(keystore.crypto.kdfparams)?;
+    let key = cx.derive_key(password.as_ref())?;
 
     // Derive the MAC from the derived key and ciphertext.
     let derived_mac = mac::Keccak256Mac.compute(&key, &keystore.crypto.ciphertext);
@@ -247,7 +216,7 @@ where
     // );
     // Derive the key.
     let mut key = vec![0u8; DEFAULT_KDF_PARAMS_DKLEN as usize];
-    let scrypt_params = ScryptParams::new(
+    let scrypt_params = ScryptParams_::new(
         DEFAULT_KDF_PARAMS_LOG_N,
         DEFAULT_KDF_PARAMS_R,
         DEFAULT_KDF_PARAMS_P,
@@ -299,14 +268,14 @@ where
             cipher: String::from(DEFAULT_CIPHER),
             cipherparams: CipherparamsJson { iv },
             ciphertext: ciphertext.to_vec(),
-            kdf: KdfType::Scrypt,
-            kdfparams: KdfparamsType::Scrypt {
+            kdf: KdfAlgorithm::Scrypt,
+            kdfparams: KdfParams::Scrypt(ScryptParams {
                 dklen: DEFAULT_KDF_PARAMS_DKLEN,
                 n: 2u32.pow(DEFAULT_KDF_PARAMS_LOG_N as u32),
                 p: DEFAULT_KDF_PARAMS_P,
                 r: DEFAULT_KDF_PARAMS_R,
                 salt,
-            },
+            }),
             mac: mac.to_vec(),
         },
     };
@@ -354,32 +323,6 @@ pub(crate) async fn scrypt_async(
     .map_err(KeystoreError::TokioTaskJoin)??;
     output.copy_from_slice(&output_copy);
     Ok(())
-}
-
-#[allow(unused_assignments)]
-pub(crate) fn log2(mut n: u32) -> u32 {
-    let mut result = 0;
-    if (n & 0xffff0000) != 0 {
-        result += 16;
-        n >>= 16;
-    }
-    if (n & 0x0000ff00) != 0 {
-        result += 8;
-        n >>= 8;
-    }
-    if (n & 0x000000f0) != 0 {
-        result += 4;
-        n >>= 4;
-    }
-    if (n & 0x0000000c) != 0 {
-        result += 2;
-        n >>= 2;
-    }
-    if (n & 0x00000002) != 0 {
-        result += 1;
-        n >>= 1;
-    }
-    result
 }
 
 #[cfg(test)]
@@ -455,10 +398,4 @@ mod test {
     //     }
     //     println!("log_n: {log_n}");
     // }
-
-    #[test]
-    fn test_log2() {
-        let n = 8192;
-        println!("log_n: {}", log2(n));
-    }
 }
