@@ -29,7 +29,7 @@ mod error;
 // use utils::geth_compat::address_from_pk;
 
 pub use error::KeystoreError;
-pub use keystore::{CipherparamsJson, CryptoJson, KeystoreJson, KdfType, KdfparamsType};
+pub use keystore::{CipherparamsJson, CryptoJson, KdfType, KdfparamsType, KeystoreJson};
 
 const DEFAULT_CIPHER: &str = "aes-128-ctr";
 const DEFAULT_KEY_SIZE: usize = 32usize;

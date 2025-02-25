@@ -26,6 +26,10 @@ rev = "34680a41039a9e108d927b6d8d6647277589c912"
 git = "https://github.com/rust-lang/libc.git"
 rev = "dad00cb00e92baa7e28a542eb94bc2a78762f583"
 
+[patch.crates-io.scrypt]
+git = "https://github.com/RustCrypto/password-hashes.git"
+rev = "7ddd03c31fdec4f9575438688e7f58f5c692419b"
+
 # [patch.crates-io.solana-zk-token-sdk]
 # git = "https://github.com/anza-xyz/agave"
 # rev = "d9f20e951a06b61e4505da0955228020b96a8915"
