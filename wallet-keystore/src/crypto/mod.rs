@@ -3,7 +3,7 @@
 //! [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition).
 
 use aes::{
-    cipher::{self, InnerIvInit, KeyInit, StreamCipherCore},
+    cipher::{InnerIvInit, KeyInit, StreamCipherCore},
     Aes128,
 };
 use digest::{Digest, Update};
@@ -15,21 +15,17 @@ use sha2::Sha256;
 use sha3::Keccak256;
 use uuid::Uuid;
 
-use std::{
-    fs::File,
-    io::{Read, Write},
-    path::Path,
-};
+use std::{fs::File, io::Write, path::Path};
 
 mod keystore;
 // mod utils;
-mod error;
 
 // #[cfg(feature = "geth-compat")]
 // use utils::geth_compat::address_from_pk;
 
-pub use error::KeystoreError;
-pub use keystore::{CipherparamsJson, CryptoJson, KeystoreJson, KdfType, KdfparamsType};
+pub use keystore::{CipherparamsJson, CryptoJson, KdfType, KdfparamsType, KeystoreJson};
+
+use crate::error::crypto::KeystoreError;
 
 const DEFAULT_CIPHER: &str = "aes-128-ctr";
 const DEFAULT_KEY_SIZE: usize = 32usize;
@@ -68,49 +64,28 @@ pub(crate) fn new<P, R, S>(
     rng: &mut R,
     password: S,
     name: Option<&str>,
-) -> Result<(Vec<u8>, String), KeystoreError>
+) -> Result<(Vec<u8>, String), crate::Error>
 where
     P: AsRef<Path>,
     R: Rng + CryptoRng,
     S: AsRef<[u8]>,
 {
     // Generate a random private key.
-    let mut pk = vec![0u8; DEFAULT_KEY_SIZE];
-    rng.fill_bytes(pk.as_mut_slice());
+    let pk = generate_random_bytes(rng, DEFAULT_KEY_SIZE);
 
     let name = encrypt_data(dir, rng, &pk, password, name)?;
     Ok((pk, name))
 }
 
-/// Decrypts an encrypted JSON keystore at the provided `path` using the provided `password`.
-/// Decryption supports the [Scrypt](https://tools.ietf.org/html/rfc7914.html) and
-/// [PBKDF2](https://ietf.org/rfc/rfc2898.txt) key derivation functions.
-///
-/// # Example
-///
-/// ```no_run
-/// use eth_keystore::decrypt_key;
-/// use std::path::Path;
-///
-/// # async fn foobar() -> Result<(), Box<dyn std::error::Error>> {
-/// let keypath = Path::new("./keys/my-key");
-/// let private_key = decrypt_key(&keypath, "password_to_keystore")?;
-/// # Ok(())
-/// # }
-/// ```
-pub(crate) fn decrypt_data<P, S>(path: P, password: S) -> Result<Vec<u8>, KeystoreError>
-where
-    P: AsRef<Path>,
-    S: AsRef<[u8]>,
-{
-    // Read the file contents as string and deserialize it.
-    let mut file = File::open(path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let keystore: KeystoreJson = serde_json::from_str(&contents)?;
+fn generate_random_bytes<R: Rng + CryptoRng>(rng: &mut R, len: usize) -> Vec<u8> {
+    let mut bytes = vec![0u8; len];
+    rng.fill_bytes(&mut bytes);
+    bytes
+}
 
-    // Derive the key.
-    let key = match keystore.crypto.kdfparams {
+fn derive_key(kdfparams: KdfparamsType, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
+    // match keystore.crypto.kdfparams {
+    Ok(match kdfparams {
         KdfparamsType::Pbkdf2 {
             c,
             dklen,
@@ -134,7 +109,37 @@ where
             scrypt(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice())?;
             key
         }
-    };
+    })
+}
+
+/// Decrypts an encrypted JSON keystore at the provided `path` using the provided `password`.
+/// Decryption supports the [Scrypt](https://tools.ietf.org/html/rfc7914.html) and
+/// [PBKDF2](https://ietf.org/rfc/rfc2898.txt) key derivation functions.
+///
+/// # Example
+///
+/// ```no_run
+/// use eth_keystore::decrypt_key;
+/// use std::path::Path;
+///
+/// # async fn foobar() -> Result<(), Box<dyn std::error::Error>> {
+/// let keypath = Path::new("./keys/my-key");
+/// let private_key = decrypt_key(&keypath, "password_to_keystore")?;
+/// # Ok(())
+/// # }
+/// ```
+pub(crate) fn decrypt_data<P, S>(path: P, password: S) -> Result<Vec<u8>, crate::Error>
+where
+    P: AsRef<Path>,
+    S: AsRef<[u8]>,
+{
+    // Read the file contents as string and deserialize it.
+    let mut contents = String::new();
+    wallet_utils::file_func::read(&mut contents, path)?;
+    let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(&contents)?;
+
+    // Derive the key.
+    let key = derive_key(keystore.crypto.kdfparams, password.as_ref())?;
 
     // Derive the MAC from the derived key and ciphertext.
     let derived_mac = Keccak256::new()
@@ -143,16 +148,14 @@ where
         .finalize();
 
     if derived_mac.as_slice() != keystore.crypto.mac.as_slice() {
-        return Err(KeystoreError::MacMismatch);
+        return Err(KeystoreError::MacMismatch.into());
     }
 
     // Decrypt the private key bytes using AES-128-CTR
-    let decryptor =
-        Aes128Ctr::new(&key[..16], &keystore.crypto.cipherparams.iv[..16]).expect("invalid length");
-
     let mut data = keystore.crypto.ciphertext;
 
-    decryptor.apply_keystream(&mut data);
+    Aes128Ctr::new(&key[..16], &keystore.crypto.cipherparams.iv[..16])?.apply_keystream(&mut data);
+
     Ok(data)
 }
 
@@ -186,7 +189,7 @@ pub(crate) fn encrypt_data<P, R, B, S>(
     data: B,
     password: S,
     name: Option<&str>,
-) -> Result<String, KeystoreError>
+) -> Result<String, crate::Error>
 where
     P: AsRef<Path>,
     R: Rng + CryptoRng,
@@ -196,8 +199,8 @@ where
     // let start_time = std::time::Instant::now();
     // tracing::info!("[encrypt_data] encrypting data");
     // Generate a random salt.
-    let mut salt = vec![0u8; DEFAULT_KEY_SIZE];
-    rng.fill_bytes(salt.as_mut_slice());
+    let salt = generate_random_bytes(rng, DEFAULT_KEY_SIZE);
+    let iv = generate_random_bytes(rng, DEFAULT_IV_SIZE);
 
     // tracing::info!(
     //     "[encrypt_data] salt: {} (elapsed: {}ms)",
@@ -210,14 +213,15 @@ where
         DEFAULT_KDF_PARAMS_LOG_N,
         DEFAULT_KDF_PARAMS_R,
         DEFAULT_KDF_PARAMS_P,
-    )?;
+    )
+    .map_err(|e| crate::Error::Keystore(e.into()))?;
     // tracing::info!(
     //     "[encrypt_data] scrypt params: {:?} (elapsed: {}ms)",
     //     scrypt_params,
     //     start_time.elapsed().as_millis()
     // );
-    scrypt(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice())?;
-
+    scrypt(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice())
+        .map_err(|e| crate::Error::Keystore(e.into()))?;
     // scrypt_async(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice()).await?;
     // tracing::info!(
     //     "[encrypt_data] key: {} (elapsed: {}ms)",
@@ -225,14 +229,9 @@ where
     //     start_time.elapsed().as_millis()
     // );
     // Encrypt the private key using AES-128-CTR.
-    let mut iv = vec![0u8; DEFAULT_IV_SIZE];
-    rng.fill_bytes(iv.as_mut_slice());
-
-    let encryptor = Aes128Ctr::new(&key[..16], &iv[..16]).expect("invalid length");
 
     let mut ciphertext = data.as_ref().to_vec();
-
-    encryptor.apply_keystream(&mut ciphertext);
+    Aes128Ctr::new(&key[..16], &iv[..16])?.apply_keystream(&mut ciphertext);
 
     // Calculate the MAC.
     let mac = Keccak256::new()
@@ -281,7 +280,7 @@ where
     //     keystore,
     //     start_time.elapsed().as_millis()
     // );
-    let contents = serde_json::to_string(&keystore)?;
+    let contents = wallet_utils::serde_func::serde_to_string(&keystore)?;
 
     // Create a file in write-only mode, to store the encrypted JSON keystore.
     let file_name = dir.as_ref().join(name);
@@ -304,7 +303,7 @@ pub(crate) async fn scrypt_async(
     salt: &[u8],
     params: &scrypt::Params,
     output: &mut [u8],
-) -> Result<(), KeystoreError> {
+) -> Result<(), crate::Error> {
     let password = password.to_vec();
     let salt = salt.to_vec();
     let params = params.to_owned();
@@ -325,9 +324,9 @@ struct Aes128Ctr {
 }
 
 impl Aes128Ctr {
-    fn new(key: &[u8], iv: &[u8]) -> Result<Self, cipher::InvalidLength> {
-        let cipher = aes::Aes128::new_from_slice(key).unwrap();
-        let inner = ctr::CtrCore::inner_iv_slice_init(cipher, iv).unwrap();
+    fn new(key: &[u8], iv: &[u8]) -> Result<Self, KeystoreError> {
+        let cipher = aes::Aes128::new_from_slice(key)?;
+        let inner = ctr::CtrCore::inner_iv_slice_init(cipher, iv)?;
         Ok(Self { inner })
     }
 

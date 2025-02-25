@@ -28,6 +28,8 @@ pub enum KeystoreError {
     // K256Error(#[from] k256::ecdsa::Error),
     #[error("Tokio task join error: `{0}`")]
     TokioTaskJoin(#[from] tokio::task::JoinError),
+    #[error("Cipher invalid length")]
+    CipherInvalidLength(aes::cipher::InvalidLength),
 }
 
 impl From<scrypt::errors::InvalidParams> for KeystoreError {

@@ -1,5 +1,6 @@
 use std::{
     fs::{self, OpenOptions},
+    io::Read,
     path::Path,
 };
 
@@ -36,11 +37,9 @@ pub fn rename<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<(), crat
 }
 
 pub fn read<P: AsRef<Path>>(buf: &mut String, path: P) -> Result<(), crate::Error> {
-    fs::read_to_string(path)
-        .map(|s| {
-            buf.push_str(&s);
-        })
-        .map_err(Into::into)
+    let mut file = fs::File::open(path)?;
+    file.read_to_string(buf).map_err(crate::Error::IO)?;
+    Ok(())
 }
 
 pub fn read_dir<P: AsRef<Path>>(path: P) -> Result<fs::ReadDir, crate::Error> {

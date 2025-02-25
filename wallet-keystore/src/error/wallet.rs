@@ -26,7 +26,7 @@ pub enum WalletError {
     // MnemonicBuilder(#[from] super::mnemonic::MnemonicBuilderError),
     /// [`eth_keystore`] error.
     #[error(transparent)]
-    EthKeystore(#[from] crate::crypto::KeystoreError),
+    EthKeystore(#[from] super::crypto::KeystoreError),
     #[error(transparent)]
     Utils(#[from] wallet_utils::Error),
 }

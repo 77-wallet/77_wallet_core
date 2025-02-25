@@ -1,3 +1,4 @@
+pub(crate) mod crypto;
 pub(crate) mod wallet;
 
 #[derive(Debug, thiserror::Error)]
@@ -9,7 +10,7 @@ pub enum Error {
     #[error("Tree error: `{0}`")]
     Tree(#[from] wallet_tree::Error),
     #[error("Keystore error: `{0}`")]
-    Keystore(#[from] crate::crypto::KeystoreError),
+    Keystore(#[from] crypto::KeystoreError),
     #[error("Wallet error: `{0}`")]
     PkWallet(#[from] wallet::WalletError),
 
