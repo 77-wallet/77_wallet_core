@@ -6,8 +6,10 @@ use aes::{
     cipher::{InnerIvInit, KeyInit, StreamCipherCore},
     Aes128,
 };
+use cipher::SymmetricCipher;
 use digest::{Digest, Update};
 use hmac::Hmac;
+use mac::MacCalculator as _;
 use pbkdf2::pbkdf2;
 use rand::{CryptoRng, Rng};
 use scrypt::{scrypt, Params as ScryptParams};
@@ -17,7 +19,11 @@ use uuid::Uuid;
 
 use std::{fs::File, io::Write, path::Path};
 
+mod cipher;
+mod io;
+mod kdf;
 mod keystore;
+mod mac;
 // mod utils;
 
 // #[cfg(feature = "geth-compat")]
@@ -34,6 +40,36 @@ const DEFAULT_KDF_PARAMS_DKLEN: u8 = 32u8;
 const DEFAULT_KDF_PARAMS_LOG_N: u8 = 10u8;
 const DEFAULT_KDF_PARAMS_R: u32 = 8u32;
 const DEFAULT_KDF_PARAMS_P: u32 = 1u32;
+
+pub struct KeystoreBuilder {
+    kdf: Box<dyn kdf::KeyDerivation>,
+    cipher: Box<dyn cipher::SymmetricCipher>,
+    mac: Box<dyn mac::MacCalculator>,
+}
+
+impl KeystoreBuilder {
+    pub fn new(
+        kdf: impl kdf::KeyDerivation + 'static,
+        cipher: impl cipher::SymmetricCipher + 'static,
+        mac: impl mac::MacCalculator + 'static,
+    ) -> Self {
+        Self {
+            kdf: Box::new(kdf),
+            cipher: Box::new(cipher),
+            mac: Box::new(mac),
+        }
+    }
+
+    pub fn encrypt<R: Rng + CryptoRng>(
+        &self,
+        rng: &mut R,
+        data: &[u8],
+        password: &[u8],
+    ) -> Result<KeystoreJson, KeystoreError> {
+        // 实现加密流程
+        todo!()
+    }
+}
 
 /// Creates a new JSON keystore using the [Scrypt](https://tools.ietf.org/html/rfc7914.html)
 /// key derivation function. The keystore is encrypted by a key derived from the provided `password`
@@ -92,6 +128,7 @@ fn derive_key(kdfparams: KdfparamsType, password: &[u8]) -> Result<Vec<u8>, Keys
             prf: _,
             salt,
         } => {
+            
             let mut key = vec![0u8; dklen as usize];
             pbkdf2::<Hmac<Sha256>>(password.as_ref(), &salt, c, key.as_mut_slice());
             key
@@ -142,10 +179,7 @@ where
     let key = derive_key(keystore.crypto.kdfparams, password.as_ref())?;
 
     // Derive the MAC from the derived key and ciphertext.
-    let derived_mac = Keccak256::new()
-        .chain(&key[16..32])
-        .chain(&keystore.crypto.ciphertext)
-        .finalize();
+    let derived_mac = mac::Keccak256Mac.compute(&key, &keystore.crypto.ciphertext);
 
     if derived_mac.as_slice() != keystore.crypto.mac.as_slice() {
         return Err(KeystoreError::MacMismatch.into());
@@ -154,7 +188,11 @@ where
     // Decrypt the private key bytes using AES-128-CTR
     let mut data = keystore.crypto.ciphertext;
 
-    Aes128Ctr::new(&key[..16], &keystore.crypto.cipherparams.iv[..16])?.apply_keystream(&mut data);
+    cipher::Aes128Ctr::decrypt(
+        &key[..16],
+        &keystore.crypto.cipherparams.iv[..16],
+        &mut data,
+    )?;
 
     Ok(data)
 }
@@ -231,13 +269,11 @@ where
     // Encrypt the private key using AES-128-CTR.
 
     let mut ciphertext = data.as_ref().to_vec();
-    Aes128Ctr::new(&key[..16], &iv[..16])?.apply_keystream(&mut ciphertext);
+
+    cipher::Aes128Ctr::encrypt(&key[..16], &iv[..16], &mut ciphertext)?;
 
     // Calculate the MAC.
-    let mac = Keccak256::new()
-        .chain(&key[16..32])
-        .chain(&ciphertext)
-        .finalize();
+    let mac = mac::Keccak256Mac.compute(&key, &ciphertext);
     // tracing::info!(
     //     "[encrypt_data] mac: {} (elapsed: {}ms)",
     //     hex::encode(&mac),
@@ -318,21 +354,6 @@ pub(crate) async fn scrypt_async(
     .map_err(KeystoreError::TokioTaskJoin)??;
     output.copy_from_slice(&output_copy);
     Ok(())
-}
-struct Aes128Ctr {
-    inner: ctr::CtrCore<Aes128, ctr::flavors::Ctr128BE>,
-}
-
-impl Aes128Ctr {
-    fn new(key: &[u8], iv: &[u8]) -> Result<Self, KeystoreError> {
-        let cipher = aes::Aes128::new_from_slice(key)?;
-        let inner = ctr::CtrCore::inner_iv_slice_init(cipher, iv)?;
-        Ok(Self { inner })
-    }
-
-    fn apply_keystream(self, buf: &mut [u8]) {
-        self.inner.apply_keystream_partial(buf.into());
-    }
 }
 
 #[allow(unused_assignments)]

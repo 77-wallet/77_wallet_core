@@ -3,10 +3,12 @@ pub mod api;
 mod crypto;
 pub mod error;
 pub mod keystore;
+pub mod service;
+pub mod utils;
 pub mod wallet;
 
 use crate::error::Error;
-pub use keystore::Keystore;
+pub use service::Keystore;
 
 pub use alloy::primitives::Address;
 
