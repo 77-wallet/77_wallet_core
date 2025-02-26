@@ -16,7 +16,7 @@ impl Keystore {
         private_key: &[u8],
         file_path: &P,
         password: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
         let mut rng = rand::thread_rng();
         // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::pk(), address)
@@ -46,7 +46,7 @@ impl Keystore {
         seed: &[u8],
         directory: &P,
         password: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<crate::wallet::seed::SeedWallet, crate::Error> {
         let mut rng = rand::thread_rng();
         // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::seed(), address)
@@ -71,7 +71,7 @@ impl Keystore {
         phrase: &str,
         directory: &P,
         password: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<crate::wallet::phrase::PhraseWallet, crate::Error> {
         let mut rng = rand::thread_rng();
         // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::phrase(), address)
@@ -103,7 +103,7 @@ impl Keystore {
         password: &str,
         address: &str,
         derivation_path: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
         let mut rng = rand::thread_rng();
 

@@ -12,7 +12,7 @@ pub(crate) struct PrikeyEncryptorBuilder<'a, P, R, B, S> {
             Error = wallet_chain_instance::Error,
         >,
     >,
-    algorithm: crate::keystore::kdf::KdfAlgorithm,
+    algorithm: crate::keystore::factory::KdfAlgorithm,
 }
 
 impl<'a, P, R, B, S> PrikeyEncryptorBuilder<'a, P, R, B, S>
@@ -34,7 +34,7 @@ where
                 Error = wallet_chain_instance::Error,
             >,
         >,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Self {
         PrikeyEncryptorBuilder {
             keypath,

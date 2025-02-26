@@ -6,9 +6,6 @@ use crate::{
     error::crypto::KeystoreError,
 };
 
-const DEFAULT_CIPHER: &str = "aes-128-ctr";
-const DEFAULT_KEY_SIZE: usize = 32usize;
-const DEFAULT_IV_SIZE: usize = 16usize;
 const DEFAULT_KDF_PARAMS_DKLEN: u8 = 32u8;
 const DEFAULT_KDF_PARAMS_LOG_N: u8 = 10u8;
 const DEFAULT_KDF_PARAMS_R: u32 = 8u32;

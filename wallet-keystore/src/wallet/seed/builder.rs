@@ -6,7 +6,7 @@ pub(crate) struct SeedEncryptorBuilder<'a, P, R, B, S> {
     data: B,
     password: S,
     name: Option<&'a str>,
-    algorithm: crate::keystore::kdf::KdfAlgorithm,
+    algorithm: crate::keystore::factory::KdfAlgorithm,
 }
 
 impl<'a, P, R, B, S> SeedEncryptorBuilder<'a, P, R, B, S>
@@ -22,7 +22,7 @@ where
         data: B,
         password: S,
         name: Option<&'a str>,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Self {
         SeedEncryptorBuilder {
             keypath,

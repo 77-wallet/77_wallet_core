@@ -11,7 +11,7 @@ impl KeystoreApi {
         phrase: &str,
         path: &std::path::PathBuf,
         password: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<(), crate::Error> {
         let name = WalletBranch::get_root_pk_filename(address)?;
 
@@ -37,7 +37,7 @@ impl KeystoreApi {
         derivation_path: &str,
         path: P,
         password: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
         let gen_address = instance.gen_gen_address()?;
         let keypair = instance.gen_keypair_with_derivation_path(seed, derivation_path)?;
@@ -113,7 +113,7 @@ impl KeystoreApi {
         wallet_address: &str,
         old_password: &str,
         new_password: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<(), crate::Error> {
         let path = root_dir.join(
             wallet_tree
@@ -154,7 +154,7 @@ impl KeystoreApi {
         address: &str,
         old_password: &str,
         new_password: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<(), crate::Error> {
         let gen_address = instance.gen_gen_address()?;
         if let Some(account) = wallet_tree
@@ -205,7 +205,7 @@ impl KeystoreApi {
         storage_path: &std::path::PathBuf,
         root_info: RootInfo,
         password: &str,
-        algorithm: crate::keystore::kdf::KdfAlgorithm,
+        algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<String, crate::Error> {
         // 清理并重新创建目录
         wallet_utils::file_func::recreate_dir_all(storage_path)?;

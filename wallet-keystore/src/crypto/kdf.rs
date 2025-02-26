@@ -1,6 +1,6 @@
 use crate::{
     error::crypto::KeystoreError,
-    keystore::kdf::{KdfParams, Pbkdf2Params, ScryptParams},
+    keystore::factory::{KdfParams, Pbkdf2Params, ScryptParams},
 };
 use hmac::Hmac;
 use scrypt::{scrypt, Params as ScryptParams_};

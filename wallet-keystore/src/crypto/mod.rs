@@ -2,20 +2,21 @@
 //! A minimalist library to interact with encrypted JSON keystores as per the
 //! [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition).
 
-use cipher::SymmetricCipher;
+use crate::keystore::{
+    cipher::{self, SymmetricCipher as _},
+    json::{CipherparamsJson, CryptoJson, KeystoreJson},
+    mac::{self, MacCalculator as _},
+};
 use context::KdfContext;
-use mac::MacCalculator as _;
 use rand::{CryptoRng, Rng};
-use scrypt::{scrypt, Params as ScryptParams_};
+use scrypt::scrypt;
 use uuid::Uuid;
 
 use std::{fs::File, io::Write, path::Path};
 
-mod cipher;
 mod context;
 mod io;
 pub(crate) mod kdf;
-mod mac;
 // mod pipeline;
 mod rng;
 // mod utils;
@@ -25,49 +26,12 @@ mod rng;
 
 use crate::{
     error::crypto::KeystoreError,
-    keystore::{
-        kdf::{KdfAlgorithm, KdfFactory, KdfParams, Pbkdf2Params, ScryptParams},
-        CipherparamsJson, CryptoJson, KeystoreJson,
-    },
+    keystore::factory::{KdfFactory, KdfParams},
 };
 
 const DEFAULT_CIPHER: &str = "aes-128-ctr";
 const DEFAULT_KEY_SIZE: usize = 32usize;
 const DEFAULT_IV_SIZE: usize = 16usize;
-const DEFAULT_KDF_PARAMS_DKLEN: u8 = 32u8;
-const DEFAULT_KDF_PARAMS_LOG_N: u8 = 10u8;
-const DEFAULT_KDF_PARAMS_R: u32 = 8u32;
-const DEFAULT_KDF_PARAMS_P: u32 = 1u32;
-
-pub struct KeystoreBuilder {
-    kdf: Box<dyn kdf::KeyDerivation>,
-    cipher: Box<dyn cipher::SymmetricCipher>,
-    mac: Box<dyn mac::MacCalculator>,
-}
-
-impl KeystoreBuilder {
-    pub fn new(
-        kdf: impl kdf::KeyDerivation + 'static,
-        cipher: impl cipher::SymmetricCipher + 'static,
-        mac: impl mac::MacCalculator + 'static,
-    ) -> Self {
-        Self {
-            kdf: Box::new(kdf),
-            cipher: Box::new(cipher),
-            mac: Box::new(mac),
-        }
-    }
-
-    pub fn encrypt<R: Rng + CryptoRng>(
-        &self,
-        rng: &mut R,
-        data: &[u8],
-        password: &[u8],
-    ) -> Result<KeystoreJson, KeystoreError> {
-        // 实现加密流程
-        todo!()
-    }
-}
 
 /// Creates a new JSON keystore using the [Scrypt](https://tools.ietf.org/html/rfc7914.html)
 /// key derivation function. The keystore is encrypted by a key derived from the provided `password`
@@ -98,7 +62,7 @@ pub(crate) fn new<P, R, S>(
     rng: &mut R,
     password: S,
     name: Option<&str>,
-    algorithm: crate::keystore::kdf::KdfAlgorithm,
+    algorithm: crate::keystore::factory::KdfAlgorithm,
 ) -> Result<(Vec<u8>, String), crate::Error>
 where
     P: AsRef<Path>,
@@ -197,7 +161,7 @@ pub(crate) fn encrypt_data<P, R, B, S>(
     data: B,
     password: S,
     name: Option<&str>,
-    algorithm: crate::keystore::kdf::KdfAlgorithm,
+    algorithm: crate::keystore::factory::KdfAlgorithm,
 ) -> Result<String, crate::Error>
 where
     P: AsRef<Path>,
@@ -334,6 +298,8 @@ pub(crate) async fn scrypt_async(
 mod test {
 
     use hex::FromHex;
+
+    use crate::KdfAlgorithm;
 
     use super::*;
     #[tokio::test]
