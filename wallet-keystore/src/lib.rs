@@ -1,6 +1,6 @@
 // #![feature(const_trait_impl, effects)]
 pub mod api;
-mod crypto;
+pub(crate) mod crypto;
 pub mod error;
 pub mod keystore;
 pub mod service;
@@ -11,6 +11,7 @@ use crate::error::Error;
 pub use service::Keystore;
 
 pub use alloy::primitives::Address;
+pub use keystore::kdf::KdfAlgorithm;
 
 /// Utility to get and set the chain ID on a transaction and the resulting signature within a
 /// signer's `sign_transaction`.

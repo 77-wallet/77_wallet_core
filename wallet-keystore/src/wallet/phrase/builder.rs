@@ -6,6 +6,7 @@ pub(crate) struct PhraseEncryptorBuilder<'a, P, R, B, S> {
     data: B,
     password: S,
     name: Option<&'a str>,
+    algorithm: crate::keystore::kdf::KdfAlgorithm,
 }
 
 impl<'a, P, R, B, S> PhraseEncryptorBuilder<'a, P, R, B, S>
@@ -21,6 +22,7 @@ where
         data: B,
         password: S,
         name: Option<&'a str>,
+        algorithm: crate::keystore::kdf::KdfAlgorithm,
     ) -> Self {
         PhraseEncryptorBuilder {
             keypath,
@@ -28,6 +30,7 @@ where
             data,
             password,
             name,
+            algorithm,
         }
     }
 }
@@ -43,8 +46,14 @@ where
 
     fn encrypt_keystore(self) -> Result<Self::Output, crate::Error> {
         let data = self.data.as_ref();
-        let uuid =
-            crate::crypto::encrypt_data(self.keypath, self.rng, data, self.password, self.name)?;
+        let uuid = crate::crypto::encrypt_data(
+            self.keypath,
+            self.rng,
+            data,
+            self.password,
+            self.name,
+            self.algorithm,
+        )?;
         let data = wallet_utils::conversion::vec_to_string(data)?;
         Ok((PhraseWallet::from_phrase(&data)?, uuid))
     }

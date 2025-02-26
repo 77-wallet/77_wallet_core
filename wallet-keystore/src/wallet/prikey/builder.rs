@@ -12,6 +12,7 @@ pub(crate) struct PrikeyEncryptorBuilder<'a, P, R, B, S> {
             Error = wallet_chain_instance::Error,
         >,
     >,
+    algorithm: crate::keystore::kdf::KdfAlgorithm,
 }
 
 impl<'a, P, R, B, S> PrikeyEncryptorBuilder<'a, P, R, B, S>
@@ -33,6 +34,7 @@ where
                 Error = wallet_chain_instance::Error,
             >,
         >,
+        algorithm: crate::keystore::kdf::KdfAlgorithm,
     ) -> Self {
         PrikeyEncryptorBuilder {
             keypath,
@@ -41,6 +43,7 @@ where
             password,
             name,
             data,
+            algorithm,
         }
     }
 }
@@ -57,8 +60,14 @@ where
 
     fn encrypt_keystore(self) -> Result<Self::Output, crate::Error> {
         let data = self.pk.as_ref();
-        let uuid =
-            crate::crypto::encrypt_data(self.keypath, self.rng, data, self.password, self.name)?;
+        let uuid = crate::crypto::encrypt_data(
+            self.keypath,
+            self.rng,
+            data,
+            self.password,
+            self.name,
+            self.algorithm,
+        )?;
         Ok((PkWallet::from_slice(data, self.data)?, uuid))
     }
 }

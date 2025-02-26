@@ -14,7 +14,7 @@ use std::{fs::File, io::Write, path::Path};
 mod cipher;
 mod context;
 mod io;
-mod kdf;
+pub(crate) mod kdf;
 mod mac;
 // mod pipeline;
 mod rng;
@@ -26,7 +26,7 @@ mod rng;
 use crate::{
     error::crypto::KeystoreError,
     keystore::{
-        kdf::{KdfAlgorithm, KdfParams, Pbkdf2Params, ScryptParams},
+        kdf::{KdfAlgorithm, KdfFactory, KdfParams, Pbkdf2Params, ScryptParams},
         CipherparamsJson, CryptoJson, KeystoreJson,
     },
 };
@@ -98,6 +98,7 @@ pub(crate) fn new<P, R, S>(
     rng: &mut R,
     password: S,
     name: Option<&str>,
+    algorithm: crate::keystore::kdf::KdfAlgorithm,
 ) -> Result<(Vec<u8>, String), crate::Error>
 where
     P: AsRef<Path>,
@@ -107,7 +108,7 @@ where
     // Generate a random private key.
     let pk = generate_random_bytes(rng, DEFAULT_KEY_SIZE);
 
-    let name = encrypt_data(dir, rng, &pk, password, name)?;
+    let name = encrypt_data(dir, rng, &pk, password, name, algorithm)?;
     Ok((pk, name))
 }
 
@@ -196,6 +197,7 @@ pub(crate) fn encrypt_data<P, R, B, S>(
     data: B,
     password: S,
     name: Option<&str>,
+    algorithm: crate::keystore::kdf::KdfAlgorithm,
 ) -> Result<String, crate::Error>
 where
     P: AsRef<Path>,
@@ -209,26 +211,28 @@ where
     let salt = generate_random_bytes(rng, DEFAULT_KEY_SIZE);
     let iv = generate_random_bytes(rng, DEFAULT_IV_SIZE);
 
+    // Derive the key.
+    let kdf = KdfFactory::create(algorithm.clone())?;
+    let key = kdf.derive_key(password.as_ref(), &salt)?;
     // tracing::info!(
     //     "[encrypt_data] salt: {} (elapsed: {}ms)",
     //     hex::encode(&salt),
     //     start_time.elapsed().as_millis()
     // );
-    // Derive the key.
-    let mut key = vec![0u8; DEFAULT_KDF_PARAMS_DKLEN as usize];
-    let scrypt_params = ScryptParams_::new(
-        DEFAULT_KDF_PARAMS_LOG_N,
-        DEFAULT_KDF_PARAMS_R,
-        DEFAULT_KDF_PARAMS_P,
-    )
-    .map_err(|e| crate::Error::Keystore(e.into()))?;
+    // let mut key = vec![0u8; DEFAULT_KDF_PARAMS_DKLEN as usize];
+    // let scrypt_params = ScryptParams_::new(
+    //     DEFAULT_KDF_PARAMS_LOG_N,
+    //     DEFAULT_KDF_PARAMS_R,
+    //     DEFAULT_KDF_PARAMS_P,
+    // )
+    // .map_err(|e| crate::Error::Keystore(e.into()))?;
     // tracing::info!(
     //     "[encrypt_data] scrypt params: {:?} (elapsed: {}ms)",
     //     scrypt_params,
     //     start_time.elapsed().as_millis()
     // );
-    scrypt(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice())
-        .map_err(|e| crate::Error::Keystore(e.into()))?;
+    // scrypt(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice())
+    //     .map_err(|e| crate::Error::Keystore(e.into()))?;
     // scrypt_async(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice()).await?;
     // tracing::info!(
     //     "[encrypt_data] key: {} (elapsed: {}ms)",
@@ -268,14 +272,15 @@ where
             cipher: String::from(DEFAULT_CIPHER),
             cipherparams: CipherparamsJson { iv },
             ciphertext: ciphertext.to_vec(),
-            kdf: KdfAlgorithm::Scrypt,
-            kdfparams: KdfParams::Scrypt(ScryptParams {
-                dklen: DEFAULT_KDF_PARAMS_DKLEN,
-                n: 2u32.pow(DEFAULT_KDF_PARAMS_LOG_N as u32),
-                p: DEFAULT_KDF_PARAMS_P,
-                r: DEFAULT_KDF_PARAMS_R,
-                salt,
-            }),
+            kdf: algorithm,
+            // kdfparams: KdfParams::Scrypt(ScryptParams {
+            //     dklen: DEFAULT_KDF_PARAMS_DKLEN,
+            //     n: 2u32.pow(DEFAULT_KDF_PARAMS_LOG_N as u32),
+            //     p: DEFAULT_KDF_PARAMS_P,
+            //     r: DEFAULT_KDF_PARAMS_R,
+            //     salt,
+            // }),
+            kdfparams: kdf.params(),
             mac: mac.to_vec(),
         },
     };
@@ -356,8 +361,15 @@ mod test {
         let password = "password_to_keystore";
 
         // Since we specify a custom filename for the keystore, it will be stored in `$dir/my-key`
-        let _name =
-            encrypt_data(&dir, &mut rng, &data_to_encrypt, password, Some("my-key")).unwrap();
+        let _name = encrypt_data(
+            &dir,
+            &mut rng,
+            &data_to_encrypt,
+            password,
+            Some("my-key"),
+            KdfAlgorithm::Pbkdf2,
+        )
+        .unwrap();
 
         let path = "./my-key";
         let data = decrypt_data(path, password).unwrap();

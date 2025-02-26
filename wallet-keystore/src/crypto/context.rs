@@ -14,7 +14,7 @@ pub struct KdfContext {
 impl KdfContext {
     pub fn new(params: KdfParams) -> Result<Self, crate::Error> {
         let strategy: Box<dyn KeyDerivation> = match &params {
-            KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.c, p.dklen)),
+            KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.to_owned())),
             KdfParams::Scrypt(p) => Box::new(ScryptKdf::new(p.to_owned())),
         };
 

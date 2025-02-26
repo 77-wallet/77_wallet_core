@@ -16,6 +16,7 @@ impl Keystore {
         private_key: &[u8],
         file_path: &P,
         password: &str,
+        algorithm: crate::keystore::kdf::KdfAlgorithm,
     ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
         let mut rng = rand::thread_rng();
         // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::pk(), address)
@@ -32,6 +33,7 @@ impl Keystore {
             password,
             Some(name),
             Box::new(address_generator),
+            algorithm,
         )
         .encrypt_keystore()?;
 
@@ -44,15 +46,22 @@ impl Keystore {
         seed: &[u8],
         directory: &P,
         password: &str,
+        algorithm: crate::keystore::kdf::KdfAlgorithm,
     ) -> Result<crate::wallet::seed::SeedWallet, crate::Error> {
         let mut rng = rand::thread_rng();
         // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::seed(), address)
         //     .gen_name_with_address()?;
 
         use crate::wallet::WalletEncrypt as _;
-        let (seed_wallet, _) =
-            SeedEncryptorBuilder::new(directory.as_ref(), &mut rng, seed, password, Some(name))
-                .encrypt_keystore()?;
+        let (seed_wallet, _) = SeedEncryptorBuilder::new(
+            directory.as_ref(),
+            &mut rng,
+            seed,
+            password,
+            Some(name),
+            algorithm,
+        )
+        .encrypt_keystore()?;
         Ok(seed_wallet)
     }
 
@@ -62,6 +71,7 @@ impl Keystore {
         phrase: &str,
         directory: &P,
         password: &str,
+        algorithm: crate::keystore::kdf::KdfAlgorithm,
     ) -> Result<crate::wallet::phrase::PhraseWallet, crate::Error> {
         let mut rng = rand::thread_rng();
         // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::phrase(), address)
@@ -75,6 +85,7 @@ impl Keystore {
             phrase_vec,
             password,
             Some(name),
+            algorithm,
         )
         .encrypt_keystore()?;
         Ok(phrase_wallet)
@@ -92,6 +103,7 @@ impl Keystore {
         password: &str,
         address: &str,
         derivation_path: &str,
+        algorithm: crate::keystore::kdf::KdfAlgorithm,
     ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
         let mut rng = rand::thread_rng();
 
@@ -111,6 +123,7 @@ impl Keystore {
             password,
             Some(&name),
             address_generator,
+            algorithm,
         )
         .encrypt_keystore()?;
 

@@ -1,10 +1,15 @@
-use crate::{error::crypto::KeystoreError, keystore::kdf::ScryptParams};
+use crate::{
+    error::crypto::KeystoreError,
+    keystore::kdf::{KdfParams, Pbkdf2Params, ScryptParams},
+};
 use hmac::Hmac;
 use scrypt::{scrypt, Params as ScryptParams_};
 use sha2::Sha256;
 
 pub trait KeyDerivation {
     fn derive_key(&self, password: &[u8], salt: &[u8]) -> Result<Vec<u8>, KeystoreError>;
+
+    fn params(&self) -> KdfParams;
 }
 pub struct ScryptKdf {
     pub params: ScryptParams,
@@ -24,24 +29,31 @@ impl KeyDerivation for ScryptKdf {
         scrypt(password, salt, &scrypt_params, &mut key)?;
         Ok(key)
     }
+
+    fn params(&self) -> KdfParams {
+        KdfParams::Scrypt(self.params.clone())
+    }
 }
 
 pub struct Pbkdf2Kdf {
-    pub iterations: u32,
-    pub dklen: u8,
+    pub params: Pbkdf2Params,
 }
 
 impl Pbkdf2Kdf {
-    pub fn new(iterations: u32, dklen: u8) -> Self {
-        Self { iterations, dklen }
+    pub fn new(params: Pbkdf2Params) -> Self {
+        Self { params }
     }
 }
 
 impl KeyDerivation for Pbkdf2Kdf {
     fn derive_key(&self, password: &[u8], salt: &[u8]) -> Result<Vec<u8>, KeystoreError> {
-        let mut key = vec![0u8; self.dklen as usize];
-        pbkdf2::pbkdf2::<Hmac<Sha256>>(password, salt, self.iterations, &mut key);
+        let mut key = vec![0u8; self.params.dklen as usize];
+        pbkdf2::pbkdf2::<Hmac<Sha256>>(password, salt, self.params.c, &mut key);
         Ok(key)
+    }
+
+    fn params(&self) -> KdfParams {
+        KdfParams::Pbkdf2(self.params.clone())
     }
 }
 
