@@ -42,11 +42,11 @@ where
     B: AsRef<[u8]>,
     S: AsRef<[u8]>,
 {
-    type Output = (SeedWallet, String);
+    type Output = SeedWallet;
 
     fn encrypt_keystore(self) -> Result<Self::Output, crate::Error> {
         let data = self.data.as_ref();
-        let uuid = crate::crypto::encrypt_data(
+        crate::crypto::encrypt_data(
             self.keypath,
             self.rng,
             data,
@@ -54,7 +54,7 @@ where
             self.name,
             self.algorithm,
         )?;
-        Ok((SeedWallet::from_seed(data.to_vec())?, uuid))
+        Ok(SeedWallet::from_seed(data.to_vec())?)
     }
 }
 

@@ -6,12 +6,12 @@ pub(crate) struct PrikeyEncryptorBuilder<'a, P, R, B, S> {
     pk: B,
     password: S,
     name: Option<&'a str>,
-    data: Box<
-        dyn wallet_core::address::GenAddress<
-            Address = wallet_chain_instance::instance::Address,
-            Error = wallet_chain_instance::Error,
-        >,
-    >,
+    // data: Box<
+    //     dyn wallet_core::address::GenAddress<
+    //         Address = wallet_chain_instance::instance::Address,
+    //         Error = wallet_chain_instance::Error,
+    //     >,
+    // >,
     algorithm: crate::keystore::factory::KdfAlgorithm,
 }
 
@@ -28,12 +28,12 @@ where
         pk: B,
         password: S,
         name: Option<&'a str>,
-        data: Box<
-            dyn wallet_core::address::GenAddress<
-                Address = wallet_chain_instance::instance::Address,
-                Error = wallet_chain_instance::Error,
-            >,
-        >,
+        // data: Box<
+        //     dyn wallet_core::address::GenAddress<
+        //         Address = wallet_chain_instance::instance::Address,
+        //         Error = wallet_chain_instance::Error,
+        //     >,
+        // >,
         algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Self {
         PrikeyEncryptorBuilder {
@@ -42,7 +42,7 @@ where
             pk,
             password,
             name,
-            data,
+            // data,
             algorithm,
         }
     }
@@ -56,11 +56,11 @@ where
     B: AsRef<[u8]>,
     S: AsRef<[u8]>,
 {
-    type Output = (PkWallet, String);
+    type Output = PkWallet;
 
     fn encrypt_keystore(self) -> Result<Self::Output, crate::Error> {
         let data = self.pk.as_ref();
-        let uuid = crate::crypto::encrypt_data(
+        crate::crypto::encrypt_data(
             self.keypath,
             self.rng,
             data,
@@ -68,19 +68,13 @@ where
             self.name,
             self.algorithm,
         )?;
-        Ok((PkWallet::from_slice(data, self.data)?, uuid))
+        Ok(PkWallet::from_slice(data)?)
     }
 }
 
 pub(crate) struct PrikeyDecryptorBuilder<P, S> {
     keypath: P,
     password: S,
-    data: Box<
-        dyn wallet_core::address::GenAddress<
-            Address = wallet_chain_instance::instance::Address,
-            Error = wallet_chain_instance::Error,
-        >,
-    >,
 }
 
 impl<P, S> PrikeyDecryptorBuilder<P, S>
@@ -88,21 +82,8 @@ where
     P: AsRef<std::path::Path>,
     S: AsRef<[u8]>,
 {
-    pub(crate) fn new(
-        keypath: P,
-        password: S,
-        data: Box<
-            dyn wallet_core::address::GenAddress<
-                Address = wallet_chain_instance::instance::Address,
-                Error = wallet_chain_instance::Error,
-            >,
-        >,
-    ) -> Self {
-        PrikeyDecryptorBuilder {
-            keypath,
-            password,
-            data,
-        }
+    pub(crate) fn new(keypath: P, password: S) -> Self {
+        PrikeyDecryptorBuilder { keypath, password }
     }
 }
 
@@ -115,6 +96,6 @@ where
 
     fn decrypt_keystore(self) -> Result<Self::Output, crate::Error> {
         let secret = crate::crypto::decrypt_data(self.keypath, self.password)?;
-        PkWallet::from_slice(&secret, self.data)
+        PkWallet::from_slice(&secret)
     }
 }

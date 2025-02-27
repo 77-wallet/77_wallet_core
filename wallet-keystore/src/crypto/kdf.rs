@@ -1,15 +1,18 @@
 use crate::{
     error::crypto::KeystoreError,
     keystore::factory::{Argon2idParams, KdfParams, Pbkdf2Params, ScryptParams},
+    KdfAlgorithm,
 };
 use hmac::Hmac;
 use scrypt::{scrypt, Params as ScryptParams_};
 use sha2::Sha256;
 
 pub trait KeyDerivation {
-    fn derive_key(&self, password: &[u8], salt: &[u8]) -> Result<Vec<u8>, KeystoreError>;
+    fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError>;
 
     fn params(&self) -> KdfParams;
+
+    fn algorithm(&self) -> KdfAlgorithm;
 }
 pub struct ScryptKdf {
     pub params: ScryptParams,
@@ -22,16 +25,20 @@ impl ScryptKdf {
 }
 
 impl KeyDerivation for ScryptKdf {
-    fn derive_key(&self, password: &[u8], salt: &[u8]) -> Result<Vec<u8>, KeystoreError> {
+    fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
         let mut key = vec![0u8; self.params.dklen as usize];
         let log_n = super::kdf::log2(self.params.n) as u8;
         let scrypt_params = ScryptParams_::new(log_n, self.params.r, self.params.p)?;
-        scrypt(password, salt, &scrypt_params, &mut key)?;
+        scrypt(password, &self.params.salt, &scrypt_params, &mut key)?;
         Ok(key)
     }
 
     fn params(&self) -> KdfParams {
         KdfParams::Scrypt(self.params.clone())
+    }
+
+    fn algorithm(&self) -> KdfAlgorithm {
+        KdfAlgorithm::Scrypt
     }
 }
 
@@ -46,14 +53,18 @@ impl Pbkdf2Kdf {
 }
 
 impl KeyDerivation for Pbkdf2Kdf {
-    fn derive_key(&self, password: &[u8], salt: &[u8]) -> Result<Vec<u8>, KeystoreError> {
+    fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
         let mut key = vec![0u8; self.params.dklen as usize];
-        pbkdf2::pbkdf2::<Hmac<Sha256>>(password, salt, self.params.c, &mut key);
+        pbkdf2::pbkdf2::<Hmac<Sha256>>(password, &self.params.salt, self.params.c, &mut key);
         Ok(key)
     }
 
     fn params(&self) -> KdfParams {
         KdfParams::Pbkdf2(self.params.clone())
+    }
+
+    fn algorithm(&self) -> KdfAlgorithm {
+        KdfAlgorithm::Pbkdf2
     }
 }
 
@@ -87,7 +98,7 @@ impl Argon2idKdf {
 }
 
 impl KeyDerivation for Argon2idKdf {
-    fn derive_key(&self, password: &[u8], salt: &[u8]) -> Result<Vec<u8>, KeystoreError> {
+    fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
         let params = argon2::Params::new(
             self.params.memory_cost,
             self.params.time_cost,
@@ -102,13 +113,17 @@ impl KeyDerivation for Argon2idKdf {
         // argon2.verify_password(b"password", hash);
         let mut output_key = vec![0u8; self.params.dklen as usize];
         argon2
-            .hash_password_into(password, salt, &mut output_key)
+            .hash_password_into(password, &self.params.salt, &mut output_key)
             .map_err(KeystoreError::Argon2)?;
         Ok(output_key)
     }
 
     fn params(&self) -> KdfParams {
         KdfParams::Argon2id(self.params.clone())
+    }
+
+    fn algorithm(&self) -> KdfAlgorithm {
+        KdfAlgorithm::Argon2id
     }
 }
 
@@ -140,9 +155,9 @@ pub(crate) fn log2(mut n: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::crypto::{
+    use crate::{
+        crypto::kdf::{log2, Argon2idKdf, KeyDerivation as _},
         generate_random_bytes,
-        kdf::{log2, Argon2idKdf, KeyDerivation as _},
     };
 
     #[test]
@@ -159,7 +174,7 @@ mod tests {
 
         let salt = "somesalt".as_bytes();
 
-        let key1 = kdf.derive_key(b"password", &salt).unwrap();
+        let key1 = kdf.derive_key(b"password").unwrap();
         let encode = hex::encode(key1);
         println!("encode: {}", encode);
         // let key2 = kdf.derive_key(b"password", &salt).unwrap();

@@ -13,6 +13,12 @@ pub use service::Keystore;
 pub use alloy::primitives::Address;
 pub use keystore::factory::KdfAlgorithm;
 
+fn generate_random_bytes<R: rand::Rng + rand::CryptoRng>(rng: &mut R, len: usize) -> Vec<u8> {
+    let mut bytes = vec![0u8; len];
+    rng.fill_bytes(&mut bytes);
+    bytes
+}
+
 /// Utility to get and set the chain ID on a transaction and the resulting signature within a
 /// signer's `sign_transaction`.
 #[macro_export]

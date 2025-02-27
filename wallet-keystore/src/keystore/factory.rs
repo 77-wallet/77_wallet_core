@@ -1,7 +1,9 @@
 use hex::{FromHex as _, ToHex};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::crypto::kdf::{Argon2idKdf, KeyDerivation, ScryptKdf};
+use crate::crypto::kdf::{Argon2idKdf, KeyDerivation, Pbkdf2Kdf, ScryptKdf};
+
+use super::json::KeystoreJson;
 
 const DEFAULT_KDF_PARAMS_DKLEN: u8 = 32u8;
 const DEFAULT_KDF_PARAMS_LOG_N: u8 = 10u8;
@@ -55,6 +57,18 @@ impl KdfFactory {
                 Ok(Box::new(Argon2idKdf::new(params)))
             }
         }
+    }
+
+    pub fn create_from_file(
+        keystore: &KeystoreJson,
+    ) -> Result<Box<dyn KeyDerivation>, crate::Error> {
+        let kdf: Box<dyn KeyDerivation> = match &keystore.crypto.kdfparams {
+            KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.to_owned())),
+            KdfParams::Scrypt(p) => Box::new(ScryptKdf::new(p.to_owned())),
+            KdfParams::Argon2id(p) => Box::new(Argon2idKdf::new(p.to_owned())),
+        };
+
+        Ok(kdf)
     }
 
     fn default_scrypt_params() -> KdfParams {

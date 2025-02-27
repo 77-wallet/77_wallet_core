@@ -60,15 +60,8 @@ impl KeystoreApi {
     pub fn get_private_key<P: AsRef<std::path::Path> + std::fmt::Debug>(
         password: &str,
         path: P,
-        gen_address: Box<
-            dyn wallet_core::address::GenAddress<
-                Address = wallet_chain_instance::instance::Address,
-                Error = wallet_chain_instance::Error,
-            >,
-        >,
     ) -> Result<Vec<u8>, crate::Error> {
-        let recovered_wallet =
-            crate::Keystore::load_private_key_keystore(path, password, gen_address)?;
+        let recovered_wallet = crate::Keystore::load_private_key_keystore(path, password)?;
         Ok(recovered_wallet.pkey().to_vec())
     }
 
@@ -78,19 +71,27 @@ impl KeystoreApi {
         salt: &str,
         address: wallet_chain_instance::instance::Address,
     ) -> Result<(), crate::Error> {
+        use wallet_core::address::GenAddress as _;
         let (master_key, _) = wallet_core::xpriv::generate_master_key(language_code, phrase, salt)?;
         let signingkey: &coins_bip32::ecdsa::SigningKey = master_key.as_ref();
         let pkey = signingkey.to_bytes();
 
-        let wallet = crate::wallet::prikey::PkWallet::from_pkey(
-            &pkey,
-            Box::new(
-                wallet_chain_instance::instance::eth::address::EthGenAddress::new(
-                    wallet_types::chain::chain::ChainCode::Ethereum,
-                ),
+        let data = Box::new(
+            wallet_chain_instance::instance::eth::address::EthGenAddress::new(
+                wallet_types::chain::chain::ChainCode::Ethereum,
             ),
-        )?;
-        let generated_address = wallet.address();
+        );
+        let generated_address = data.generate(&pkey)?;
+
+        // let wallet = crate::wallet::prikey::PkWallet::from_pkey(
+        //     &pkey,
+        //     // Box::new(
+        //     //     wallet_chain_instance::instance::eth::address::EthGenAddress::new(
+        //     //         wallet_types::chain::chain::ChainCode::Ethereum,
+        //     //     ),
+        //     // ),
+        // )?;
+        // let generated_address = wallet.address();
         if generated_address.ne(&address) {
             return Err(crate::Error::Parase);
         }
@@ -122,15 +123,7 @@ impl KeystoreApi {
                 .gen_name_with_address()?,
         );
 
-        let private_key = Self::get_private_key(
-            old_password,
-            &path,
-            Box::new(
-                wallet_chain_instance::instance::eth::address::EthGenAddress::new(
-                    wallet_types::chain::chain::ChainCode::Ethereum,
-                ),
-            ),
-        )?;
+        let private_key = Self::get_private_key(old_password, &path)?;
         let seed = crate::Keystore::load_seed_keystore(wallet_address, &root_dir, old_password)?
             .into_seed();
         let phrase_wallet =
@@ -163,11 +156,7 @@ impl KeystoreApi {
         {
             let filename = account.gen_name_with_derivation_path()?;
             let path = subs_dir.join(filename);
-            let pk = crate::api::KeystoreApi::get_private_key(
-                old_password,
-                &path,
-                instance.gen_gen_address()?,
-            )?;
+            let pk = crate::api::KeystoreApi::get_private_key(old_password, &path)?;
 
             crate::Keystore::store_sub_private_key(
                 gen_address,

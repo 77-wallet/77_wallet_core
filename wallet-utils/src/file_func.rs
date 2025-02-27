@@ -1,8 +1,24 @@
 use std::{
     fs::{self, OpenOptions},
-    io::Read,
+    io::{Read, Write as _},
     path::Path,
 };
+
+pub fn create_file<P: AsRef<Path>>(path: P) -> Result<fs::File, crate::Error> {
+    Ok(fs::File::create(path)?)
+    // OpenOptions::new()
+    //     .create(true)
+    //     .write(true)
+    //     .read(true)
+    //     .open(path)
+    //     .map_err(crate::Error::IO)
+}
+
+pub fn write_all<P: AsRef<Path>>(path: P, data: &[u8]) -> Result<(), crate::Error> {
+    let mut file = create_file(path)?;
+    file.write_all(data)?;
+    Ok(())
+}
 
 pub fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<(), crate::Error> {
     if !path.as_ref().exists() {

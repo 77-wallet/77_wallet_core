@@ -21,18 +21,18 @@ impl Keystore {
         let mut rng = rand::thread_rng();
         // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::pk(), address)
         //     .gen_name_with_address()?;
-        let address_generator = wallet_chain_instance::instance::eth::address::EthGenAddress::new(
-            wallet_types::chain::chain::ChainCode::Ethereum,
-        );
+        // let address_generator = wallet_chain_instance::instance::eth::address::EthGenAddress::new(
+        //     wallet_types::chain::chain::ChainCode::Ethereum,
+        // );
 
         use crate::wallet::WalletEncrypt as _;
-        let (pk_wallet, _) = PrikeyEncryptorBuilder::new(
+        let pk_wallet = PrikeyEncryptorBuilder::new(
             file_path.as_ref(),
             &mut rng,
             private_key,
             password,
             Some(name),
-            Box::new(address_generator),
+            // Box::new(address_generator),
             algorithm,
         )
         .encrypt_keystore()?;
@@ -53,7 +53,7 @@ impl Keystore {
         //     .gen_name_with_address()?;
 
         use crate::wallet::WalletEncrypt as _;
-        let (seed_wallet, _) = SeedEncryptorBuilder::new(
+        let seed_wallet = SeedEncryptorBuilder::new(
             directory.as_ref(),
             &mut rng,
             seed,
@@ -76,15 +76,15 @@ impl Keystore {
         let mut rng = rand::thread_rng();
         // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::phrase(), address)
         //     .gen_name_with_address()?;
-        let phrase_vec = wallet_utils::conversion::str_to_vec(phrase);
+        // let phrase_vec = wallet_utils::conversion::str_to_vec(phrase);
 
         use crate::wallet::WalletEncrypt as _;
-        let (phrase_wallet, _) = PhraseEncryptorBuilder::new(
+        let phrase_wallet = PhraseEncryptorBuilder::new(
             directory.as_ref(),
             &mut rng,
-            phrase_vec,
+            phrase,
             password,
-            Some(name),
+            name,
             algorithm,
         )
         .encrypt_keystore()?;
@@ -116,13 +116,13 @@ impl Keystore {
         .gen_name_with_derivation_path()?;
 
         use crate::wallet::WalletEncrypt as _;
-        let (pk_wallet, _) = PrikeyEncryptorBuilder::new(
+        let pk_wallet = PrikeyEncryptorBuilder::new(
             file_path.as_ref(),
             &mut rng,
             private_key,
             password,
             Some(&name),
-            address_generator,
+            // address_generator,
             algorithm,
         )
         .encrypt_keystore()?;
@@ -133,17 +133,10 @@ impl Keystore {
     pub fn load_private_key_keystore<P: AsRef<Path>>(
         file_path: P,
         password: &str,
-        address_generator: Box<
-            dyn wallet_core::address::GenAddress<
-                Address = wallet_chain_instance::instance::Address,
-                Error = wallet_chain_instance::Error,
-            >,
-        >,
     ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
         use crate::wallet::WalletDecrypt as _;
         let prikey_wallet =
-            PrikeyDecryptorBuilder::new(file_path.as_ref(), password, address_generator)
-                .decrypt_keystore()?;
+            PrikeyDecryptorBuilder::new(file_path.as_ref(), password).decrypt_keystore()?;
 
         Ok(prikey_wallet)
     }

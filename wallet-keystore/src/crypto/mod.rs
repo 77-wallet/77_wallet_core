@@ -70,16 +70,10 @@ where
     S: AsRef<[u8]>,
 {
     // Generate a random private key.
-    let pk = generate_random_bytes(rng, DEFAULT_KEY_SIZE);
+    let pk = crate::generate_random_bytes(rng, DEFAULT_KEY_SIZE);
 
     let name = encrypt_data(dir, rng, &pk, password, name, algorithm)?;
     Ok((pk, name))
-}
-
-fn generate_random_bytes<R: Rng + CryptoRng>(rng: &mut R, len: usize) -> Vec<u8> {
-    let mut bytes = vec![0u8; len];
-    rng.fill_bytes(&mut bytes);
-    bytes
 }
 
 /// Decrypts an encrypted JSON keystore at the provided `path` using the provided `password`.
@@ -172,37 +166,12 @@ where
     // let start_time = std::time::Instant::now();
     // tracing::info!("[encrypt_data] encrypting data");
     // Generate a random salt.
-    let salt = generate_random_bytes(rng, DEFAULT_KEY_SIZE);
-    let iv = generate_random_bytes(rng, DEFAULT_IV_SIZE);
+    let salt = crate::generate_random_bytes(rng, DEFAULT_KEY_SIZE);
+    let iv = crate::generate_random_bytes(rng, DEFAULT_IV_SIZE);
 
     // Derive the key.
     let kdf = KdfFactory::create(algorithm.clone(), &salt)?;
-    let key = kdf.derive_key(password.as_ref(), &salt)?;
-    // tracing::info!(
-    //     "[encrypt_data] salt: {} (elapsed: {}ms)",
-    //     hex::encode(&salt),
-    //     start_time.elapsed().as_millis()
-    // );
-    // let mut key = vec![0u8; DEFAULT_KDF_PARAMS_DKLEN as usize];
-    // let scrypt_params = ScryptParams_::new(
-    //     DEFAULT_KDF_PARAMS_LOG_N,
-    //     DEFAULT_KDF_PARAMS_R,
-    //     DEFAULT_KDF_PARAMS_P,
-    // )
-    // .map_err(|e| crate::Error::Keystore(e.into()))?;
-    // tracing::info!(
-    //     "[encrypt_data] scrypt params: {:?} (elapsed: {}ms)",
-    //     scrypt_params,
-    //     start_time.elapsed().as_millis()
-    // );
-    // scrypt(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice())
-    //     .map_err(|e| crate::Error::Keystore(e.into()))?;
-    // scrypt_async(password.as_ref(), &salt, &scrypt_params, key.as_mut_slice()).await?;
-    // tracing::info!(
-    //     "[encrypt_data] key: {} (elapsed: {}ms)",
-    //     hex::encode(&key),
-    //     start_time.elapsed().as_millis()
-    // );
+    let key = kdf.derive_key(password.as_ref())?;
     // Encrypt the private key using AES-128-CTR.
 
     let mut ciphertext = data.as_ref().to_vec();
