@@ -176,7 +176,7 @@ where
     let iv = generate_random_bytes(rng, DEFAULT_IV_SIZE);
 
     // Derive the key.
-    let kdf = KdfFactory::create(algorithm.clone())?;
+    let kdf = KdfFactory::create(algorithm.clone(), &salt)?;
     let key = kdf.derive_key(password.as_ref(), &salt)?;
     // tracing::info!(
     //     "[encrypt_data] salt: {} (elapsed: {}ms)",

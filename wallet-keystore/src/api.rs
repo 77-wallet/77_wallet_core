@@ -222,6 +222,14 @@ impl KeystoreApi {
 
         Ok(root_info.address.to_string())
     }
+
+    pub fn read_keystore<P: AsRef<std::path::Path> + std::fmt::Debug>(
+        path: P,
+    ) -> Result<crate::keystore::json::KeystoreJson, crate::Error> {
+        let mut contents = String::new();
+        wallet_utils::file_func::read(&mut contents, path)?;
+        Ok(wallet_utils::serde_func::serde_from_str(&contents)?)
+    }
 }
 
 pub struct RootInfo {

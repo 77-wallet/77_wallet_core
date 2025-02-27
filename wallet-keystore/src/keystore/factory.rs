@@ -1,15 +1,16 @@
 use hex::{FromHex as _, ToHex};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{
-    crypto::kdf::{KeyDerivation, ScryptKdf},
-    error::crypto::KeystoreError,
-};
+use crate::crypto::kdf::{Argon2idKdf, KeyDerivation, ScryptKdf};
 
 const DEFAULT_KDF_PARAMS_DKLEN: u8 = 32u8;
 const DEFAULT_KDF_PARAMS_LOG_N: u8 = 10u8;
 const DEFAULT_KDF_PARAMS_R: u32 = 8u32;
 const DEFAULT_KDF_PARAMS_P: u32 = 1u32;
+
+const TIME_COST: u32 = 3;
+const MEMORY_COST: u32 = 65536;
+const PARALLELISM: u32 = 1;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -23,7 +24,10 @@ pub enum KdfAlgorithm {
 pub struct KdfFactory;
 
 impl KdfFactory {
-    pub fn create(algorithm: KdfAlgorithm) -> Result<Box<dyn KeyDerivation>, crate::Error> {
+    pub fn create(
+        algorithm: KdfAlgorithm,
+        salt: &[u8],
+    ) -> Result<Box<dyn KeyDerivation>, crate::Error> {
         match algorithm {
             KdfAlgorithm::Scrypt => {
                 let params = ScryptParams::new(
@@ -31,8 +35,8 @@ impl KdfFactory {
                     2u32.pow(DEFAULT_KDF_PARAMS_LOG_N as u32),
                     DEFAULT_KDF_PARAMS_R,
                     DEFAULT_KDF_PARAMS_P,
-                )
-                .map_err(|e| crate::Error::Keystore(e.into()))?;
+                    salt,
+                );
 
                 Ok(Box::new(ScryptKdf::new(params)))
             }
@@ -40,7 +44,15 @@ impl KdfFactory {
                 todo!()
             }
             KdfAlgorithm::Argon2id => {
-                todo!()
+                let params = Argon2idParams::new(
+                    DEFAULT_KDF_PARAMS_DKLEN,
+                    TIME_COST,
+                    MEMORY_COST,
+                    PARALLELISM,
+                    salt,
+                );
+
+                Ok(Box::new(Argon2idKdf::new(params)))
             }
         }
     }
@@ -76,14 +88,35 @@ pub struct ScryptParams {
 }
 
 impl ScryptParams {
-    pub(crate) fn new(dklen: u8, n: u32, r: u32, p: u32) -> Result<Self, KeystoreError> {
-        Ok(Self {
+    pub(crate) fn new(dklen: u8, n: u32, r: u32, p: u32, salt: &[u8]) -> Self {
+        Self {
             dklen,
             n,
             r,
             p,
-            salt: vec![],
-        })
+            salt: salt.to_vec(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Argon2idParams {
+    pub dklen: u8,        // 输出密钥长度
+    pub time_cost: u32,   // 迭代次数
+    pub memory_cost: u32, // 内存成本（单位：KB）
+    pub parallelism: u32, // 并行度
+    pub salt: Vec<u8>,    // 盐值
+}
+
+impl Argon2idParams {
+    pub fn new(dklen: u8, time_cost: u32, memory_cost: u32, parallelism: u32, salt: &[u8]) -> Self {
+        Self {
+            dklen,
+            time_cost,
+            memory_cost,
+            parallelism,
+            salt: salt.to_vec(),
+        }
     }
 }
 
@@ -92,6 +125,7 @@ impl ScryptParams {
 pub enum KdfParams {
     Pbkdf2(Pbkdf2Params),
     Scrypt(ScryptParams),
+    Argon2id(Argon2idParams),
 }
 
 impl KdfParams {
@@ -99,6 +133,7 @@ impl KdfParams {
         match self {
             Self::Pbkdf2(_) => KdfAlgorithm::Pbkdf2,
             Self::Scrypt(_) => KdfAlgorithm::Scrypt,
+            Self::Argon2id(_) => KdfAlgorithm::Argon2id,
         }
     }
 }

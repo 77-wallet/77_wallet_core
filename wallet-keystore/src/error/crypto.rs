@@ -19,6 +19,10 @@ pub enum KeystoreError {
     /// Invalid scrypt output length
     #[error("scrypt {0:?}")]
     ScryptInvalidOuputLen(scrypt::errors::InvalidOutputLen),
+
+    /// An error thrown by the [Argon2](https://docs.rs/argon2/latest/argon2/) crate.
+    #[error("argon2 {0:?}")]
+    Argon2(argon2::Error),
     /// Invalid aes key nonce length
     #[error("aes {0:?}")]
     AesInvalidKeyNonceLength(aes::cipher::InvalidLength),
@@ -41,6 +45,12 @@ impl From<scrypt::errors::InvalidParams> for KeystoreError {
 impl From<scrypt::errors::InvalidOutputLen> for KeystoreError {
     fn from(e: scrypt::errors::InvalidOutputLen) -> Self {
         Self::ScryptInvalidOuputLen(e)
+    }
+}
+
+impl From<argon2::Error> for KeystoreError {
+    fn from(e: argon2::Error) -> Self {
+        Self::Argon2(e)
     }
 }
 
