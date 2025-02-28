@@ -170,7 +170,7 @@ where
     let iv = crate::generate_random_bytes(rng, DEFAULT_IV_SIZE);
 
     // Derive the key.
-    let kdf = KdfFactory::create(algorithm.clone(), &salt)?;
+    let kdf = KdfFactory::create(&algorithm, &salt)?;
     let key = kdf.derive_key(password.as_ref())?;
     // Encrypt the private key using AES-128-CTR.
 

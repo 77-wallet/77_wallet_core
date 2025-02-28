@@ -79,7 +79,7 @@ where
         // let data = self.data.as_ref();
         let dir = self.keypath.as_ref().join(self.name);
         let salt = crate::generate_random_bytes(self.rng, DEFAULT_KEY_SIZE);
-        let kdf = KdfFactory::create(self.algorithm.clone(), &salt)?;
+        let kdf = KdfFactory::create(&self.algorithm, &salt)?;
         let engine = KeystoreEngine::new(kdf);
 
         let _keystore =

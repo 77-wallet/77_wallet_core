@@ -1,13 +1,13 @@
 use super::json::KeystoreJson;
 
 // 文件管理层（处理路径和序列化）
-pub struct KeystoreFile {
-    path: std::path::PathBuf,
+pub struct KeystoreFile<P: AsRef<std::path::Path>> {
+    path: P,
     engine: super::engine::KeystoreEngine,
 }
 
-impl KeystoreFile {
-    pub(crate) fn new(path: std::path::PathBuf, engine: super::engine::KeystoreEngine) -> Self {
+impl<P: AsRef<std::path::Path>> KeystoreFile<P> {
+    pub(crate) fn new(path: P, engine: super::engine::KeystoreEngine) -> Self {
         Self { path, engine }
     }
 

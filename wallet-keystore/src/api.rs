@@ -38,13 +38,13 @@ impl KeystoreApi {
         path: P,
         password: &str,
         algorithm: crate::keystore::factory::KdfAlgorithm,
-    ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
+    ) -> Result<(), crate::Error> {
         let gen_address = instance.gen_gen_address()?;
         let keypair = instance.gen_keypair_with_derivation_path(seed, derivation_path)?;
 
         let address = keypair.address();
         let private_key = keypair.private_key_bytes()?;
-        let wallet = crate::Keystore::store_sub_private_key(
+        crate::Keystore::store_sub_private_key(
             gen_address,
             private_key,
             path,
@@ -54,7 +54,7 @@ impl KeystoreApi {
             algorithm,
         )?;
 
-        Ok(wallet)
+        Ok(())
     }
 
     pub fn get_private_key<P: AsRef<std::path::Path> + std::fmt::Debug>(

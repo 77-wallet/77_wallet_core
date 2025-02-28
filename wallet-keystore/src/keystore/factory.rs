@@ -27,7 +27,7 @@ pub struct KdfFactory;
 
 impl KdfFactory {
     pub fn create(
-        algorithm: KdfAlgorithm,
+        algorithm: &KdfAlgorithm,
         salt: &[u8],
     ) -> Result<Box<dyn KeyDerivation>, crate::Error> {
         match algorithm {

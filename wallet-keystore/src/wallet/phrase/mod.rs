@@ -4,10 +4,12 @@
 
 use std::fmt;
 
+use serde::Deserialize;
+
 use crate::error::wallet::WalletError;
 
 pub(crate) mod builder;
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct PhraseWallet {
     /// The wallet's private key.
     pub phrase: String,

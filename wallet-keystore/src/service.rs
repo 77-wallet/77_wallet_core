@@ -1,10 +1,6 @@
 use std::path::Path;
 
-use crate::wallet::{
-    phrase::builder::{PhraseDecryptorBuilder, PhraseEncryptorBuilder},
-    prikey::builder::{PrikeyDecryptorBuilder, PrikeyEncryptorBuilder},
-    seed::builder::{SeedDecryptorBuilder, SeedEncryptorBuilder},
-};
+use crate::keystore::builder::KeystoreBuilder;
 
 #[derive(Debug, Clone, Default)]
 pub struct Keystore {}
@@ -17,27 +13,13 @@ impl Keystore {
         file_path: &P,
         password: &str,
         algorithm: crate::keystore::factory::KdfAlgorithm,
-    ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
-        let mut rng = rand::thread_rng();
-        // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::pk(), address)
-        //     .gen_name_with_address()?;
-        // let address_generator = wallet_chain_instance::instance::eth::address::EthGenAddress::new(
-        //     wallet_types::chain::chain::ChainCode::Ethereum,
-        // );
+    ) -> Result<(), crate::Error> {
+        let rng = rand::thread_rng();
 
-        use crate::wallet::WalletEncrypt as _;
-        let pk_wallet = PrikeyEncryptorBuilder::new(
-            file_path.as_ref(),
-            &mut rng,
-            private_key,
-            password,
-            Some(name),
-            // Box::new(address_generator),
-            algorithm,
-        )
-        .encrypt_keystore()?;
+        KeystoreBuilder::new_encrypt(file_path, password, private_key, rng, algorithm, &name)
+            .save()?;
 
-        Ok(pk_wallet)
+        Ok(())
     }
 
     pub fn store_seed_keystore<P: AsRef<Path>>(
@@ -47,22 +29,12 @@ impl Keystore {
         directory: &P,
         password: &str,
         algorithm: crate::keystore::factory::KdfAlgorithm,
-    ) -> Result<crate::wallet::seed::SeedWallet, crate::Error> {
-        let mut rng = rand::thread_rng();
-        // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::seed(), address)
-        //     .gen_name_with_address()?;
+    ) -> Result<(), crate::Error> {
+        let rng = rand::thread_rng();
 
-        use crate::wallet::WalletEncrypt as _;
-        let seed_wallet = SeedEncryptorBuilder::new(
-            directory.as_ref(),
-            &mut rng,
-            seed,
-            password,
-            Some(name),
-            algorithm,
-        )
-        .encrypt_keystore()?;
-        Ok(seed_wallet)
+        KeystoreBuilder::new_encrypt(directory, password, seed, rng, algorithm, &name).save()?;
+
+        Ok(())
     }
 
     pub fn store_phrase_keystore<P: AsRef<Path>>(
@@ -72,23 +44,10 @@ impl Keystore {
         directory: &P,
         password: &str,
         algorithm: crate::keystore::factory::KdfAlgorithm,
-    ) -> Result<crate::wallet::phrase::PhraseWallet, crate::Error> {
-        let mut rng = rand::thread_rng();
-        // let name = RootKeystoreInfo::new(crate::utils::file::Suffix::phrase(), address)
-        //     .gen_name_with_address()?;
-        // let phrase_vec = wallet_utils::conversion::str_to_vec(phrase);
-
-        use crate::wallet::WalletEncrypt as _;
-        let phrase_wallet = PhraseEncryptorBuilder::new(
-            directory.as_ref(),
-            &mut rng,
-            phrase,
-            password,
-            name,
-            algorithm,
-        )
-        .encrypt_keystore()?;
-        Ok(phrase_wallet)
+    ) -> Result<(), crate::Error> {
+        let rng = rand::thread_rng();
+        KeystoreBuilder::new_encrypt(directory, password, phrase, rng, algorithm, &name).save()?;
+        Ok(())
     }
 
     pub fn store_sub_private_key<P: AsRef<Path>>(
@@ -104,8 +63,8 @@ impl Keystore {
         address: &str,
         derivation_path: &str,
         algorithm: crate::keystore::factory::KdfAlgorithm,
-    ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
-        let mut rng = rand::thread_rng();
+    ) -> Result<(), crate::Error> {
+        let rng = rand::thread_rng();
 
         let name = wallet_tree::wallet_tree::subs::SubsKeystoreInfo::new(
             derivation_path,
@@ -115,30 +74,18 @@ impl Keystore {
         )
         .gen_name_with_derivation_path()?;
 
-        use crate::wallet::WalletEncrypt as _;
-        let pk_wallet = PrikeyEncryptorBuilder::new(
-            file_path.as_ref(),
-            &mut rng,
-            private_key,
-            password,
-            Some(&name),
-            // address_generator,
-            algorithm,
-        )
-        .encrypt_keystore()?;
+        KeystoreBuilder::new_encrypt(file_path, password, private_key, rng, algorithm, &name)
+            .save()?;
 
-        Ok(pk_wallet)
+        Ok(())
     }
 
     pub fn load_private_key_keystore<P: AsRef<Path>>(
         file_path: P,
         password: &str,
     ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
-        use crate::wallet::WalletDecrypt as _;
-        let prikey_wallet =
-            PrikeyDecryptorBuilder::new(file_path.as_ref(), password).decrypt_keystore()?;
-
-        Ok(prikey_wallet)
+        let phrase = KeystoreBuilder::new_decrypt(file_path, password).load()?;
+        Ok(crate::wallet::prikey::PkWallet::from_pkey(&phrase.inner())?)
     }
 
     pub fn load_phrase_keystore<P: AsRef<Path>>(
@@ -153,10 +100,10 @@ impl Keystore {
         .gen_name_with_address()?;
         let path = directory.as_ref().join(name);
 
-        use crate::wallet::WalletDecrypt as _;
-        let phrase_wallet = PhraseDecryptorBuilder::new(path, password).decrypt_keystore()?;
-
-        Ok(phrase_wallet)
+        let phrase = KeystoreBuilder::new_decrypt(path, password).load()?;
+        Ok(crate::wallet::phrase::PhraseWallet::from_phrase(
+            &phrase.into_string()?,
+        )?)
     }
 
     pub fn load_seed_keystore<P: AsRef<Path>>(
@@ -171,8 +118,7 @@ impl Keystore {
         .gen_name_with_address()?;
         let path = directory.as_ref().join(name);
 
-        use crate::wallet::WalletDecrypt as _;
-        let recovered_wallet = SeedDecryptorBuilder::new(path, password).decrypt_keystore()?;
-        Ok(recovered_wallet)
+        let phrase = KeystoreBuilder::new_decrypt(path, password).load()?;
+        Ok(crate::wallet::seed::SeedWallet::from_seed(phrase.inner())?)
     }
 }
