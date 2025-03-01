@@ -1,5 +1,7 @@
 use wallet_tree::wallet_tree::WalletBranch;
 
+use crate::wallet::prikey::PkWallet;
+
 pub struct KeystoreApi;
 
 impl KeystoreApi {
@@ -15,18 +17,12 @@ impl KeystoreApi {
     ) -> Result<(), crate::Error> {
         let name = WalletBranch::get_root_pk_filename(address)?;
 
-        crate::Keystore::store_root_private_key(
-            &name,
-            private_key,
-            &path,
-            password,
-            algorithm.clone(),
-        )?;
+        crate::Keystore::store_data(&name, private_key, &path, password, algorithm.clone())?;
         let name = WalletBranch::get_root_seed_filename(address)?;
 
-        crate::Keystore::store_seed_keystore(&name, seed, &path, password, algorithm.clone())?;
+        crate::Keystore::store_data(&name, seed, &path, password, algorithm.clone())?;
         let name = WalletBranch::get_root_phrase_filename(address)?;
-        crate::Keystore::store_phrase_keystore(&name, phrase, &path, password, algorithm)?;
+        crate::Keystore::store_data(&name, phrase, &path, password, algorithm)?;
         Ok(())
     }
 
@@ -44,15 +40,16 @@ impl KeystoreApi {
 
         let address = keypair.address();
         let private_key = keypair.private_key_bytes()?;
-        crate::Keystore::store_sub_private_key(
-            gen_address,
-            private_key,
-            path,
-            password,
-            &address,
+
+        let name = wallet_tree::wallet_tree::subs::SubsKeystoreInfo::new(
             derivation_path,
-            algorithm,
-        )?;
+            wallet_tree::utils::file::Suffix::pk(),
+            gen_address.chain_code(),
+            &address,
+        )
+        .gen_name_with_derivation_path()?;
+
+        crate::Keystore::store_data(&name, private_key, &path, password, algorithm)?;
 
         Ok(())
     }
@@ -61,8 +58,8 @@ impl KeystoreApi {
         password: &str,
         path: P,
     ) -> Result<Vec<u8>, crate::Error> {
-        let recovered_wallet = crate::Keystore::load_private_key_keystore(path, password)?;
-        Ok(recovered_wallet.pkey().to_vec())
+        let pkwallet = crate::Keystore::load_data::<_, PkWallet>(path, password)?;
+        Ok(pkwallet.pkey().to_vec())
     }
 
     pub fn check_wallet_address(
@@ -83,15 +80,6 @@ impl KeystoreApi {
         );
         let generated_address = data.generate(&pkey)?;
 
-        // let wallet = crate::wallet::prikey::PkWallet::from_pkey(
-        //     &pkey,
-        //     // Box::new(
-        //     //     wallet_chain_instance::instance::eth::address::EthGenAddress::new(
-        //     //         wallet_types::chain::chain::ChainCode::Ethereum,
-        //     //     ),
-        //     // ),
-        // )?;
-        // let generated_address = wallet.address();
         if generated_address.ne(&address) {
             return Err(crate::Error::Parase);
         }
@@ -128,6 +116,8 @@ impl KeystoreApi {
             .into_seed();
         let phrase_wallet =
             crate::Keystore::load_phrase_keystore(wallet_address, &root_dir, old_password)?;
+
+        // let phrase_wallet = crate::Keystore::load_data(path, password)
         Self::initialize_root_keystore(
             wallet_address,
             &private_key,
@@ -158,15 +148,15 @@ impl KeystoreApi {
             let path = subs_dir.join(filename);
             let pk = crate::api::KeystoreApi::get_private_key(old_password, &path)?;
 
-            crate::Keystore::store_sub_private_key(
-                gen_address,
-                pk,
-                subs_dir,
-                new_password,
-                address,
+            let name = wallet_tree::wallet_tree::subs::SubsKeystoreInfo::new(
                 &account.derivation_path,
-                algorithm,
-            )?;
+                wallet_tree::utils::file::Suffix::pk(),
+                gen_address.chain_code(),
+                &address,
+            )
+            .gen_name_with_derivation_path()?;
+
+            crate::Keystore::store_data(&name, pk, &subs_dir, new_password, algorithm)?;
         }
 
         Ok(())

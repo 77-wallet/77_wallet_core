@@ -6,7 +6,7 @@ use std::fmt;
 
 use serde::Deserialize;
 
-use crate::error::wallet::WalletError;
+use crate::{error::wallet::WalletError, keystore::builder::RecoverableData};
 
 pub(crate) mod builder;
 #[derive(Clone, Deserialize)]
@@ -53,5 +53,13 @@ impl fmt::Debug for PhraseWallet {
 impl PartialEq for PhraseWallet {
     fn eq(&self, other: &Self) -> bool {
         self.phrase.eq(&other.phrase) && self.phrase == other.phrase
+    }
+}
+
+impl TryFrom<RecoverableData> for PhraseWallet {
+    type Error = crate::Error;
+
+    fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
+        Ok(Self::from_phrase(&value.into_string()?)?)
     }
 }

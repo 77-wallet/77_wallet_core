@@ -10,6 +10,8 @@
 
 use std::fmt;
 
+use crate::keystore::builder::RecoverableData;
+
 pub(crate) mod builder;
 
 /// A wallet instantiated with a locally stored private key
@@ -127,5 +129,13 @@ impl fmt::Debug for PkWallet {
 impl PartialEq for PkWallet {
     fn eq(&self, other: &Self) -> bool {
         self.pkey.eq(&other.pkey)
+    }
+}
+
+impl TryFrom<RecoverableData> for PkWallet {
+    type Error = crate::Error;
+
+    fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
+        Ok(Self::from_slice(&value.inner())?)
     }
 }

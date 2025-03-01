@@ -1,91 +1,32 @@
 use std::path::Path;
 
-use crate::keystore::builder::KeystoreBuilder;
+use crate::keystore::builder::{KeystoreBuilder, RecoverableData};
 
 #[derive(Debug, Clone, Default)]
 pub struct Keystore {}
 
 impl Keystore {
-    pub fn store_root_private_key<P: AsRef<Path>>(
-        // address: &str,
+    pub fn store_data<D: AsRef<[u8]>, P: AsRef<Path>>(
         name: &str,
-        private_key: &[u8],
+        data: D,
         file_path: &P,
         password: &str,
         algorithm: crate::keystore::factory::KdfAlgorithm,
     ) -> Result<(), crate::Error> {
         let rng = rand::thread_rng();
-
-        KeystoreBuilder::new_encrypt(file_path, password, private_key, rng, algorithm, &name)
-            .save()?;
+        KeystoreBuilder::new_encrypt(file_path, password, data, rng, algorithm, &name).save()?;
 
         Ok(())
     }
 
-    pub fn store_seed_keystore<P: AsRef<Path>>(
-        // address: &str,
-        name: &str,
-        seed: &[u8],
-        directory: &P,
-        password: &str,
-        algorithm: crate::keystore::factory::KdfAlgorithm,
-    ) -> Result<(), crate::Error> {
-        let rng = rand::thread_rng();
-
-        KeystoreBuilder::new_encrypt(directory, password, seed, rng, algorithm, &name).save()?;
-
-        Ok(())
-    }
-
-    pub fn store_phrase_keystore<P: AsRef<Path>>(
-        // address: &str,
-        name: &str,
-        phrase: &str,
-        directory: &P,
-        password: &str,
-        algorithm: crate::keystore::factory::KdfAlgorithm,
-    ) -> Result<(), crate::Error> {
-        let rng = rand::thread_rng();
-        KeystoreBuilder::new_encrypt(directory, password, phrase, rng, algorithm, &name).save()?;
-        Ok(())
-    }
-
-    pub fn store_sub_private_key<P: AsRef<Path>>(
-        address_generator: Box<
-            dyn wallet_core::address::GenAddress<
-                Address = wallet_chain_instance::instance::Address,
-                Error = wallet_chain_instance::Error,
-            >,
-        >,
-        private_key: Vec<u8>,
-        file_path: P,
-        password: &str,
-        address: &str,
-        derivation_path: &str,
-        algorithm: crate::keystore::factory::KdfAlgorithm,
-    ) -> Result<(), crate::Error> {
-        let rng = rand::thread_rng();
-
-        let name = wallet_tree::wallet_tree::subs::SubsKeystoreInfo::new(
-            derivation_path,
-            wallet_tree::utils::file::Suffix::pk(),
-            address_generator.chain_code(),
-            address,
-        )
-        .gen_name_with_derivation_path()?;
-
-        KeystoreBuilder::new_encrypt(file_path, password, private_key, rng, algorithm, &name)
-            .save()?;
-
-        Ok(())
-    }
-
-    pub fn load_private_key_keystore<P: AsRef<Path>>(
-        file_path: P,
-        password: &str,
-    ) -> Result<crate::wallet::prikey::PkWallet, crate::Error> {
-        let phrase = KeystoreBuilder::new_decrypt(file_path, password).load()?;
-        Ok(crate::wallet::prikey::PkWallet::from_pkey(&phrase.inner())?)
+    pub(crate) fn load_data<P, D>(path: P, password: &str) -> Result<D, crate::Error>
+    where
+        P: AsRef<Path>,
+        D: TryFrom<RecoverableData> + Sized,
+        crate::Error: From<<D as TryFrom<RecoverableData>>::Error>,
+    {
+        let data = KeystoreBuilder::new_decrypt(path, password).load()?;
+        Ok(D::try_from(data)?)
     }
 
     pub fn load_phrase_keystore<P: AsRef<Path>>(

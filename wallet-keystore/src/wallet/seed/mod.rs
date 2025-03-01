@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use crate::error::wallet::WalletError;
+use crate::{error::wallet::WalletError, keystore::builder::RecoverableData};
 
 pub(crate) mod builder;
 
@@ -91,5 +91,13 @@ impl PartialEq for SeedWallet {
     fn eq(&self, other: &Self) -> bool {
         self.seed.eq(&other.seed)
         //  && self.address == other.address
+    }
+}
+
+impl TryFrom<RecoverableData> for SeedWallet {
+    type Error = crate::Error;
+
+    fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
+        Ok(Self::from_seed(value.inner())?)
     }
 }
