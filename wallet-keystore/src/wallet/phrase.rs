@@ -8,7 +8,6 @@ use serde::Deserialize;
 
 use crate::{error::wallet::WalletError, keystore::builder::RecoverableData};
 
-pub(crate) mod builder;
 #[derive(Clone, Deserialize)]
 pub struct PhraseWallet {
     /// The wallet's private key.

@@ -6,8 +6,6 @@ use std::fmt;
 
 use crate::{error::wallet::WalletError, keystore::builder::RecoverableData};
 
-pub(crate) mod builder;
-
 /// An Ethereum private-public key pair which can be used for signing messages.
 ///
 /// # Examples

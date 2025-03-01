@@ -12,8 +12,6 @@ use std::fmt;
 
 use crate::keystore::builder::RecoverableData;
 
-pub(crate) mod builder;
-
 /// A wallet instantiated with a locally stored private key
 // pub type LocalWallet = PkWallet<k256::ecdsa::SigningKey>;
 
