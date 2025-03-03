@@ -46,10 +46,11 @@ pub fn extract_sub_address_and_derive_path_from_filename(
         } else {
             return Err(crate::Error::FilenameInvalid);
         };
-        let percent_derivation_path =
-            wallet_utils::parse_func::derivation_path_percent_decode(&encoded_derivation_path);
         let derivation_path =
-            wallet_utils::parse_func::decode_from_percent(percent_derivation_path)?.to_string();
+            wallet_utils::parse_func::derivation_path_percent_decode(&encoded_derivation_path)?
+                .to_string();
+        // let derivation_path =
+        // wallet_utils::parse_func::decode_from_percent(percent_derivation_path)?.to_string();
         Ok(SubsKeystoreInfo {
             derivation_path,
             address,

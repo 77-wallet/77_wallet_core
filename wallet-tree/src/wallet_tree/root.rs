@@ -23,11 +23,13 @@ impl RootKeystoreInfo {
         &self,
         raw_derivation_path: &str,
     ) -> Result<String, crate::Error> {
-        let percent_derivation_path =
-            wallet_utils::parse_func::derivation_path_percent_decode(raw_derivation_path);
+        // let percent_derivation_path =
+        //     wallet_utils::parse_func::derivation_path_percent_decode(raw_derivation_path);
+        // let derivation_path =
+        //     wallet_utils::parse_func::decode_from_percent(percent_derivation_path)?.to_string();
         let derivation_path =
-            wallet_utils::parse_func::decode_from_percent(percent_derivation_path)?.to_string();
-
+            wallet_utils::parse_func::derivation_path_percent_decode(&raw_derivation_path)?
+                .to_string();
         let name = format!(
             "{}-{}-{}",
             self.address,

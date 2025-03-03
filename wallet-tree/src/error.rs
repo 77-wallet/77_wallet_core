@@ -8,4 +8,10 @@ pub enum Error {
     FilenameInvalid,
     #[error("Types error: `{0}`")]
     Types(#[from] wallet_types::Error),
+    #[error("Missing chain code")]
+    MissingChainCode,
+    #[error("Missing derivation")]
+    MissingDerivation,
+    #[error("Unsupported file type")]
+    UnsupportedFileType,
 }

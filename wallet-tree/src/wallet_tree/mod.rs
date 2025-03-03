@@ -1,9 +1,34 @@
+pub mod legecy_adapter;
 pub mod root;
 pub mod subs;
+
 use root::RootKeystoreInfo;
 use serde::Serialize;
 use subs::SubsKeystoreInfo;
 use wallet_types::chain::chain::ChainCode;
+
+pub trait WalletTreeOps {
+    type Tree;
+    fn traverse(wallet_dir: &std::path::PathBuf) -> Result<Self::Tree, crate::Error>
+    where
+        Self: Sized;
+    fn deprecate_subkeys(
+        self,
+        wallet_address: &str,
+        subs_path: std::path::PathBuf,
+    ) -> Result<(), crate::Error>;
+
+    fn delete_subkey(
+        &mut self,
+        wallet_address: &str,
+        subs_path: &std::path::PathBuf,
+        address: &str,
+        chain: &ChainCode,
+    ) -> Result<(), crate::Error>;
+
+    fn get_root_info(&self, wallet_address: &str) -> Result<RootKeystoreInfo, crate::Error>;
+    // 其他必要方法...
+}
 
 /// 钱包
 ///       根              子
