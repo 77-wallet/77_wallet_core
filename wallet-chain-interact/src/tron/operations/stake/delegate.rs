@@ -20,7 +20,9 @@ pub struct DelegateArgs {
     pub lock: bool,
     // day * 28800
     pub lock_period: i64,
-    // pub Permission_id: Option<u32>,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 impl DelegateArgs {
     pub fn new(
@@ -36,7 +38,7 @@ impl DelegateArgs {
             resource: ResourceType::try_from(resource)?,
             lock: false,
             lock_period: 0,
-            // Permission_id: None,
+            permission_id: None,
         })
     }
 
@@ -46,10 +48,10 @@ impl DelegateArgs {
         self
     }
 
-    // pub fn with_permission_id(mut self, permission_id: u32) -> Self {
-    //     self.Permission_id = Some(permission_id);
-    //     self
-    // }
+    pub fn with_permission_id(mut self, permission_id: i64) -> Self {
+        self.permission_id = Some(permission_id);
+        self
+    }
 }
 
 #[async_trait::async_trait]

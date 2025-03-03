@@ -10,14 +10,23 @@ pub struct UnFreezeBalanceArgs {
     owner_address: String,
     resource: ResourceType,
     unfreeze_balance: i64,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 
 impl UnFreezeBalanceArgs {
-    pub fn new(owner_address: &str, resource: &str, unfreeze_balance: i64) -> crate::Result<Self> {
+    pub fn new(
+        owner_address: &str,
+        resource: &str,
+        unfreeze_balance: i64,
+        permission_id: Option<i64>,
+    ) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             resource: ResourceType::try_from(resource)?,
             unfreeze_balance: unfreeze_balance * consts::TRX_VALUE,
+            permission_id,
         })
     }
 }
@@ -52,11 +61,15 @@ pub struct UnFreezeBalanceResp {
 #[derive(serde::Serialize, Debug)]
 pub struct CancelAllFreezeBalanceArgs {
     owner_address: String,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 impl CancelAllFreezeBalanceArgs {
-    pub fn new(owner_address: &str) -> crate::Result<Self> {
+    pub fn new(owner_address: &str, permission_id: Option<i64>) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
+            permission_id,
         })
     }
 }
@@ -86,6 +99,9 @@ pub struct CancelAllUnfreezeResp {
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct WithdrawUnfreezeArgs {
     pub owner_address: String,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
@@ -98,7 +114,9 @@ impl TronTxOperation<WithdrawExpireResp> for WithdrawUnfreezeArgs {
         &self,
         provider: &Provider,
     ) -> crate::Result<RawTransactionParams> {
-        let res = provider.withdraw_expire_unfree(&self.owner_address).await?;
+        let res = provider
+            .withdraw_expire_unfree(&self.owner_address, self.permission_id)
+            .await?;
         Ok(RawTransactionParams::from(res))
     }
 

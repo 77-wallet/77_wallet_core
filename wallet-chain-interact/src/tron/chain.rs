@@ -247,19 +247,19 @@ impl TronChain {
         )))
     }
 
-    pub async fn withdraw_unfreeze_amount(
-        &self,
-        owner_address: &str,
-        key: ChainPrivateKey,
-    ) -> crate::Result<String> {
-        let resp = self.provider.withdraw_expire_unfree(owner_address).await?;
+    // pub async fn withdraw_unfreeze_amount(
+    //     &self,
+    //     owner_address: &str,
+    //     key: ChainPrivateKey,
+    // ) -> crate::Result<String> {
+    //     let resp = self.provider.withdraw_expire_unfree(owner_address).await?;
 
-        let raw = RawTransactionParams::from(resp);
+    //     let raw = RawTransactionParams::from(resp);
 
-        // signature
-        let sign_str = wallet_utils::sign::sign_tron(&raw.tx_id, &key, None)?;
+    //     // signature
+    //     let sign_str = wallet_utils::sign::sign_tron(&raw.tx_id, &key, None)?;
 
-        let rs = self.exec_multisig_transaction(raw, vec![sign_str]).await?;
-        Ok(rs)
-    }
+    //     let rs = self.exec_multisig_transaction(raw, vec![sign_str]).await?;
+    //     Ok(rs)
+    // }
 }

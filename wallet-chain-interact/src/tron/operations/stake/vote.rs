@@ -20,6 +20,9 @@ pub struct WithdrawBalanceArgs {
     pub owner_address: String,
     // 提取的金额 unit is trx
     pub value: Option<f64>,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 
 #[async_trait::async_trait]
@@ -28,7 +31,9 @@ impl TronTxOperation<WithdrawBalanceResp> for WithdrawBalanceArgs {
         &self,
         provider: &Provider,
     ) -> crate::Result<RawTransactionParams> {
-        let res = provider.withdraw_balance(&self.owner_address).await?;
+        let res = provider
+            .withdraw_balance(&self.owner_address, self.permission_id)
+            .await?;
         Ok(RawTransactionParams::from(res))
     }
 
@@ -52,13 +57,21 @@ pub struct VoteWitnessArgs {
     pub owner_address: String,
     pub votes: Vec<Votes>,
     pub visible: bool,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 impl VoteWitnessArgs {
-    pub fn new(owner_address: &str, votes: Vec<Votes>) -> crate::Result<Self> {
+    pub fn new(
+        owner_address: &str,
+        votes: Vec<Votes>,
+        permission: Option<i64>,
+    ) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             votes,
             visible: false,
+            permission_id: permission,
         })
     }
 }

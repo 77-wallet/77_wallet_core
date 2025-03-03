@@ -393,12 +393,24 @@ impl Provider {
     pub async fn withdraw_expire_unfree(
         &self,
         owner_address: &str,
+        permission_id: Option<i64>,
     ) -> crate::Result<TronTransactionResponse<stake::WithdrawExpireResp>> {
         let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
 
-        let args = json!({
-            "owner_address":json!(owner_address)
-        });
+        let args = if let Some(permision_id) = permission_id {
+            json!({
+                "owner_address":json!(owner_address),
+                "Permission_id":json!(permision_id),
+            })
+        } else {
+            json!({
+                "owner_address":json!(owner_address),
+            })
+        };
+
+        // let args = json!({
+        //     "owner_address":json!(owner_address)
+        // });
         let res = self
             .do_request("wallet/withdrawexpireunfreeze", Some(args))
             .await?;
@@ -466,11 +478,21 @@ impl Provider {
     pub async fn withdraw_balance(
         &self,
         owner_address: &str,
+        permission_id: Option<i64>,
     ) -> crate::Result<TronTransactionResponse<stake::WithdrawBalanceResp>> {
         let owner_address = wallet_utils::address::bs58_addr_to_hex(owner_address)?;
-        let args = json!({
-            "owner_address":json!(owner_address),
-        });
+
+        let args = if let Some(permission) = permission_id {
+            json!({
+                "owner_address":json!(owner_address),
+                "Permission_id":json!(permission)
+            })
+        } else {
+            json!({
+                "owner_address":json!(owner_address),
+            })
+        };
+
         let res = self
             .do_request("wallet/withdrawbalance", Some(args))
             .await?;

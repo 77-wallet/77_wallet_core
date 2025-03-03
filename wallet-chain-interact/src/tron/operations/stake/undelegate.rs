@@ -14,6 +14,9 @@ pub struct UnDelegateArgs {
     pub receiver_address: String,
     pub balance: i64,
     pub resource: ResourceType,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 impl UnDelegateArgs {
     pub fn new(
@@ -21,12 +24,14 @@ impl UnDelegateArgs {
         receiver_address: &str,
         balance: i64,
         resource: &str,
+        permission_id: Option<i64>,
     ) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             receiver_address: wallet_utils::address::bs58_addr_to_hex(receiver_address)?,
             balance: balance * consts::TRX_VALUE,
             resource: ResourceType::try_from(resource)?,
+            permission_id,
         })
     }
 }

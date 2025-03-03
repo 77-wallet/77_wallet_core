@@ -153,6 +153,10 @@ impl Permission {
             keys,
         }
     }
+
+    pub fn users(&self) -> Vec<String> {
+        self.keys.iter().map(|k| k.address.clone()).collect()
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]

@@ -13,6 +13,9 @@ pub struct TriggerContractParameter {
     pub call_value: Option<u64>,
     pub call_token_value: Option<u64>,
     pub token_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "Permission_id")]
+    pub permission_id: Option<i64>,
 }
 
 impl TriggerContractParameter {
@@ -31,6 +34,7 @@ impl TriggerContractParameter {
             call_value: Some(0),
             call_token_value: Some(0),
             token_id: Some(0),
+            permission_id: None,
         }
     }
 

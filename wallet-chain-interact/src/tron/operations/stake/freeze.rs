@@ -11,15 +11,24 @@ pub struct FreezeBalanceArgs {
     resource: ResourceType,
     frozen_balance: i64,
     visible: bool,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 
 impl FreezeBalanceArgs {
-    pub fn new(owner_address: &str, resource: &str, frozen_balance: i64) -> crate::Result<Self> {
+    pub fn new(
+        owner_address: &str,
+        resource: &str,
+        frozen_balance: i64,
+        permission_id: Option<i64>,
+    ) -> crate::Result<Self> {
         Ok(Self {
             owner_address: wallet_utils::address::bs58_addr_to_hex(owner_address)?,
             resource: ResourceType::try_from(resource)?,
             frozen_balance: frozen_balance * consts::TRX_VALUE,
             visible: false,
+            permission_id,
         })
     }
 }

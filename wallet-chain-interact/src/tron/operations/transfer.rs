@@ -20,6 +20,9 @@ pub struct TransferOpt {
     pub value: i64,
     pub signature_num: u8,
     pub memo: Option<String>,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 
 impl TransferOpt {
@@ -35,11 +38,17 @@ impl TransferOpt {
             value: value.to::<i64>(),
             signature_num: 1,
             memo: None,
+            permission_id: None,
         })
     }
 
     pub fn set_sign_num(&mut self, sign_num: u8) {
         self.signature_num = sign_num;
+    }
+
+    pub fn with_permission(mut self, permission: i64) -> Self {
+        self.permission_id = Some(permission);
+        self
     }
 }
 
@@ -51,7 +60,7 @@ pub struct TronTransferResp {
     pub to_address: String,
     #[serde(rename = "Permission_id")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub permission_id: Option<u8>,
+    pub permission_id: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra_data: Option<String>,
 }
@@ -66,7 +75,7 @@ impl TronTxOperation<TronTransferResp> for TransferOpt {
             amount: self.value,
             owner_address: self.from.clone(),
             to_address: self.to.clone(),
-            permission_id: None,
+            permission_id: self.permission_id,
             extra_data: self.memo.clone(),
         };
 
@@ -113,6 +122,9 @@ pub struct ContractTransferOpt {
     pub signature_num: u8,
     pub fee_limit: Option<i64>,
     pub memo: Option<String>,
+    #[serde(rename = "Permission_id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permission_id: Option<i64>,
 }
 
 impl ContractTransferOpt {
@@ -130,8 +142,8 @@ impl ContractTransferOpt {
             value,
             signature_num: 1,
             fee_limit: None,
-            // memo: memo.map(|m| wallet_utils::hex_func::utf8_to_hex(&m)),
             memo: None,
+            permission_id: None,
         })
     }
     pub fn set_sign_num(&mut self, sign_num: u8) {
@@ -160,10 +172,21 @@ impl ContractTransferOpt {
             function_selector,
             parameter,
         );
+
         if let Some(fee_limit) = self.fee_limit {
             trigger.fee_limit = Some(fee_limit);
         }
+
+        if let Some(permission) = self.permission_id {
+            trigger.permission_id = Some(permission);
+        }
+
         trigger
+    }
+
+    pub fn with_permission(mut self, permission_id: i64) -> Self {
+        self.permission_id = Some(permission_id);
+        self
     }
 }
 
