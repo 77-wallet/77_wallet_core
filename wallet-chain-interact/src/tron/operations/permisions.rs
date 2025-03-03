@@ -1,8 +1,8 @@
 use super::{
-    multisig::{MultisigAccountResp, Permission},
+    multisig::{Keys, MultisigAccountResp, Permission},
     RawTransactionParams, TronTransactionResponse, TronTxOperation,
 };
-use crate::tron::Provider;
+use crate::tron::{protocol::account::TronAccount, Provider};
 use wallet_utils::address;
 
 // https://github.com/tronprotocol/java-tron/blob/1f0aa386212feb7817048aeb436779ddecaca534/protocol/src/main/protos/core/Tron.proto#L337
@@ -123,6 +123,16 @@ impl PermissionTypes {
 
         Ok(original_structure)
     }
+
+    pub fn from_i8(operations: Vec<i8>) -> crate::Result<Self> {
+        let mut result = vec![];
+
+        for item in operations {
+            result.push(ContractType::try_from(item)?)
+        }
+
+        Ok(Self(result))
+    }
 }
 
 impl Default for PermissionTypes {
@@ -169,20 +179,111 @@ impl ContractType {
     }
 }
 
+impl TryFrom<i8> for ContractType {
+    type Error = crate::Error;
+
+    fn try_from(value: i8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(ContractType::AccountCreateContract),
+            1 => Ok(ContractType::TransferContract),
+            2 => Ok(ContractType::TransferAssetContract),
+            3 => Ok(ContractType::VoteAssetContract),
+            4 => Ok(ContractType::VoteWitnessContract),
+            5 => Ok(ContractType::WitnessCreateContract),
+            6 => Ok(ContractType::AssetIssueContract),
+            8 => Ok(ContractType::WitnessUpdateContract),
+            9 => Ok(ContractType::ParticipateAssetIssueContract),
+            10 => Ok(ContractType::AccountUpdateContract),
+            11 => Ok(ContractType::FreezeBalanceContract),
+            12 => Ok(ContractType::UnfreezeBalanceContract),
+            13 => Ok(ContractType::WithdrawBalanceContract),
+            14 => Ok(ContractType::UnfreezeAssetContract),
+            15 => Ok(ContractType::UpdateAssetContract),
+            16 => Ok(ContractType::ProposalCreateContract),
+            17 => Ok(ContractType::ProposalApproveContract),
+            18 => Ok(ContractType::ProposalDeleteContract),
+            19 => Ok(ContractType::SetAccountIdContract),
+            20 => Ok(ContractType::CustomContract),
+            30 => Ok(ContractType::CreateSmartContract),
+            31 => Ok(ContractType::TriggerSmartContract),
+            32 => Ok(ContractType::GetContract),
+            33 => Ok(ContractType::UpdateSettingContract),
+            41 => Ok(ContractType::ExchangeCreateContract),
+            42 => Ok(ContractType::ExchangeInjectContract),
+            43 => Ok(ContractType::ExchangeWithdrawContract),
+            44 => Ok(ContractType::ExchangeTransactionContract),
+            45 => Ok(ContractType::UpdateEnergyLimitContract),
+            46 => Ok(ContractType::AccountPermissionUpdateContract),
+            48 => Ok(ContractType::ClearABIContract),
+            49 => Ok(ContractType::UpdateBrokerageContract),
+            51 => Ok(ContractType::ShieldedTransferContract),
+            52 => Ok(ContractType::MarketSellAssetContract),
+            53 => Ok(ContractType::MarketCancelOrderContract),
+            54 => Ok(ContractType::FreezeBalanceV2Contract),
+            55 => Ok(ContractType::UnfreezeBalanceV2Contract),
+            56 => Ok(ContractType::WithdrawExpireUnfreezeContract),
+            57 => Ok(ContractType::DelegateResourceContract),
+            58 => Ok(ContractType::UnDelegateResourceContract),
+            59 => Ok(ContractType::CancelAllUnfreezeV2Contract),
+            _ => Err(crate::Error::Other(
+                "Invalid ContractType value".to_string(),
+            )),
+        }
+    }
+}
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct PermissionUpdateArgs {
     pub owner_address: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub owner: Option<Permission>,
+    pub owner: Permission,
     // 权限
-    pub actives: Option<Vec<Permission>>,
+    pub actives: Vec<Permission>,
+}
+
+impl TryFrom<&TronAccount> for PermissionUpdateArgs {
+    type Error = crate::Error;
+
+    fn try_from(value: &TronAccount) -> Result<Self, Self::Error> {
+        // owner permison
+        let mut keys = vec![];
+        for item in value.owner_permission.keys.iter() {
+            keys.push(Keys::new(&item.address, item.weight)?);
+        }
+        let owner = Permission::new_owner(value.owner_permission.threshold, keys);
+
+        // actvies permison
+        let mut actives = vec![];
+        for permission in value.active_permission.iter() {
+            if let Some(operations) = permission.operations.as_ref() {
+                let mut keys = vec![];
+                for item in permission.keys.iter() {
+                    keys.push(Keys::new(&item.address, item.weight)?);
+                }
+
+                let active = Permission::new_actives_with_id(
+                    permission.permission_name.clone(),
+                    operations.clone(),
+                    permission.id,
+                    permission.threshold,
+                    keys,
+                );
+                actives.push(active);
+            }
+        }
+
+        Ok(Self {
+            owner_address: wallet_utils::address::bs58_addr_to_hex(&value.address)?,
+            owner,
+            actives,
+        })
+    }
 }
 
 impl PermissionUpdateArgs {
     pub fn new(
         owner_address: &str,
-        owner: Option<Permission>,
-        actives: Option<Vec<Permission>>,
+        owner: Permission,
+        actives: Vec<Permission>,
     ) -> crate::Result<Self> {
         Ok(Self {
             owner_address: address::bs58_addr_to_hex(owner_address)?,

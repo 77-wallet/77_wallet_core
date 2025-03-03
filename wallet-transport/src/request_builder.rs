@@ -7,7 +7,7 @@ pub struct ReqBuilder(pub RequestBuilder);
 
 impl ReqBuilder {
     pub fn json(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::debug!("request params: {:?}", serde_json::to_string(&v).unwrap());
+        tracing::info!("request params: {}", serde_json::to_string(&v).unwrap());
         self.0 = self.0.json(&v);
         self
     }

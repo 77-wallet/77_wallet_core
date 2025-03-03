@@ -1,6 +1,4 @@
-use super::{
-    permisions::PermissionTypes, RawTransactionParams, TronTransactionResponse, TronTxOperation,
-};
+use super::{RawTransactionParams, TronTransactionResponse, TronTxOperation};
 use crate::{
     tron::{consts::PERMISSION, provider::Provider},
     types::{ChainPrivateKey, MultisigSignResp},
@@ -88,10 +86,12 @@ impl TronTxOperation<MultisigAccountResp> for MultisigAccountOpt {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 pub struct Permission {
     #[serde(rename = "type")]
     pub types: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<i8>,
     pub permission_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub operations: Option<String>,
@@ -103,6 +103,7 @@ impl Permission {
         Self {
             types: Some(json!(0)),
             permission_name: "owner".to_owned(),
+            id: None,
             operations: None,
             threshold,
             keys,
@@ -113,6 +114,7 @@ impl Permission {
         Self {
             types: Some(json!(0)),
             permission_name: "owner".to_owned(),
+            id: None,
             operations: None,
             threshold,
             keys,
@@ -121,15 +123,32 @@ impl Permission {
 
     pub fn new_actives(
         permission_name: String,
-        permission: PermissionTypes,
+        operations: String,
         threshold: u8,
         keys: Vec<Keys>,
     ) -> Self {
-        let permisions = permission.to_hex();
         Self {
             types: Some(json!(2)),
             permission_name,
-            operations: Some(permisions),
+            id: None,
+            operations: Some(operations),
+            threshold,
+            keys,
+        }
+    }
+
+    pub fn new_actives_with_id(
+        permission_name: String,
+        operations: String,
+        id: Option<i8>,
+        threshold: u8,
+        keys: Vec<Keys>,
+    ) -> Self {
+        Self {
+            types: Some(json!(2)),
+            permission_name,
+            id,
+            operations: Some(operations),
             threshold,
             keys,
         }
@@ -138,9 +157,9 @@ impl Permission {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Keys {
-    // hex
-    address: String,
-    weight: i8,
+    // address 作为参数是hex类型,tron账户信息响应的是bs58格式的
+    pub address: String,
+    pub weight: i8,
 }
 impl Keys {
     pub fn new(address: &str, weight: i8) -> crate::Result<Self> {

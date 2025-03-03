@@ -56,7 +56,7 @@ impl HttpClient {
         } else {
             url = self.base_url.to_string();
         }
-        tracing::debug!("request url = {}", url);
+        tracing::info!("request url = {}", url);
         let build = self.client.post(url);
         ReqBuilder(build)
     }

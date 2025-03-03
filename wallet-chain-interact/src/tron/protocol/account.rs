@@ -1,4 +1,7 @@
-use crate::tron::{consts, operations::stake::ResourceType};
+use crate::tron::{
+    consts,
+    operations::{multisig::Permission, stake::ResourceType},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -16,8 +19,8 @@ pub struct TronAccount {
     pub frozen_v2: Vec<FrozenV2>,
     #[serde(rename = "unfrozenV2")]
     pub unfreeze_v2: Vec<UnfrozenV2>,
-    pub owner_permission: PermissionResp,
-    pub active_permission: Vec<PermissionResp>,
+    pub owner_permission: Permission,
+    pub active_permission: Vec<Permission>,
     pub votes: Vec<Vote>,
     #[serde(flatten)]
     #[serde(default)]
@@ -115,6 +118,13 @@ impl TronAccount {
             ResourceType::ENERGY => self.account_resource.acquired_energy,
         };
         value / consts::TRX_VALUE
+    }
+
+    pub fn all_actives_user(&self) -> Vec<String> {
+        self.active_permission
+            .iter()
+            .flat_map(|a| a.keys.iter().map(|k| k.address.clone()))
+            .collect()
     }
 }
 
@@ -226,33 +236,33 @@ pub struct AccountPermission<T> {
     visible: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct Permission {
-    #[serde(rename = "type")]
-    pub types: i8,
-    pub permission_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub operations: Option<String>,
-    pub threshold: u8,
-    pub keys: Vec<Keys>,
-}
-#[derive(Serialize, Debug, Deserialize, Default)]
-pub struct PermissionResp {
-    #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub types: Option<String>,
-    pub permission_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub operations: Option<String>,
-    pub threshold: u8,
-    pub keys: Vec<Keys>,
-}
+// #[derive(Debug, Serialize, Deserialize, Clone, Default)]
+// pub struct Permission {
+//     #[serde(rename = "type")]
+//     pub types: i8,
+//     pub permission_name: String,
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub operations: Option<String>,
+//     pub threshold: u8,
+//     pub keys: Vec<Keys>,
+// }
+// #[derive(Serialize, Debug, Deserialize, Default)]
+// pub struct PermissionResp {
+//     #[serde(rename = "type")]
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub types: Option<String>,
+//     pub permission_name: String,
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub operations: Option<String>,
+//     pub threshold: u8,
+//     pub keys: Vec<Keys>,
+// }
 
-#[derive(Debug, Serialize, Clone, Deserialize)]
-pub struct Keys {
-    pub address: String,
-    pub weight: i8,
-}
+// #[derive(Debug, Serialize, Clone, Deserialize)]
+// pub struct Keys {
+//     pub address: String,
+//     pub weight: i8,
+// }
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct Vote {

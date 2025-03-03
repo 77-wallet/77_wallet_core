@@ -25,6 +25,7 @@ pub trait TronTxOperation<T> {
 }
 
 pub trait TronSimulateOperation {
+    // 默认的引用区块信息
     const DEFAULT_NUM: i64 = 27007120;
     const DEFAULT_HASH: &'static str =
         "00000000019c1890f87d110a81d815b9a38a3e62d44a00a7c8fd50a7b322a2df";
