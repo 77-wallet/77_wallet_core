@@ -4,7 +4,7 @@ use crate::{
     types::{ChainPrivateKey, MultisigSignResp},
 };
 use serde_json::json;
-use std::{fmt::Debug, str::FromStr as _};
+use std::{collections::HashSet, fmt::Debug, str::FromStr as _};
 use wallet_utils::{address, sign};
 
 pub struct MultisigAccountOpt {
@@ -155,7 +155,22 @@ impl Permission {
     }
 
     pub fn users(&self) -> Vec<String> {
-        self.keys.iter().map(|k| k.address.clone()).collect()
+        self.keys
+            .iter()
+            .map(|k| k.address.clone())
+            .collect::<HashSet<String>>()
+            .into_iter()
+            .collect()
+    }
+
+    pub fn users_from_hex(&self) -> crate::Result<Vec<String>> {
+        let unique_addresses = self
+            .keys
+            .iter()
+            .map(|k| wallet_utils::address::hex_to_bs58_addr(&k.address))
+            .collect::<Result<HashSet<String>, _>>()?;
+
+        Ok(unique_addresses.into_iter().collect())
     }
 }
 

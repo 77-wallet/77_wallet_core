@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::tron::{
     consts,
     operations::{multisig::Permission, stake::ResourceType},
@@ -124,6 +126,8 @@ impl TronAccount {
         self.active_permission
             .iter()
             .flat_map(|a| a.keys.iter().map(|k| k.address.clone()))
+            .collect::<HashSet<String>>()
+            .into_iter()
             .collect()
     }
 }
