@@ -2,7 +2,6 @@ use std::path::Path;
 
 use wallet_keystore::{KdfAlgorithm, KeystoreBuilder, RecoverableData};
 
-
 #[derive(Debug, Clone, Default)]
 pub struct Keystore {}
 

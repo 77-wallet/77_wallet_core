@@ -22,7 +22,9 @@ impl IoStrategy for ModernIo {
         password: &str,
         algorithm: wallet_keystore::KdfAlgorithm,
     ) -> Result<(), crate::Error> {
-        todo!()
+        let rng = rand::thread_rng();
+        KeystoreBuilder::new_encrypt(file_path, password, data, rng, algorithm, &name).save()?;
+        Ok(())
     }
 
     fn load(

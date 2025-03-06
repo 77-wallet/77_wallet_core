@@ -78,7 +78,7 @@ impl WalletTreeOps for ModernWalletTree {
 
     fn delete_subkey(
         &mut self,
-        naming: Box<dyn crate::naming::NamingStrategy>,
+        // naming: Box<dyn crate::naming::NamingStrategy>,
         wallet_address: &str,
         address: &str,
         chain_code: &str,
@@ -87,7 +87,7 @@ impl WalletTreeOps for ModernWalletTree {
     ) -> Result<(), crate::Error> {
         let base_path = file_path.as_ref();
         let meta_path = base_path.join("derived_meta.json");
-        let subs_dir = base_path.join("subs");
+        let subs_dir = base_path;
 
         // 1. 处理元数据文件
         let mut metadata: DerivedMetadata = if meta_path.exists() {
@@ -96,6 +96,7 @@ impl WalletTreeOps for ModernWalletTree {
         } else {
             return Err(crate::Error::MetadataNotFound);
         };
+        tracing::info!("delete_subkey =============== 1");
 
         // 查找需要删除的条目并记录关联的密钥文件
         let mut keys_to_delete = Vec::new();
@@ -116,6 +117,7 @@ impl WalletTreeOps for ModernWalletTree {
             });
         }
 
+        tracing::info!("delete_subkey =============== 2");
         // 删除空账户
         metadata.accounts.retain(|_, metas| !metas.is_empty());
 
@@ -127,32 +129,42 @@ impl WalletTreeOps for ModernWalletTree {
         )?;
         fs::rename(&temp_meta_path, &meta_path).unwrap();
 
+        tracing::info!("delete_subkey =============== 3");
+        tracing::info!("metadata: {metadata:#?}");
         // 2. 处理密钥文件
         for (account_idx, encoded_key) in keys_to_delete {
+            tracing::info!("account_idx: {account_idx:#?}");
             let key_filename = format!("key{}.keystore", account_idx);
-            let data_path = subs_dir.join(&key_filename);
+            let file_path = subs_dir.join(&key_filename);
+            tracing::info!("data_path: {file_path:#?}");
 
-            if !data_path.exists() {
+            if !file_path.exists() {
                 continue;
             }
 
             // 加载并解密数据
-            let mut keystore = KeystoreBuilder::new_decrypt(&data_path, password).load()?;
+            let keystore = KeystoreBuilder::new_decrypt(&file_path, password).load()?;
 
             // 转换为可操作结构
             let mut keystore_data: KeystoreData = keystore.try_into()?;
 
+            tracing::warn!("keystore_data 1: {keystore_data:#?}");
             // 删除目标条目
             keystore_data.remove(&encoded_key);
 
+            tracing::warn!("keystore_data 2: {keystore_data:#?}");
             // 决定是否保留文件
+            // if keystore_data.get(&account_idx).is_none(){
+
+            // }
             if keystore_data.is_empty() {
-                fs::remove_file(&data_path).unwrap();
+                fs::remove_file(&file_path).unwrap();
             } else {
                 // 重新加密保存
                 let rng = rand::thread_rng();
+                tracing::info!("data_path: {file_path:#?}");
                 KeystoreBuilder::new_encrypt(
-                    &data_path,
+                    &subs_dir,
                     password,
                     &wallet_utils::serde_func::serde_to_vec(&keystore_data)?,
                     rng,

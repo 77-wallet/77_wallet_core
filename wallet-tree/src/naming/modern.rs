@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use serde::{Deserialize, Serialize};
-use wallet_keystore::{KeystoreBuilder, RecoverableData};
+use wallet_keystore::RecoverableData;
 use wallet_utils::address::AccountIndexMap;
 
 use super::{FileMeta, FileType, NamingStrategy};
@@ -137,14 +137,14 @@ impl NamingStrategy for ModernNaming {
             return Ok(Box::new(ModernFileMetas::DerivedData(idx)));
         }
 
-        let parts: Vec<&str> = filename.split('-').collect();
+        // let parts: Vec<&str> = filename.split('-').collect();
         match filename {
             "derived_meta.json" => {
                 let content = std::fs::read_to_string(path).unwrap();
                 let metadata: DerivedMetadata = serde_json::from_str(&content).unwrap();
 
                 let mut metas = Vec::new();
-                for (index, v) in metadata.accounts.into_iter() {
+                for (index, _v) in metadata.accounts.into_iter() {
                     let m = ModernFileMeta {
                         file_type: FileType::DerivedMeta,
                         address: None,
@@ -157,28 +157,28 @@ impl NamingStrategy for ModernNaming {
 
                 Ok(Box::new(ModernFileMetas::DerivedMeta(metas)))
             }
-            _ => {
-                let suffix = parts[1];
-                let file_type = match suffix {
-                    "phrase" => FileType::Phrase,
-                    "pk" => FileType::PrivateKey,
-                    "seed" => FileType::Seed,
-                    _ => return Err(Error::UnsupportedFileType),
-                };
-                let meta = ModernFileMeta {
-                    file_type: file_type.clone(),
-                    account_index_map: None,
-                    address: Some(parts[0].to_string()),
-                    chain_code: Default::default(),
-                    derivation_path: Default::default(),
-                };
-                Ok(Box::new(match file_type {
-                    FileType::PrivateKey => ModernFileMetas::PrivateKey(meta),
-                    FileType::Phrase => ModernFileMetas::Phrase(meta),
-                    FileType::Seed => ModernFileMetas::Seed(meta),
-                    _ => return Err(Error::FilenameInvalid),
-                }))
-            }
+            // _ => {
+            //     let suffix = parts[1];
+            //     let file_type = match suffix {
+            //         "phrase" => FileType::Phrase,
+            //         "pk" => FileType::PrivateKey,
+            //         "seed" => FileType::Seed,
+            //         _ => return Err(Error::UnsupportedFileType),
+            //     };
+            //     let meta = ModernFileMeta {
+            //         file_type: file_type.clone(),
+            //         account_index_map: None,
+            //         address: Some(parts[0].to_string()),
+            //         chain_code: Default::default(),
+            //         derivation_path: Default::default(),
+            //     };
+            //     Ok(Box::new(match file_type {
+            //         FileType::PrivateKey => ModernFileMetas::PrivateKey(meta),
+            //         FileType::Phrase => ModernFileMetas::Phrase(meta),
+            //         FileType::Seed => ModernFileMetas::Seed(meta),
+            //         _ => return Err(Error::FilenameInvalid),
+            //     }))
+            // }
             _ => Err(Error::FilenameInvalid),
         }
     }

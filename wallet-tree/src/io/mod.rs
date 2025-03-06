@@ -3,7 +3,7 @@ pub(crate) mod modern;
 
 use std::path::Path;
 
-use wallet_keystore::{KdfAlgorithm, RecoverableData};
+use wallet_keystore::{KdfAlgorithm, KeystoreBuilder, RecoverableData};
 
 use crate::naming::NamingStrategy;
 
@@ -16,6 +16,17 @@ pub trait IoStrategy: Send + Sync {
         password: &str,
         algorithm: KdfAlgorithm,
     ) -> Result<(), crate::Error>;
+
+    fn load_custom(
+        &self,
+        subs_dir: &dyn AsRef<Path>,
+        name: &str,
+        password: &str,
+    ) -> Result<RecoverableData, crate::Error> {
+        let data = KeystoreBuilder::new_decrypt(subs_dir.as_ref().join(name), password).load()?;
+
+        Ok(data)
+    }
 
     fn load(
         &self,

@@ -71,7 +71,7 @@ impl NamingStrategy for LegacyNaming {
         }
     }
 
-    fn decode(&self, path: &str, filename: &str) -> Result<Box<dyn FileMeta>, crate::Error> {
+    fn decode(&self, _path: &str, filename: &str) -> Result<Box<dyn FileMeta>, crate::Error> {
         let parts: Vec<&str> = filename.split('-').collect();
 
         // 解析 root 文件
@@ -160,7 +160,7 @@ impl NamingStrategy for LegacyNaming {
         &self,
         file_type: FileType,
         address: &str,
-        account_index_map: Option<&wallet_utils::address::AccountIndexMap>,
+        _account_index_map: Option<&wallet_utils::address::AccountIndexMap>,
         chain_code: Option<String>,
         derivation_path: Option<String>,
     ) -> Result<Box<dyn FileMeta>, crate::Error> {

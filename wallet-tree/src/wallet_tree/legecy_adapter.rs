@@ -5,7 +5,7 @@ use wallet_types::chain::chain::ChainCode;
 
 use crate::{
     layout::LayoutStrategy,
-    naming::{legacy::LegacyFileMeta, FileMeta, FileType},
+    naming::{FileMeta, FileType},
 };
 
 use super::{AccountTrait, RootTrait, WalletBranchOps, WalletTreeOps};
@@ -411,7 +411,7 @@ impl WalletTreeOps for LegacyWalletTree {
 
     fn delete_subkey(
         &mut self,
-        naming: Box<dyn crate::naming::NamingStrategy>,
+        // naming: Box<dyn crate::naming::NamingStrategy>,
         wallet_address: &str,
         address: &str,
         chain_code: &str,

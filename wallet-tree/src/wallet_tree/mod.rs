@@ -49,7 +49,7 @@ pub trait WalletTreeOps: std::any::Any + std::fmt::Debug {
 
     fn delete_subkey(
         &mut self,
-        naming: Box<dyn NamingStrategy>,
+        // naming: Box<dyn NamingStrategy>,
         wallet_address: &str,
         address: &str,
         chain_code: &str,

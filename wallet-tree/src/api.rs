@@ -308,7 +308,6 @@ impl KeystoreApi {
 
     pub fn reset_and_store_root_keys(
         wallet_tree: Box<dyn WalletTreeOps>,
-        account_index_map: &wallet_utils::address::AccountIndexMap,
         storage_path: &std::path::PathBuf,
         root_info: RootInfo,
         password: &str,

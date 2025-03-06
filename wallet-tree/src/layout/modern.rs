@@ -3,12 +3,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::{
     layout::LayoutStrategy,
     naming::{
-        modern::{ModernFileMeta, ModernFileMetas, ModernNaming},
+        modern::{ModernFileMetas, ModernNaming},
         FileMeta, FileType, NamingStrategy as _,
     },
     wallet_tree::{

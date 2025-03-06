@@ -28,7 +28,7 @@ where
     P: AsRef<std::path::Path>,
 {
     pub fn new_encrypt(
-        path: P,
+        dir_path: P,
         password: impl AsRef<[u8]>,
         data: D,
         rng: R,
@@ -36,7 +36,7 @@ where
         file_name: &str,
     ) -> Self {
         Self {
-            path,
+            path: dir_path,
             password: password.as_ref().to_vec(),
             crypto_mode: EncryptMode {
                 rng,
