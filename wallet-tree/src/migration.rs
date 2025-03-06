@@ -19,12 +19,13 @@ where
 {
     pub fn migrate_file(&self, old_path: PathBuf) -> Result<(), crate::Error> {
         // 步骤1：解析旧文件
-        let old_meta = self
-            .src_strategy
-            .decode(old_path.file_name().unwrap().to_str().unwrap())?;
+        let old_meta = self.src_strategy.decode(
+            &old_path.to_string_lossy().to_string(),
+            old_path.file_name().unwrap().to_str().unwrap(),
+        )?;
 
         // 步骤2：生成新路径
-        let new_path = self.dst_strategy.resolve_path(&old_meta).unwrap();
+        let new_path = self.dst_strategy.resolve_path(old_meta).unwrap();
 
         // 步骤3：创建备份
         let backup_path = self.backup_dir.join(old_path.file_name().unwrap());

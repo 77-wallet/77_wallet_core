@@ -130,10 +130,10 @@ where
 //     }
 // }
 
-pub(crate) struct RecoverableData(Vec<u8>);
+pub struct RecoverableData(Vec<u8>);
 
 impl RecoverableData {
-    pub(crate) fn into_string(self) -> Result<String, crate::Error> {
+    pub fn into_string(self) -> Result<String, crate::Error> {
         Ok(wallet_utils::conversion::vec_to_string(&self.0)?)
     }
 

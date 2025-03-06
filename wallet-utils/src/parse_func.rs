@@ -39,8 +39,9 @@ pub fn decode_from_percent(
 
 pub fn derivation_path_percent_decode(
     encoded_derivation_path: &str,
-) -> percent_encoding::PercentDecode {
-    percent_encoding::percent_decode_str(encoded_derivation_path)
+) -> Result<std::borrow::Cow<'_, str>, crate::Error> {
+    let percent_decode = percent_encoding::percent_decode_str(encoded_derivation_path);
+    decode_from_percent(percent_decode)
 }
 
 pub fn derivation_path_percent_encode(

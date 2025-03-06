@@ -1,30 +1,77 @@
+use serde::Serialize;
+
 use super::{FileMeta, FileType, NamingStrategy};
 
+#[derive(Debug, Clone)]
+pub struct LegacyFileMeta {
+    // pub directory_naming: DirectoryNaming,
+    pub file_type: FileType,
+    pub address: String,
+    pub chain_code: Option<String>,
+    pub derivation_path: Option<String>,
+    // pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+
+impl FileMeta for LegacyFileMeta {
+    fn file_type(&self) -> &FileType {
+        &self.file_type
+    }
+    fn address(&self) -> Option<String> {
+        Some(self.address.clone())
+    }
+
+    fn chain_code(&self) -> Option<String> {
+        self.chain_code.clone()
+    }
+    fn derivation_path(&self) -> Option<String> {
+        self.derivation_path.clone()
+    }
+
+    fn account_index(&self) -> Option<u32> {
+        None
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Clone, Serialize)]
 pub struct LegacyNaming;
 
 impl NamingStrategy for LegacyNaming {
-    fn encode(&self, meta: &FileMeta) -> Result<String, crate::Error> {
-        match meta.file_type {
-            FileType::Phrase => Ok(format!("{}-phrase", meta.address)),
-            FileType::PrivateKey => Ok(format!("{}-pk", meta.address)),
-            FileType::Seed => Ok(format!("{}-seed", meta.address)),
-            FileType::DerivedKey => {
-                let chain = meta
-                    .chain_code
-                    .as_ref()
-                    .ok_or(crate::Error::MissingChainCode)?;
-                let derivation_path = meta
-                    .derivation_path
+    fn encode(&self, meta: Box<dyn FileMeta>) -> Result<String, crate::Error> {
+        match meta.file_type() {
+            FileType::Phrase => Ok(format!(
+                "{}-phrase",
+                meta.address().ok_or(crate::Error::MissingAddress)?
+            )),
+            FileType::PrivateKey => Ok(format!(
+                "{}-pk",
+                meta.address().ok_or(crate::Error::MissingAddress)?
+            )),
+            FileType::Seed => Ok(format!(
+                "{}-seed",
+                meta.address().ok_or(crate::Error::MissingAddress)?
+            )),
+            FileType::DerivedData => {
+                let chain = meta.chain_code();
+                let chain = chain.as_ref().ok_or(crate::Error::MissingChainCode)?;
+                let derivation_path = meta.derivation_path();
+
+                let derivation_path = derivation_path
                     .as_ref()
                     .ok_or(crate::Error::MissingDerivation)?;
                 let encoded_path =
                     wallet_utils::parse_func::derivation_path_percent_encode(derivation_path);
-                Ok(format!("{}-{}-{}-pk", chain, meta.address, encoded_path))
-            } // _ => Err(crate::Error::UnsupportedFileType),
+                Ok(format!(
+                    "{}-{}-{}-pk",
+                    chain,
+                    meta.address().ok_or(crate::Error::MissingAddress)?,
+                    encoded_path
+                ))
+            }
+            _ => Err(crate::Error::UnsupportedFileType),
         }
     }
 
-    fn decode(&self, filename: &str) -> Result<FileMeta, crate::Error> {
+    fn decode(&self, path: &str, filename: &str) -> Result<Box<dyn FileMeta>, crate::Error> {
         let parts: Vec<&str> = filename.split('-').collect();
 
         // 解析 root 文件
@@ -37,13 +84,13 @@ impl NamingStrategy for LegacyNaming {
                 _ => return Err(crate::Error::UnsupportedFileType),
             };
 
-            return Ok(FileMeta {
+            return Ok(Box::new(LegacyFileMeta {
                 file_type,
                 address: parts[0].to_string(),
                 chain_code: None,
                 derivation_path: None,
                 // timestamp: Utc::now(),
-            });
+            }));
         }
 
         // 解析 subs 文件（至少4部分：chain-addr-path-pk）
@@ -62,13 +109,13 @@ impl NamingStrategy for LegacyNaming {
             //     .decode_utf8()?
             //     .into_owned();
 
-            return Ok(FileMeta {
-                file_type: FileType::DerivedKey,
+            return Ok(Box::new(LegacyFileMeta {
+                file_type: FileType::DerivedData,
                 address,
                 chain_code: Some(chain),
                 derivation_path: Some(derivation_path),
                 // timestamp: Utc::now(),
-            });
+            }));
         }
 
         Err(crate::Error::FilenameInvalid)
@@ -108,6 +155,22 @@ impl NamingStrategy for LegacyNaming {
 
         false
     }
+
+    fn generate_filemeta(
+        &self,
+        file_type: FileType,
+        address: &str,
+        account_index_map: Option<&wallet_utils::address::AccountIndexMap>,
+        chain_code: Option<String>,
+        derivation_path: Option<String>,
+    ) -> Result<Box<dyn FileMeta>, crate::Error> {
+        Ok(Box::new(LegacyFileMeta {
+            file_type,
+            address: address.to_string(),
+            chain_code,
+            derivation_path,
+        }))
+    }
 }
 
 #[cfg(test)]
@@ -123,20 +186,20 @@ mod tests {
         #[test]
         fn parse_phrase_file() {
             let filename = format!("{}-phrase", TEST_ADDRESS);
-            let meta = LegacyNaming.decode(&filename).unwrap();
+            let meta = LegacyNaming.decode("", &filename).unwrap();
 
-            assert_eq!(meta.file_type, FileType::Phrase);
-            assert_eq!(meta.address, TEST_ADDRESS);
-            assert!(meta.chain_code.is_none());
+            assert_eq!(meta.file_type(), &FileType::Phrase);
+            assert_eq!(meta.address(), Some(TEST_ADDRESS.to_string()));
+            assert!(meta.chain_code().is_none());
         }
 
         #[test]
         fn parse_pk_file() {
             let filename = format!("{}-pk", TEST_ADDRESS);
-            let meta = LegacyNaming.decode(&filename).unwrap();
+            let meta = LegacyNaming.decode("", &filename).unwrap();
 
-            assert_eq!(meta.file_type, FileType::PrivateKey);
-            assert_eq!(meta.address, TEST_ADDRESS);
+            assert_eq!(meta.file_type(), &FileType::PrivateKey);
+            assert_eq!(meta.address(), Some(TEST_ADDRESS.to_string()));
         }
     }
 
@@ -176,21 +239,21 @@ mod tests {
             let strategy = LegacyNaming;
 
             for (filename, expected_chain, expected_path) in SUBS_EXAMPLES {
-                let meta = strategy.decode(filename).unwrap();
+                let meta = strategy.decode("", filename).unwrap();
 
-                assert_eq!(meta.file_type, FileType::DerivedKey);
-                assert_eq!(meta.chain_code, Some(expected_chain.to_string()));
-                assert_eq!(meta.derivation_path, Some(expected_path.to_string()));
+                assert_eq!(meta.file_type(), &FileType::DerivedData);
+                assert_eq!(meta.chain_code(), Some(expected_chain.to_string()));
+                assert_eq!(meta.derivation_path(), Some(expected_path.to_string()));
             }
         }
 
         #[test]
         fn handle_special_characters() {
             let filename = "btc-特殊地址-m%2Ftest%2Fpath%2Fwith%2Fchinese-%E4%B8%AD%E6%96%87-pk";
-            let meta = LegacyNaming.decode(filename).unwrap();
+            let meta = LegacyNaming.decode("", filename).unwrap();
 
             assert_eq!(
-                meta.derivation_path,
+                meta.derivation_path(),
                 Some("m/test/path/with/chinese-中文".to_string())
             );
         }

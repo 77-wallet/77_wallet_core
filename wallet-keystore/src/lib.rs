@@ -1,17 +1,18 @@
 // #![feature(const_trait_impl, effects)]
-pub mod api;
 pub(crate) mod crypto;
 pub mod error;
 pub mod keystore;
-pub mod service;
 pub mod utils;
 pub mod wallet;
 
-use crate::error::Error;
-pub use service::Keystore;
+pub use crate::error::Error;
+// pub use service::Keystore;
 
 pub use alloy::primitives::Address;
+pub use keystore::json::KeystoreJson;
+pub use keystore::builder::{KeystoreBuilder, RecoverableData};
 pub use keystore::factory::KdfAlgorithm;
+// pub use wallet_tree::wallet_tree::WalletTreeStrategy;
 
 fn generate_random_bytes<R: rand::Rng + rand::CryptoRng>(rng: &mut R, len: usize) -> Vec<u8> {
     let mut bytes = vec![0u8; len];

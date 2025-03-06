@@ -7,6 +7,9 @@ edition = "2021"
 alloy = { workspace = true }
 wallet-utils = { workspace = true }
 wallet-types = { workspace = true }
+wallet-keystore = { workspace = true }
+wallet-chain-instance = { workspace = true }
+wallet-core = { workspace = true }
 
 # error
 thiserror.workspace = true
@@ -21,3 +24,6 @@ serde_json.workspace = true
 
 # time
 chrono = { version = "0.4", features = ["serde"] }
+rand = { workspace = true }
+
+coins-bip32 = { workspace = true }

@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wallet-core = { workspace = true }
+# wallet-core = { workspace = true }
 wallet-types = { workspace = true }
 wallet-utils = { workspace = true }
-wallet-tree = { workspace = true }
+# wallet-tree = { workspace = true }
 
-wallet-chain-instance = { workspace = true }
+# wallet-chain-instance = { workspace = true }
 
 alloy = { workspace = true }
 bitcoin = { workspace = true }
