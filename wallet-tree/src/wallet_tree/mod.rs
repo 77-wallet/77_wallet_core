@@ -33,7 +33,7 @@ impl WalletTreeStrategy {
     }
 }
 
-pub trait WalletTreeOps: std::any::Any + std::fmt::Debug {
+pub trait WalletTreeOps: std::any::Any + std::fmt::Debug + std::marker::Send {
     fn layout(&self) -> Box<dyn LayoutStrategy>;
     fn naming(&self) -> Box<dyn NamingStrategy>;
     fn io(&self) -> Box<dyn IoStrategy>;
