@@ -122,8 +122,8 @@ impl LayoutStrategy for ModernLayout {
                                         ) else {
                                             continue;
                                         };
-                                        if let ModernFileMetas::DerivedData(_) = key_meta {
-                                            entry.file_type = key_meta.file_type().clone();
+                                        if let ModernFileMetas::DerivedData(_) = meta {
+                                            entry.file_type = meta.file_type().clone();
                                             wallet_branch.subs.push(entry);
                                         }
                                     }
