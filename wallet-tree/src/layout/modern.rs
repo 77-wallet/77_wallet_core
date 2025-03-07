@@ -67,10 +67,11 @@ impl LayoutStrategy for ModernLayout {
                             if path.is_file() {
                                 let filename = path.file_name().unwrap().to_str().unwrap();
                                 tracing::info!("filename: {filename}");
-                                let meta = self.parse_meta_data(
-                                    &path.to_string_lossy().to_string(),
-                                    filename,
-                                )?;
+                                let Ok(meta) = self
+                                    .parse_meta_data(&path.to_string_lossy().to_string(), filename)
+                                else {
+                                    continue;
+                                };
 
                                 match meta.file_type() {
                                     FileType::PrivateKey => {
@@ -99,10 +100,11 @@ impl LayoutStrategy for ModernLayout {
                         // 加载元数据文件
                         let meta_file = subs_dir.join("derived_meta.json");
                         if meta_file.exists() {
-                            let meta = self.parse_meta_data(
-                                &meta_file.to_string_lossy(),
-                                "derived_meta.json",
-                            )?;
+                            let Ok(meta) = self
+                                .parse_meta_data(&meta_file.to_string_lossy(), "derived_meta.json")
+                            else {
+                                continue;
+                            };
 
                             // 加载所有密钥文件
                             if let ModernFileMetas::DerivedMeta(entries) = meta {
@@ -114,10 +116,12 @@ impl LayoutStrategy for ModernLayout {
                                     let key_path = subs_dir.join(&file_name);
 
                                     if key_path.exists() {
-                                        let key_meta = self.parse_meta_data(
+                                        let Ok(meta) = self.parse_meta_data(
                                             &key_path.to_string_lossy(),
                                             &file_name,
-                                        )?;
+                                        ) else {
+                                            continue;
+                                        };
                                         if let ModernFileMetas::DerivedData(_) = key_meta {
                                             entry.file_type = key_meta.file_type().clone();
                                             wallet_branch.subs.push(entry);

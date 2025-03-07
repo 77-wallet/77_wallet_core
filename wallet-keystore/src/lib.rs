@@ -9,9 +9,9 @@ pub use crate::error::Error;
 // pub use service::Keystore;
 
 pub use alloy::primitives::Address;
-pub use keystore::json::KeystoreJson;
 pub use keystore::builder::{KeystoreBuilder, RecoverableData};
 pub use keystore::factory::KdfAlgorithm;
+pub use keystore::json::KeystoreJson;
 // pub use wallet_tree::wallet_tree::WalletTreeStrategy;
 
 fn generate_random_bytes<R: rand::Rng + rand::CryptoRng>(rng: &mut R, len: usize) -> Vec<u8> {
