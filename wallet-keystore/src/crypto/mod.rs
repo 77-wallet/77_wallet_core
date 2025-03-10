@@ -412,6 +412,15 @@ mod test {
     }
 
     #[test]
+    fn decrypt() {
+        let subs_dir =
+            "./tron-TFzMRRzQFhY9XFS37veoswLRuWLNtbyhiB-m%2F44%27%2F195%27%2F0%27%2F0%2F0-pk";
+        // let res = KeystoreBuilder::new_decrypt(subs_dir, "q1111111").load();
+        let res = decrypt_data(subs_dir, "q1111111").unwrap();
+        println!("res: {res:?}");
+    }
+
+    #[test]
     fn test_hex_decode() {
         let data = "f1446ee3758d62d2b793ce3834950d10";
         let res = Vec::from_hex(data).unwrap();
