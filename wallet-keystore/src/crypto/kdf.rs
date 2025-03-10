@@ -30,6 +30,7 @@ impl KeyDerivation for ScryptKdf {
         let log_n = super::kdf::log2(self.params.n) as u8;
         let scrypt_params = ScryptParams_::new(log_n, self.params.r, self.params.p)?;
         scrypt(password, &self.params.salt, &scrypt_params, &mut key)?;
+        tracing::info!("key: {key:?}");
         Ok(key)
     }
 

@@ -51,7 +51,7 @@ impl IoStrategy for ModernIo {
             KeystoreBuilder::new_decrypt(subs_dir.as_ref().join(pk_filename), password).load()?;
 
         let derived_data: KeystoreData = data.try_into()?;
-        tracing::info!("derived_data: {:#?}", derived_data);
+        tracing::info!("derived_data: {:?}", derived_data);
 
         for (k, v) in derived_data.iter() {
             if let Ok(meta) = KeyMeta::decode(k)

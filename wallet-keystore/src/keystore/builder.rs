@@ -109,12 +109,12 @@ where
     {
         // let engine = KeystoreEngine::from_file(self.path.join(&self.crypto_mode.file_name))?;
         let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(encrypted)?;
-
+        tracing::warn!("keystore: {keystore:#?}");
         let kdf = KdfFactory::create_from_file(&keystore)?;
         let engine = KeystoreEngine::new(kdf);
 
         let decrypted = engine.decrypt(self.password.as_ref(), keystore)?;
-
+        tracing::warn!("[process_decryption] decrypted: {decrypted:?}");
         // Ok(wallet_utils::conversion::vec_to_string(&decrypted)?)
         Ok(RecoverableData(decrypted))
         // D::from_bytes(&decrypted)
@@ -130,6 +130,7 @@ where
 //     }
 // }
 
+#[derive(Debug)]
 pub struct RecoverableData(Vec<u8>);
 
 impl RecoverableData {

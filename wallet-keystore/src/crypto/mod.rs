@@ -101,14 +101,14 @@ where
     let mut contents = String::new();
     wallet_utils::file_func::read(&mut contents, path)?;
     let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(&contents)?;
-
+    println!("keystore: {keystore:#?}");
     // Derive the key.
     let cx = KdfContext::new(keystore.crypto.kdfparams)?;
     let key = cx.derive_key(password.as_ref())?;
 
     // Derive the MAC from the derived key and ciphertext.
     let derived_mac = mac::Keccak256Mac.compute(&key, &keystore.crypto.ciphertext);
-
+    tracing::info!("derived_mac: {derived_mac:?}");
     if derived_mac.as_slice() != keystore.crypto.mac.as_slice() {
         return Err(KeystoreError::MacMismatch.into());
     }
@@ -268,7 +268,7 @@ mod test {
 
     use hex::FromHex;
 
-    use crate::KdfAlgorithm;
+    use crate::{KdfAlgorithm, KeystoreBuilder};
 
     use super::*;
     #[tokio::test]
@@ -317,6 +317,15 @@ mod test {
         // let private_key = alloy::hex::encode(private_key);
         // let data = alloy::hex::encode(&data);
         tracing::info!("data: {data}");
+    }
+
+    #[test]
+    fn decrypt() {
+        let subs_dir =
+            "./tron-TFzMRRzQFhY9XFS37veoswLRuWLNtbyhiB-m%2F44%27%2F195%27%2F0%27%2F0%2F0-pk";
+        // let res = KeystoreBuilder::new_decrypt(subs_dir, "q1111111").load();
+        let res = decrypt_data(subs_dir, "q1111111").unwrap();
+        println!("res: {res:?}");
     }
 
     #[test]
