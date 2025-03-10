@@ -136,14 +136,14 @@ where
             key
         }
     };
-    tracing::info!("key: {key:?}");
+    println!("key: {key:?}");
     // Derive the MAC from the derived key and ciphertext.
     let derived_mac = Keccak256::new()
         .chain(&key[16..32])
         .chain(&keystore.crypto.ciphertext)
         .finalize();
 
-    tracing::info!("derived_mac: {derived_mac:?}");
+    println!("derived_mac: {derived_mac:?}");
     if derived_mac.as_slice() != keystore.crypto.mac.as_slice() {
         return Err(KeystoreError::MacMismatch);
     }
