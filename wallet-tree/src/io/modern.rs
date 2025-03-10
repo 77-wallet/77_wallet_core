@@ -47,6 +47,7 @@ impl IoStrategy for ModernIo {
         )?;
         let pk_filename = naming.encode(pk_meta)?;
 
+        tracing::info!("读取");
         let data =
             KeystoreBuilder::new_decrypt(subs_dir.as_ref().join(pk_filename), password).load()?;
 
@@ -150,13 +151,13 @@ impl IoStrategy for ModernIo {
 
         derived_data.insert(key.encode(), data.as_ref().to_vec());
 
-        let val = wallet_utils::serde_func::serde_to_string(&derived_data)?;
+        let val = wallet_utils::serde_func::serde_to_vec(&derived_data)?;
         tracing::info!("val: {val:?}");
         let rng = rand::thread_rng();
         KeystoreBuilder::new_encrypt(
             &base_path,
             password,
-            val.as_bytes(), // 原始二进制数据
+            val, // 原始二进制数据
             rng,
             algorithm,
             &key_filename, // 唯一标识

@@ -246,8 +246,13 @@ impl TryFrom<RecoverableData> for KeystoreData {
     type Error = crate::Error;
 
     fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
-        let s = value.into_string()?;
-        Ok(wallet_utils::serde_func::serde_from_str(&s)?)
+        // let s = value.into_string()?;
+
+        // let val = 
+        // wallet_utils::serde_func::serde_to_value(value.inner())?;
+        // tracing::warn!("val: {val:?}");
+        // todo!()
+        Ok(wallet_utils::serde_func::serde_from_slice(&value.inner())?)
     }
 }
 

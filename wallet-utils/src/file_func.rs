@@ -84,3 +84,17 @@ pub fn is_file_empty<P: AsRef<Path>>(path: P) -> Result<bool, crate::Error> {
         .map(|metadata| metadata.len() == 0)
         .map_err(Into::into)
 }
+
+pub fn exists<P: AsRef<Path>>(path: P) -> Result<bool, crate::Error> {
+    fs::metadata(path).map_or_else(
+        |e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                Ok(false)
+            } else {
+                tracing::error!("exists err: {e}");
+                Err(e.into())
+            }
+        },
+        |_| Ok(true),
+    )
+}

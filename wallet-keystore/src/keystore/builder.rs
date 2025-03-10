@@ -71,7 +71,6 @@ where
             &self.crypto_mode.data,
             self.password.as_ref(),
         )?;
-
         // let data = wallet_utils::conversion::vec_to_string(self.data.as_ref())?;
         // engine.encrypt(self.crypto_mode.rng, &data_bytes, &self.password)
         Ok(())
@@ -109,12 +108,10 @@ where
     {
         // let engine = KeystoreEngine::from_file(self.path.join(&self.crypto_mode.file_name))?;
         let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(encrypted)?;
-        tracing::warn!("keystore: {keystore:#?}");
         let kdf = KdfFactory::create_from_file(&keystore)?;
         let engine = KeystoreEngine::new(kdf);
 
         let decrypted = engine.decrypt(self.password.as_ref(), keystore)?;
-        tracing::warn!("[process_decryption] decrypted: {decrypted:?}");
         // Ok(wallet_utils::conversion::vec_to_string(&decrypted)?)
         Ok(RecoverableData(decrypted))
         // D::from_bytes(&decrypted)
@@ -138,7 +135,11 @@ impl RecoverableData {
         Ok(wallet_utils::conversion::vec_to_string(&self.0)?)
     }
 
-    pub(crate) fn inner(self) -> Vec<u8> {
+    // pub fn serde_to_string(self) -> Result<String, crate::Error> {
+    //     Ok(wallet_utils::serde_func::(&self.0)?)
+    // }
+
+    pub fn inner(self) -> Vec<u8> {
         self.0
     }
 }

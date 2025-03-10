@@ -172,9 +172,7 @@ where
     let key = kdf.derive_key(password.as_ref())?;
     // Encrypt the private key using AES-128-CTR.
 
-    let mut ciphertext = data.as_ref().to_vec();
-
-    cipher::Aes128Ctr::encrypt(&key[..16], &iv[..16], &mut ciphertext)?;
+    let ciphertext = cipher::Aes128Ctr::encrypt(&key[..16], &iv[..16], data.as_ref())?;
 
     // Calculate the MAC.
     let mac = mac::Keccak256Mac.compute(&key, &ciphertext);

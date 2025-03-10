@@ -48,7 +48,7 @@ impl KeystoreEngine {
         // let mut ciphertext = data.as_ref().to_vec();
         // let ciphertext = wallet_utils::serde_func::serde_to_vec(data)?;
 
-        super::cipher::Aes128Ctr::encrypt(&key[..16], &iv[..16], data.as_ref())?;
+        let data = super::cipher::Aes128Ctr::encrypt(&key[..16], &iv[..16], data.as_ref())?;
         // self.cipher.encrypt(&key, &iv, &ciphertext)?;
 
         // Calculate the MAC.
@@ -66,7 +66,7 @@ impl KeystoreEngine {
             crypto: CryptoJson {
                 cipher: String::from(DEFAULT_CIPHER),
                 cipherparams: CipherparamsJson { iv },
-                ciphertext: data.as_ref().to_vec(),
+                ciphertext: data,
                 kdf: self.kdf.algorithm(),
                 // kdfparams: KdfParams::Scrypt(ScryptParams {
                 //     dklen: DEFAULT_KDF_PARAMS_DKLEN,

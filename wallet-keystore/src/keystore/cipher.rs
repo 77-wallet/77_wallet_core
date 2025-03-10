@@ -6,7 +6,7 @@ use aes::{
 use crate::error::crypto::KeystoreError;
 
 pub trait SymmetricCipher {
-    fn encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<(), KeystoreError>;
+    fn encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, KeystoreError>;
     fn decrypt(key: &[u8], iv: &[u8], ciphertext: &mut [u8]) -> Result<(), KeystoreError>;
 }
 
@@ -29,11 +29,11 @@ impl Aes128Ctr {
 }
 
 impl SymmetricCipher for Aes128Ctr {
-    fn encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<(), KeystoreError> {
+    fn encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, KeystoreError> {
         let mut buf = plaintext.to_vec();
         let cipher = Aes128Ctr::new(key, iv)?;
         cipher.apply_keystream(&mut buf);
-        Ok(())
+        Ok(buf)
     }
 
     fn decrypt(key: &[u8], iv: &[u8], ciphertext: &mut [u8]) -> Result<(), KeystoreError> {

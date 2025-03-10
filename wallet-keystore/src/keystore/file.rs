@@ -21,7 +21,7 @@ impl<P: AsRef<std::path::Path>> KeystoreFile<P> {
         // let serialized = wallet_utils::serde_func::serde_to_vec(data)?;
 
         // 加密核心数据
-        let crypto = self.engine.encrypt(rng, &data, password)?;
+        let crypto = self.engine.encrypt(rng, data, password)?;
 
         // 构建完整文件结构
         // let keystore = KeystoreJson {
@@ -33,6 +33,7 @@ impl<P: AsRef<std::path::Path>> KeystoreFile<P> {
 
         let contents = wallet_utils::serde_func::serde_to_string(&crypto)?;
         // 写入文件
+        wallet_utils::file_func::create_file(&self.path)?;
         wallet_utils::file_func::write_all(&self.path, contents.as_bytes())?;
 
         Ok(crypto)
