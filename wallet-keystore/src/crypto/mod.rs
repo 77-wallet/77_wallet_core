@@ -101,14 +101,12 @@ where
     let mut contents = String::new();
     wallet_utils::file_func::read(&mut contents, path)?;
     let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(&contents)?;
-    println!("keystore: {keystore:#?}");
     // Derive the key.
     let cx = KdfContext::new(keystore.crypto.kdfparams)?;
     let key = cx.derive_key(password.as_ref())?;
 
     // Derive the MAC from the derived key and ciphertext.
     let derived_mac = mac::Keccak256Mac.compute(&key, &keystore.crypto.ciphertext);
-    tracing::info!("derived_mac: {derived_mac:?}");
     if derived_mac.as_slice() != keystore.crypto.mac.as_slice() {
         return Err(KeystoreError::MacMismatch.into());
     }

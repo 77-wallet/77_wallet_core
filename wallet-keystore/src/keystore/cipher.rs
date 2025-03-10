@@ -6,8 +6,8 @@ use aes::{
 use crate::error::crypto::KeystoreError;
 
 pub trait SymmetricCipher {
-    fn encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, KeystoreError>;
-    fn decrypt(key: &[u8], iv: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>, KeystoreError>;
+    fn encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<(), KeystoreError>;
+    fn decrypt(key: &[u8], iv: &[u8], ciphertext: &mut [u8]) -> Result<(), KeystoreError>;
 }
 
 pub struct Cipher;
@@ -23,20 +23,22 @@ impl Aes128Ctr {
         Ok(Self { inner })
     }
 
-    fn apply_keystream(self, buf: &mut [u8]) {
+    pub(crate) fn apply_keystream(self, buf: &mut [u8]) {
         self.inner.apply_keystream_partial(buf.into());
     }
 }
 
 impl SymmetricCipher for Aes128Ctr {
-    fn encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, KeystoreError> {
+    fn encrypt(key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<(), KeystoreError> {
         let mut buf = plaintext.to_vec();
         let cipher = Aes128Ctr::new(key, iv)?;
         cipher.apply_keystream(&mut buf);
-        Ok(buf)
+        Ok(())
     }
 
-    fn decrypt(key: &[u8], iv: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>, KeystoreError> {
-        Aes128Ctr::encrypt(key, iv, ciphertext) // CTR 模式加解密相同
+    fn decrypt(key: &[u8], iv: &[u8], ciphertext: &mut [u8]) -> Result<(), KeystoreError> {
+        let cipher = Aes128Ctr::new(key, iv)?;
+        cipher.apply_keystream(ciphertext);
+        Ok(())
     }
 }
