@@ -109,6 +109,7 @@ where
     file.read_to_string(&mut contents)?;
     let keystore: KeystoreJson = serde_json::from_str(&contents)?;
 
+    println!("keystore: {keystore:#?}");
     // Derive the key.
     let key = match keystore.crypto.kdfparams {
         KdfparamsType::Pbkdf2 {
@@ -135,13 +136,14 @@ where
             key
         }
     };
-
+    tracing::info!("key: {key:?}");
     // Derive the MAC from the derived key and ciphertext.
     let derived_mac = Keccak256::new()
         .chain(&key[16..32])
         .chain(&keystore.crypto.ciphertext)
         .finalize();
 
+    tracing::info!("derived_mac: {derived_mac:?}");
     if derived_mac.as_slice() != keystore.crypto.mac.as_slice() {
         return Err(KeystoreError::MacMismatch);
     }
