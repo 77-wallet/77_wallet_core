@@ -1,4 +1,4 @@
-use std::fs;
+use std::{collections::BTreeMap, fs};
 
 use serde::Serialize;
 use wallet_keystore::KeystoreBuilder;
@@ -8,7 +8,7 @@ use crate::naming::{
     FileType, NamingStrategy,
 };
 
-use super::IoStrategy;
+use super::{BulkSubkey, IoStrategy};
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize)]
 pub struct ModernIo;
@@ -52,15 +52,21 @@ impl IoStrategy for ModernIo {
             KeystoreBuilder::new_decrypt(subs_dir.as_ref().join(pk_filename), password).load()?;
 
         let derived_data: KeystoreData = data.try_into()?;
-        tracing::info!("derived_data: {:?}", derived_data);
+        tracing::info!("derived_data: {:#?}", derived_data);
 
         for (k, v) in derived_data.iter() {
-            if let Ok(meta) = KeyMeta::decode(k)
-                && meta.address == address
-                && meta.chain_code == chain_code
-                && meta.derivation_path == derivation_path
-            {
-                return Ok(v.to_vec());
+            tracing::info!("k: {:?}, v: {:?}", k, v);
+
+            match KeyMeta::decode(k) {
+                Ok(meta) => {
+                    if meta.address == address
+                        && meta.chain_code == chain_code
+                        && meta.derivation_path == derivation_path
+                    {
+                        return Ok(v.to_vec());
+                    }
+                }
+                Err(e) => tracing::error!("KeyMeta decode error: {e}"),
             }
         }
 
@@ -164,6 +170,112 @@ impl IoStrategy for ModernIo {
         )
         .save()?;
         tracing::warn!("store_subkey ============ 7");
+        Ok(())
+    }
+
+    fn store_subkeys_bulk(
+        &self,
+        naming: Box<dyn NamingStrategy>,
+        subkeys: Vec<super::BulkSubkey>,
+        file_path: &dyn AsRef<std::path::Path>,
+        password: &str,
+        algorithm: wallet_keystore::KdfAlgorithm,
+    ) -> Result<(), crate::Error> {
+        let start = std::time::Instant::now();
+        let base_path = file_path.as_ref();
+        let meta_path = base_path.join("derived_meta.json");
+        let subs_dir = base_path;
+        wallet_utils::file_func::create_dir_all(&subs_dir)?;
+
+        // 1. 分组处理：按账户索引分组
+        let mut grouped = BTreeMap::<u32, Vec<&BulkSubkey>>::new();
+        for subkey in &subkeys {
+            grouped
+                .entry(subkey.account_index_map.account_id)
+                .or_default()
+                .push(subkey);
+        }
+
+        // 2. 准备元数据更新
+        let mut metadata = if meta_path.exists() {
+            let content = fs::read_to_string(&meta_path).unwrap();
+            serde_json::from_str(&content).unwrap_or_default()
+        } else {
+            DerivedMetadata::default()
+        };
+        // 3. 批量处理密钥文件
+        // let mut all_meta_updates = Vec::new();
+        for (account_idx, subkeys) in grouped {
+            let key_filename = format!("key{}.keystore", account_idx);
+            let data_path = subs_dir.join(&key_filename);
+            tracing::info!("data_path: {data_path:?}");
+            // 批量读取和更新数据
+            let mut keystore_data = if data_path.exists() {
+                let keystore = KeystoreBuilder::new_decrypt(&data_path, password).load()?;
+                keystore.try_into()?
+            } else {
+                KeystoreData::default()
+            };
+
+            // 收集本批次的元数据更新
+            // let mut meta_updates = Vec::with_capacity(subkeys.len());
+            for subkey in subkeys {
+                let key = KeyMeta {
+                    chain_code: subkey.chain_code.to_string(),
+                    address: subkey.address.to_string(),
+                    derivation_path: subkey.derivation_path.to_string(),
+                };
+
+                // 插入密钥数据
+                keystore_data.insert(key.encode(), subkey.data.to_vec());
+                // meta_updates.push(key);
+
+                metadata
+                    .accounts
+                    .entry(account_idx)
+                    .or_insert(KeyMetas::default())
+                    .push(key);
+            }
+
+            // 保存密钥文件
+            let val = wallet_utils::serde_func::serde_to_vec(&keystore_data)?;
+            let rng = rand::thread_rng();
+            KeystoreBuilder::new_encrypt(
+                &subs_dir,
+                password,
+                &val,
+                rng,
+                algorithm.clone(),
+                &key_filename,
+            )
+            .save()?;
+
+            // all_meta_updates.extend(meta_updates);
+        }
+
+        // 4. 批量更新元数据
+        // for key in all_meta_updates {
+        //     metadata
+        //         .accounts
+        //         .entry(key.account_index)
+        //         .or_insert(KeyMetas::default())
+        //         .retain(|m| !(m.chain_code == key.chain_code && m.address == key.address));
+
+        //     metadata
+        //         .accounts
+        //         .entry(key.account_index)
+        //         .or_insert(KeyMetas::default())
+        //         .push(key);
+        // }
+
+        // 5. 原子写入元数据
+        let temp_meta_path = meta_path.with_extension("tmp");
+        wallet_utils::file_func::write_all(
+            &temp_meta_path,
+            &serde_json::to_vec_pretty(&metadata).unwrap(),
+        )?;
+        fs::rename(temp_meta_path, meta_path).unwrap();
+        tracing::warn!("store_subkeys_bulk cost: {:?}", start.elapsed());
         Ok(())
     }
 }

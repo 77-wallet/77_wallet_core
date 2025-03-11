@@ -46,49 +46,52 @@ impl KeystoreApi {
     }
 
     // 传入derivation_path，由根私钥派生出子私钥，创建子Keystore，并生成keystore文件
-    pub fn initialize_child_keystore<P: AsRef<std::path::Path>>(
+    pub fn initialize_child_keystores<P: AsRef<std::path::Path>>(
         wallet_tree: Box<dyn WalletTreeOps>,
-        account_index_map: &wallet_utils::address::AccountIndexMap,
-        instance: &wallet_chain_instance::instance::ChainObject,
-        seed: &[u8],
-        derivation_path: &str,
+        subkeys: Vec<crate::io::BulkSubkey>,
         subs_path: P,
         password: &str,
         algorithm: KdfAlgorithm,
     ) -> Result<(), crate::Error> {
         let naming = wallet_tree.naming();
 
-        let gen_address = instance.gen_gen_address()?;
-        let keypair = instance.gen_keypair_with_derivation_path(seed, derivation_path)?;
-        let address = keypair.address();
-        let private_key = keypair.private_key_bytes()?;
-
-        // let file_meta = naming.generate_filemeta(
-        //     FileType::DerivedData,
-        //     &address,
-        //     Some(account_index_map),
-        //     Some(gen_address.chain_code().to_string()),
-        //     Some(derivation_path.to_string()),
-        // )?;
-
-        // let name = naming.encode(file_meta)?;
-
-        wallet_tree.io().store_subkey(
-            naming,
-            account_index_map,
-            &address,
-            &gen_address.chain_code().to_string(),
-            derivation_path,
-            &private_key,
-            &subs_path,
-            password,
-            algorithm,
-        )?;
-
-        // crate::Keystore::store_data(&name, private_key, &path, password, algorithm)?;
+        wallet_tree
+            .io()
+            .store_subkeys_bulk(naming, subkeys, &subs_path, password, algorithm)?;
 
         Ok(())
     }
+    // pub fn initialize_child_keystore<P: AsRef<std::path::Path>>(
+    //     wallet_tree: Box<dyn WalletTreeOps>,
+    //     account_index_map: &wallet_utils::address::AccountIndexMap,
+    //     instance: &wallet_chain_instance::instance::ChainObject,
+    //     seed: &[u8],
+    //     derivation_path: &str,
+    //     subs_path: P,
+    //     password: &str,
+    //     algorithm: KdfAlgorithm,
+    // ) -> Result<(), crate::Error> {
+    //     let naming = wallet_tree.naming();
+
+    //     let gen_address = instance.gen_gen_address()?;
+    //     let keypair = instance.gen_keypair_with_derivation_path(seed, derivation_path)?;
+    //     let address = keypair.address();
+    //     let private_key = keypair.private_key_bytes()?;
+
+    //     wallet_tree.io().store_subkey(
+    //         naming,
+    //         account_index_map,
+    //         &address,
+    //         &gen_address.chain_code().to_string(),
+    //         derivation_path,
+    //         &private_key,
+    //         &subs_path,
+    //         password,
+    //         algorithm,
+    //     )?;
+
+    //     Ok(())
+    // }
 
     pub fn get_private_key<P: AsRef<std::path::Path> + std::fmt::Debug>(
         password: &str,

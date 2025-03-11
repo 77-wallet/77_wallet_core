@@ -248,7 +248,7 @@ impl TryFrom<RecoverableData> for KeystoreData {
     fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
         // let s = value.into_string()?;
 
-        // let val = 
+        // let val =
         // wallet_utils::serde_func::serde_to_value(value.inner())?;
         // tracing::warn!("val: {val:?}");
         // todo!()

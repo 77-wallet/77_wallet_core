@@ -77,6 +77,38 @@ impl IoStrategy for LegacyIo {
         Ok(())
     }
 
+    fn store_subkeys_bulk(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        subkeys: Vec<super::BulkSubkey>,
+        file_path: &dyn AsRef<std::path::Path>,
+        password: &str,
+        algorithm: wallet_keystore::KdfAlgorithm,
+    ) -> Result<(), crate::Error> {
+        for subkey in subkeys {
+            let file_meta = naming.generate_filemeta(
+                FileType::DerivedData,
+                &subkey.address,
+                Some(&subkey.account_index_map),
+                Some(subkey.chain_code.to_string()),
+                Some(subkey.derivation_path.to_string()),
+            )?;
+
+            let name = naming.encode(file_meta)?;
+            let rng = rand::thread_rng();
+            KeystoreBuilder::new_encrypt(
+                file_path,
+                password,
+                &subkey.data,
+                rng,
+                algorithm.clone(),
+                &name,
+            )
+            .save()?;
+        }
+        Ok(())
+    }
+
     // fn store(
     //     &self,
     //     name: &str,

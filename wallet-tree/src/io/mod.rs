@@ -67,4 +67,39 @@ pub trait IoStrategy: Send + Sync {
         password: &str,
         algorithm: KdfAlgorithm,
     ) -> Result<(), crate::Error>;
+
+    fn store_subkeys_bulk(
+        &self,
+        naming: Box<dyn NamingStrategy>,
+        subkeys: Vec<BulkSubkey>,
+        file_path: &dyn AsRef<std::path::Path>,
+        password: &str,
+        algorithm: wallet_keystore::KdfAlgorithm,
+    ) -> Result<(), crate::Error>;
+}
+
+pub struct BulkSubkey {
+    pub account_index_map: wallet_utils::address::AccountIndexMap,
+    pub address: String,
+    pub chain_code: String,
+    pub derivation_path: String,
+    pub data: Vec<u8>,
+}
+
+impl BulkSubkey {
+    pub fn new(
+        account_index_map: wallet_utils::address::AccountIndexMap,
+        address: &str,
+        chain_code: &str,
+        derivation_path: &str,
+        data: Vec<u8>,
+    ) -> Self {
+        Self {
+            account_index_map: account_index_map.clone(),
+            address: address.to_string(),
+            chain_code: chain_code.to_string(),
+            derivation_path: derivation_path.to_string(),
+            data,
+        }
+    }
 }
