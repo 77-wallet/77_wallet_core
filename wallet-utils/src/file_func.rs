@@ -45,7 +45,10 @@ pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> Result<(), crate::Error> {
 }
 
 pub fn remove_file<P: AsRef<Path>>(path: P) -> Result<(), crate::Error> {
-    fs::remove_file(path).map_err(Into::into)
+    if exists(&path)? {
+        fs::remove_file(path)?;
+    }
+    Ok(())
 }
 
 pub fn rename<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<(), crate::Error> {

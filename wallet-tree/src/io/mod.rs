@@ -28,7 +28,15 @@ pub trait IoStrategy: Send + Sync {
         Ok(data)
     }
 
-    fn load(
+    fn load_root(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        wallet_address: &str,
+        root_dir: &dyn AsRef<std::path::Path>,
+        password: &str,
+    ) -> Result<RootData, crate::Error>;
+
+    fn load_subkey(
         &self,
         naming: Box<dyn crate::naming::NamingStrategy>,
         account_index_map: Option<&wallet_utils::address::AccountIndexMap>,
@@ -53,7 +61,25 @@ pub trait IoStrategy: Send + Sync {
     //     derivation_path: &str,
     //     path: &dyn AsRef<std::path::Path>,
     //     password: &str,
-    // ) -> Result<RecoverableData, crate::Error>;
+    // ) -> Result<RecoverableData, crate::Error>;(
+
+    fn delete_root(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        address: &str,
+        root_dir: &dyn AsRef<std::path::Path>,
+    ) -> Result<(), crate::Error>;
+
+    fn store_root(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        address: &str,
+        seed: &[u8],
+        phrase: &str,
+        file_path: &dyn AsRef<std::path::Path>,
+        password: &str,
+        algorithm: KdfAlgorithm,
+    ) -> Result<(), crate::Error>;
 
     fn store_subkey(
         &self,
@@ -101,5 +127,33 @@ impl BulkSubkey {
             derivation_path: derivation_path.to_string(),
             data,
         }
+    }
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct RootData {
+    phrase: String,
+    seed: Vec<u8>,
+}
+
+impl RootData {
+    pub(crate) fn new(phrase: String, seed: Vec<u8>) -> Self {
+        Self { phrase, seed }
+    }
+
+    pub fn phrase(&self) -> &str {
+        &self.phrase
+    }
+
+    pub fn seed(&self) -> &[u8] {
+        &self.seed
+    }
+}
+
+impl TryFrom<RecoverableData> for RootData {
+    type Error = crate::Error;
+
+    fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
+        Ok(wallet_utils::serde_func::serde_from_slice(&value.inner())?)
     }
 }

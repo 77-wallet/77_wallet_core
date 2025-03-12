@@ -9,6 +9,7 @@ use crate::error::Error;
 
 #[derive(Clone, Debug)]
 pub enum ModernFileMetas {
+    Root(ModernFileMeta),
     Phrase(ModernFileMeta),
     PrivateKey(ModernFileMeta),
     Seed(ModernFileMeta),
@@ -52,6 +53,7 @@ impl FileMeta for ModernFileMetas {
             ModernFileMetas::Seed(modern_file_meta) => &modern_file_meta.file_type,
             ModernFileMetas::DerivedData(_) => &FileType::DerivedData,
             ModernFileMetas::DerivedMeta(_) => &FileType::DerivedMeta,
+            ModernFileMetas::Root(modern_file_meta) => &modern_file_meta.file_type,
         }
     }
 
@@ -62,6 +64,7 @@ impl FileMeta for ModernFileMetas {
             ModernFileMetas::Seed(modern_file_meta) => modern_file_meta.address.clone(),
             ModernFileMetas::DerivedData(_) => None,
             ModernFileMetas::DerivedMeta(_) => None,
+            ModernFileMetas::Root(modern_file_meta) => modern_file_meta.address.clone(),
         }
     }
 
@@ -72,16 +75,18 @@ impl FileMeta for ModernFileMetas {
             ModernFileMetas::Seed(_) => None,
             ModernFileMetas::DerivedData(index) => Some(*index),
             ModernFileMetas::DerivedMeta(_) => None,
+            ModernFileMetas::Root(_) => None,
         }
     }
 
     fn chain_code(&self) -> Option<String> {
         match self {
-            ModernFileMetas::Phrase(modern_file_meta) => modern_file_meta.chain_code.clone(),
-            ModernFileMetas::PrivateKey(modern_file_meta) => modern_file_meta.chain_code.clone(),
-            ModernFileMetas::Seed(modern_file_meta) => modern_file_meta.chain_code.clone(),
+            ModernFileMetas::Phrase(_) => None,
+            ModernFileMetas::PrivateKey(_) => None,
+            ModernFileMetas::Seed(_) => None,
             ModernFileMetas::DerivedData(_) => None,
             ModernFileMetas::DerivedMeta(_) => None,
+            ModernFileMetas::Root(_) => None,
         }
     }
 
@@ -94,6 +99,7 @@ impl FileMeta for ModernFileMetas {
             ModernFileMetas::Seed(modern_file_meta) => modern_file_meta.derivation_path.clone(),
             ModernFileMetas::DerivedData(_) => None,
             ModernFileMetas::DerivedMeta(_) => None,
+            ModernFileMetas::Root(_) => None,
         }
     }
 }
@@ -124,6 +130,7 @@ impl NamingStrategy for ModernNaming {
                 ))
             }
             FileType::DerivedMeta => Ok("derived_meta.json".to_string()),
+            FileType::Root => Ok("root.keystore".to_string()),
             _ => Err(Error::UnsupportedFileType),
         }
     }
@@ -139,6 +146,13 @@ impl NamingStrategy for ModernNaming {
 
         // let parts: Vec<&str> = filename.split('-').collect();
         match filename {
+            "root.keystore" => Ok(Box::new(ModernFileMetas::Root(ModernFileMeta {
+                file_type: FileType::Root,
+                address: None,
+                account_index_map: None,
+                chain_code: None,
+                derivation_path: None,
+            }))),
             "derived_meta.json" => {
                 let content = std::fs::read_to_string(path).unwrap();
                 let metadata: DerivedMetadata = serde_json::from_str(&content).unwrap();
@@ -193,6 +207,7 @@ impl NamingStrategy for ModernNaming {
             || filename.ends_with("-seed")
             || filename == "derived_keys.keystore"
             || filename == "derived_meta.json"
+            || filename == "root.keystore"
     }
 
     fn generate_filemeta(
@@ -207,8 +222,8 @@ impl NamingStrategy for ModernNaming {
             file_type,
             address: Some(address.to_string()),
             account_index_map: account_index_map.cloned(),
-            chain_code: chain_code,
-            derivation_path: derivation_path,
+            chain_code,
+            derivation_path,
         }))
     }
 }

@@ -36,6 +36,7 @@ pub trait FileMeta: std::any::Any + Send + Sync {
 
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum FileType {
+    Root,
     PrivateKey,
     Phrase,
     Seed,

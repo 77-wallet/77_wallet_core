@@ -1,7 +1,9 @@
 use hex::{FromHex as _, ToHex};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::crypto::kdf::{Argon2idKdf, KeyDerivation, Pbkdf2Kdf, ScryptKdf};
+use crate::crypto::kdfs::{
+    argon2id::Argon2idKdf, pbkdf2::Pbkdf2Kdf, scrypt_::ScryptKdf, KeyDerivation,
+};
 
 use super::json::KeystoreJson;
 

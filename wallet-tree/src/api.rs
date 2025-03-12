@@ -12,7 +12,7 @@ impl KeystoreApi {
     pub fn initialize_root_keystore(
         wallet_tree: Box<dyn WalletTreeOps>,
         address: &str,
-        private_key: &[u8],
+        // private_key: &[u8],
         seed: &[u8],
         phrase: &str,
         path: &std::path::PathBuf,
@@ -22,26 +22,27 @@ impl KeystoreApi {
         // let root = wallet_tree.get_wallet_branch(address)?.get_root();
         let naming = wallet_tree.naming();
 
-        let phrase_meta = naming.generate_filemeta(FileType::Phrase, &address, None, None, None)?;
-        let pk_meta = naming.generate_filemeta(FileType::PrivateKey, &address, None, None, None)?;
-        let seed_meta = naming.generate_filemeta(FileType::Seed, &address, None, None, None)?;
+        // let phrase_meta = naming.generate_filemeta(FileType::Phrase, &address, None, None, None)?;
+        // // let pk_meta = naming.generate_filemeta(FileType::PrivateKey, &address, None, None, None)?;
+        // let seed_meta = naming.generate_filemeta(FileType::Seed, &address, None, None, None)?;
 
-        // WalletBranch::get_root_pk_filename(address)?;
-        let pk_filename = wallet_tree.naming().encode(pk_meta)?;
-        let seed_filename = wallet_tree.naming().encode(seed_meta)?;
-        let phrase_filename = wallet_tree.naming().encode(phrase_meta)?;
-        crate::Keystore::store_data(
-            &pk_filename,
-            private_key,
-            &path,
-            password,
-            algorithm.clone(),
-        )?;
-        // let name = WalletBranch::get_root_seed_filename(address)?;
+        // // let pk_filename = wallet_tree.naming().encode(pk_meta)?;
+        // let seed_filename = wallet_tree.naming().encode(seed_meta)?;
+        // let phrase_filename = wallet_tree.naming().encode(phrase_meta)?;
+        // // crate::Keystore::store_data(
+        // //     &pk_filename,
+        // //     private_key,
+        // //     &path,
+        // //     password,
+        // //     algorithm.clone(),
+        // // )?;
 
-        crate::Keystore::store_data(&seed_filename, seed, &path, password, algorithm.clone())?;
-        // let name = WalletBranch::get_root_phrase_filename(address)?;
-        crate::Keystore::store_data(&phrase_filename, phrase, &path, password, algorithm)?;
+        // crate::Keystore::store_data(&seed_filename, seed, &path, password, algorithm.clone())?;
+        // crate::Keystore::store_data(&phrase_filename, phrase, &path, password, algorithm)?;
+
+        wallet_tree
+            .io()
+            .store_root(naming, address, seed, phrase, path, password, algorithm)?;
         Ok(())
     }
 
@@ -147,7 +148,7 @@ impl KeystoreApi {
         // )?;
         // let pk_filename = naming.encode(pk_meta)?;
 
-        let pk = wallet_tree.io().load(
+        let pk = wallet_tree.io().load_subkey(
             naming,
             account_index_map,
             address,
@@ -170,13 +171,17 @@ impl KeystoreApi {
         //     crate::Keystore::load_seed_keystore(wallet_address, root_dir, password)?;
         let naming = wallet_tree.naming();
 
-        let seed_meta =
-            naming.generate_filemeta(FileType::Seed, &wallet_address, None, None, None)?;
-        let seed_filename = naming.encode(seed_meta)?;
+        // let seed_meta =
+        //     naming.generate_filemeta(FileType::Seed, &wallet_address, None, None, None)?;
+        // let seed_filename = naming.encode(seed_meta)?;
 
-        let seed =
-            crate::Keystore::load_data::<_, SeedWallet>(root_dir.join(seed_filename), password)?;
-        Ok(seed.into_seed())
+        // let seed =
+        //     crate::Keystore::load_data::<_, SeedWallet>(root_dir.join(seed_filename), password)?;
+
+        let root = wallet_tree
+            .io()
+            .load_root(naming, wallet_address, root_dir, password)?;
+        Ok(root.seed().to_vec())
     }
 
     pub fn load_phrase(
@@ -189,15 +194,19 @@ impl KeystoreApi {
         //     crate::Keystore::load_seed_keystore(wallet_address, root_dir, password)?;
         let naming = wallet_tree.naming();
 
-        let phrase_meta =
-            naming.generate_filemeta(FileType::Phrase, &wallet_address, None, None, None)?;
-        let phrase_filename = naming.encode(phrase_meta)?;
+        // let phrase_meta =
+        //     naming.generate_filemeta(FileType::Phrase, &wallet_address, None, None, None)?;
+        // let phrase_filename = naming.encode(phrase_meta)?;
 
-        let phrase_wallet = crate::Keystore::load_data::<_, PhraseWallet>(
-            root_dir.join(phrase_filename),
-            password,
-        )?;
-        Ok(phrase_wallet.phrase)
+        // let phrase_wallet = crate::Keystore::load_data::<_, PhraseWallet>(
+        //     root_dir.join(phrase_filename),
+        //     password,
+        // )?;
+
+        let root = wallet_tree
+            .io()
+            .load_root(naming, wallet_address, root_dir, password)?;
+        Ok(root.phrase().to_string())
     }
 
     pub fn update_root_password(
@@ -208,14 +217,14 @@ impl KeystoreApi {
         new_password: &str,
         algorithm: KdfAlgorithm,
     ) -> Result<(), crate::Error> {
-        let naming = wallet_tree.naming();
+        // let naming = wallet_tree.naming();
 
-        let pk_meta =
-            naming.generate_filemeta(FileType::PrivateKey, &wallet_address, None, None, None)?;
-        let pk_filename = naming.encode(pk_meta)?;
+        // let pk_meta =
+        //     naming.generate_filemeta(FileType::PrivateKey, &wallet_address, None, None, None)?;
+        // let pk_filename = naming.encode(pk_meta)?;
 
-        let path = root_dir.join(pk_filename);
-        let private_key = Self::get_private_key(old_password, &path)?;
+        // let path = root_dir.join(pk_filename);
+        // let private_key = Self::get_private_key(old_password, &path)?;
 
         // let seed_meta = naming.generate_filemeta(FileType::Seed, &wallet_address, None, None)?;
         // let seed_filename = naming.encode(seed_meta)?;
@@ -246,7 +255,7 @@ impl KeystoreApi {
         Self::initialize_root_keystore(
             wallet_tree,
             wallet_address,
-            &private_key,
+            // &private_key,
             &seed,
             &phrase,
             &root_dir,
@@ -322,7 +331,7 @@ impl KeystoreApi {
         Self::initialize_root_keystore(
             wallet_tree,
             &root_info.address.to_string(),
-            &root_info.private_key,
+            // &root_info.private_key,
             &root_info.seed,
             &root_info.phrase,
             storage_path,

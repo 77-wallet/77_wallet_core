@@ -27,7 +27,22 @@ impl IoStrategy for ModernIo {
         Ok(())
     }
 
-    fn load(
+    fn load_root(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        wallet_address: &str,
+        root_dir: &dyn AsRef<std::path::Path>,
+        password: &str,
+    ) -> Result<super::RootData, crate::Error> {
+        let root_meta =
+            naming.generate_filemeta(FileType::Root, wallet_address, None, None, None)?;
+        let root_filename = naming.encode(root_meta)?;
+        let data =
+            KeystoreBuilder::new_decrypt(root_dir.as_ref().join(root_filename), password).load()?;
+        Ok(data.try_into()?)
+    }
+
+    fn load_subkey(
         &self,
         naming: Box<dyn crate::naming::NamingStrategy>,
         account_index_map: Option<&wallet_utils::address::AccountIndexMap>,
@@ -74,6 +89,33 @@ impl IoStrategy for ModernIo {
     }
 
     // fn load_subkey(){}
+
+    fn store_root(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        address: &str,
+        seed: &[u8],
+        phrase: &str,
+        file_path: &dyn AsRef<std::path::Path>,
+        password: &str,
+        algorithm: wallet_keystore::KdfAlgorithm,
+    ) -> Result<(), crate::Error> {
+        let data = super::RootData {
+            phrase: phrase.to_string(),
+            seed: seed.to_vec(),
+        };
+
+        let file_name = "root.keystore";
+        let data_path = file_path.as_ref().join(file_name);
+        let data = wallet_utils::serde_func::serde_to_vec(&data)?;
+
+        let rng = rand::thread_rng();
+        tracing::info!("store root: {:?}", file_path.as_ref());
+        KeystoreBuilder::new_encrypt(file_path, password, data, rng, algorithm, file_name)
+            .save()?;
+
+        Ok(())
+    }
 
     fn store_subkey(
         &self,
@@ -276,6 +318,25 @@ impl IoStrategy for ModernIo {
         )?;
         fs::rename(temp_meta_path, meta_path).unwrap();
         tracing::warn!("store_subkeys_bulk cost: {:?}", start.elapsed());
+        Ok(())
+    }
+
+    fn delete_root(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        address: &str,
+        root_dir: &dyn AsRef<std::path::Path>,
+    ) -> Result<(), crate::Error> {
+        wallet_utils::file_func::remove_file(root_dir.as_ref().join(
+            naming.encode(naming.generate_filemeta(
+                FileType::Root,
+                &address,
+                None,
+                None,
+                None,
+            )?)?,
+        ))?;
+
         Ok(())
     }
 }

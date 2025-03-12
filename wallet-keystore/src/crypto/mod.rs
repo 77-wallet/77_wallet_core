@@ -15,8 +15,7 @@ use uuid::Uuid;
 use std::{fs::File, io::Write, path::Path};
 
 mod context;
-mod io;
-pub(crate) mod kdf;
+pub(crate) mod kdfs;
 // mod pipeline;
 mod rng;
 // mod utils;
@@ -264,7 +263,7 @@ mod test {
 
     use hex::FromHex;
 
-    use crate::{KdfAlgorithm, KeystoreBuilder};
+    use crate::KdfAlgorithm;
 
     use super::*;
     #[tokio::test]

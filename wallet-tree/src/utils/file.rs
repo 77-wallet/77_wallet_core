@@ -11,13 +11,13 @@ pub fn extract_wallet_address_and_suffix_from_filename(
         let address = parts[0].to_string();
         let suffix = parts[1];
         let deprecated = suffix.starts_with("deprecated");
-        let file_type = if suffix.ends_with("pk") {
+        let file_type = if suffix.ends_with("phrase") {
             // if deprecated {
             //     Suffix::deprecated_pk()
             // } else {
             //     Suffix::pk()
             // }
-            FileType::PrivateKey
+            FileType::Phrase
         } else if suffix.ends_with("seed") {
             // Suffix::seed()
             FileType::Seed

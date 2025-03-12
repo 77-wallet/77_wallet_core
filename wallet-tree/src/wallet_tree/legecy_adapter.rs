@@ -141,6 +141,7 @@ impl LegacyWalletTree {
             let entry = entry.map_err(|e| crate::Error::Utils(e.into()))?;
             let path = entry.path();
 
+            tracing::info!("[traverse_directory_structure] path: {}", path.display());
             if path.is_dir() {
                 let wallet_name = path.file_name().unwrap().to_string_lossy().to_string();
                 let root_dir = path.join("root");
@@ -149,22 +150,45 @@ impl LegacyWalletTree {
                 wallet_utils::file_func::create_dir_all(&root_dir)?;
                 wallet_utils::file_func::create_dir_all(&subs_dir)?;
 
+                tracing::info!(
+                    "[traverse_directory_structure] root_dir: {}",
+                    root_dir.display()
+                );
                 let Some(root_dir) = wallet_utils::file_func::read_dir(root_dir)?
                     .filter_map(Result::ok)
                     .map(|e| e.file_name())
-                    .find(|e| e.to_string_lossy().ends_with("-pk"))
+                    .find(|e| e.to_string_lossy().ends_with("-phrase"))
                 else {
                     continue;
                 };
 
+                tracing::info!(
+                    "[traverse_directory_structure] root_dir 2: {}",
+                    root_dir.to_string_lossy()
+                );
                 let pk_filename = root_dir.to_string_lossy().to_string();
 
+                tracing::info!(
+                    "[traverse_directory_structure] pk_filename: {}",
+                    pk_filename
+                );
                 wallet_branch.add_root_from_filename(&pk_filename)?;
-
+                tracing::info!(
+                    "[traverse_directory_structure] wallet_branch: {:?}",
+                    wallet_branch
+                );
                 for subs_entry in wallet_utils::file_func::read_dir(subs_dir)? {
+                    tracing::info!(
+                        "[traverse_directory_structure] subs_entry: {:?}",
+                        subs_entry
+                    );
                     let subs_entry = subs_entry.map_err(|e| crate::Error::Utils(e.into()))?;
                     let subs_path = subs_entry.path();
 
+                    tracing::info!(
+                        "[traverse_directory_structure] subs_path: {}",
+                        subs_path.display()
+                    );
                     if subs_path.is_file()
                         && subs_path
                             .file_name()
