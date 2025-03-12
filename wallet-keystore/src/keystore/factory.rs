@@ -48,15 +48,18 @@ impl KdfFactory {
                 todo!()
             }
             KdfAlgorithm::Argon2id => {
-                let params = Argon2idParams::new(
-                    DEFAULT_KDF_PARAMS_DKLEN,
-                    TIME_COST,
-                    MEMORY_COST,
-                    PARALLELISM,
-                    salt,
-                );
+                // let params = Argon2idParams::new(
+                //     DEFAULT_KDF_PARAMS_DKLEN,
+                //     TIME_COST,
+                //     MEMORY_COST,
+                //     PARALLELISM,
+                //     salt,
+                // );
 
-                Ok(Box::new(Argon2idKdf::new(params)))
+                let params = Argon2idKdf::recommended_params_with_salt(salt);
+
+                Ok(Box::new(params))
+                // Ok(Box::new(Argon2idKdf::new(params)))
             }
         }
     }
