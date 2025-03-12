@@ -10,8 +10,6 @@ pub trait SymmetricCipher {
     fn decrypt(key: &[u8], iv: &[u8], ciphertext: &mut [u8]) -> Result<(), KeystoreError>;
 }
 
-pub struct Cipher;
-
 pub struct Aes128Ctr {
     inner: ctr::CtrCore<Aes128, ctr::flavors::Ctr128BE>,
 }

@@ -7,15 +7,6 @@ use crate::crypto::kdfs::{
 
 use super::json::KeystoreJson;
 
-const DEFAULT_KDF_PARAMS_DKLEN: u8 = 32u8;
-const DEFAULT_KDF_PARAMS_LOG_N: u8 = 10u8;
-const DEFAULT_KDF_PARAMS_R: u32 = 8u32;
-const DEFAULT_KDF_PARAMS_P: u32 = 1u32;
-
-const TIME_COST: u32 = 3;
-const MEMORY_COST: u32 = 65536;
-const PARALLELISM: u32 = 1;
-
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 /// Types of key derivition functions supported by the Web3 Secret Storage.
@@ -34,14 +25,7 @@ impl KdfFactory {
     ) -> Result<Box<dyn KeyDerivationFunction>, crate::Error> {
         match algorithm {
             KdfAlgorithm::Scrypt => {
-                let params = ScryptParams::new(
-                    DEFAULT_KDF_PARAMS_DKLEN,
-                    2u32.pow(DEFAULT_KDF_PARAMS_LOG_N as u32),
-                    DEFAULT_KDF_PARAMS_R,
-                    DEFAULT_KDF_PARAMS_P,
-                    salt,
-                );
-
+                let params = ScryptParams::default().with_salt(salt);
                 Ok(Box::new(ScryptKdf::new(params)))
             }
             KdfAlgorithm::Pbkdf2 => {
@@ -75,16 +59,6 @@ impl KdfFactory {
 
         Ok(kdf)
     }
-
-    fn default_scrypt_params() -> KdfParams {
-        KdfParams::Scrypt(ScryptParams {
-            dklen: 32,
-            n: 16384,
-            r: 8,
-            p: 1,
-            salt: vec![],
-        })
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -106,8 +80,20 @@ pub struct ScryptParams {
     pub salt: Vec<u8>,
 }
 
+impl Default for ScryptParams {
+    fn default() -> Self {
+        Self {
+            dklen: 32u8,
+            n: 2u32.pow(10u8 as u32),
+            r: 8,
+            p: 1,
+            salt: vec![],
+        }
+    }
+}
+
 impl ScryptParams {
-    pub(crate) fn new(dklen: u8, n: u32, r: u32, p: u32, salt: &[u8]) -> Self {
+    pub fn new(dklen: u8, n: u32, r: u32, p: u32, salt: &[u8]) -> Self {
         Self {
             dklen,
             n,
@@ -115,6 +101,11 @@ impl ScryptParams {
             p,
             salt: salt.to_vec(),
         }
+    }
+
+    pub(crate) fn with_salt(mut self, salt: &[u8]) -> Self {
+        self.salt = salt.to_vec();
+        self
     }
 }
 

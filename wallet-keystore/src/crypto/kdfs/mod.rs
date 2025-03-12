@@ -1,8 +1,8 @@
 use crate::{error::crypto::KeystoreError, keystore::factory::KdfParams, KdfAlgorithm};
 
-pub(crate) mod argon2id;
-pub(crate) mod pbkdf2;
-pub(crate) mod scrypt_;
+pub mod argon2id;
+pub mod pbkdf2;
+pub mod scrypt_;
 
 pub trait KeyDerivationFunction {
     fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError>;

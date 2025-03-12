@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use std::{fs::File, io::Write, path::Path};
 
-pub(crate) mod kdfs;
+pub mod kdfs;
 // mod utils;
 
 // #[cfg(feature = "geth-compat")]
@@ -235,27 +235,7 @@ mod test {
         *,
     };
 
-    struct KdfContext {
-        strategy: Box<dyn KeyDerivationFunction>,
-    }
-
-    impl KdfContext {
-        pub fn new(params: KdfParams) -> Result<Self, crate::Error> {
-            let strategy: Box<dyn KeyDerivationFunction> = match &params {
-                KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.to_owned())),
-                KdfParams::Scrypt(p) => Box::new(ScryptKdf::new(p.to_owned())),
-                KdfParams::Argon2id(p) => Box::new(Argon2idKdf::new(p.to_owned())),
-            };
-
-            Ok(Self { strategy })
-        }
-
-        pub fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
-            self.strategy.derive_key(password)
-        }
-    }
-
-    pub(crate) fn decrypt_data<P, S>(path: P, password: S) -> Result<Vec<u8>, crate::Error>
+    fn decrypt_data<P, S>(path: P, password: S) -> Result<Vec<u8>, crate::Error>
     where
         P: AsRef<Path>,
         S: AsRef<[u8]>,
@@ -265,8 +245,14 @@ mod test {
         wallet_utils::file_func::read(&mut contents, path)?;
         let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(&contents)?;
         // Derive the key.
-        let cx = KdfContext::new(keystore.crypto.kdfparams)?;
-        let key = cx.derive_key(password.as_ref())?;
+
+        let strategy: Box<dyn KeyDerivationFunction> = match &keystore.crypto.kdfparams {
+            KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.to_owned())),
+            KdfParams::Scrypt(p) => Box::new(ScryptKdf::new(p.to_owned())),
+            KdfParams::Argon2id(p) => Box::new(Argon2idKdf::new(p.to_owned())),
+        };
+
+        let key = strategy.derive_key(password.as_ref())?;
 
         // Derive the MAC from the derived key and ciphertext.
         let derived_mac = mac::Keccak256Mac.compute(&key, &keystore.crypto.ciphertext);

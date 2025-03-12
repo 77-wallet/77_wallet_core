@@ -1,5 +1,5 @@
 // #![feature(const_trait_impl, effects)]
-pub(crate) mod crypto;
+pub mod crypto;
 pub mod error;
 pub mod keystore;
 pub mod utils;
