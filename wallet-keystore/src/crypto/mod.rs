@@ -7,24 +7,19 @@ use crate::keystore::{
     json::{CipherparamsJson, CryptoJson, KeystoreJson},
     mac::{self, MacCalculator as _},
 };
-use context::KdfContext;
 use rand::{CryptoRng, Rng};
 use scrypt::scrypt;
 use uuid::Uuid;
 
 use std::{fs::File, io::Write, path::Path};
 
-mod context;
 pub(crate) mod kdfs;
 // mod utils;
 
 // #[cfg(feature = "geth-compat")]
 // use utils::geth_compat::address_from_pk;
 
-use crate::{
-    error::crypto::KeystoreError,
-    keystore::factory::{KdfFactory, KdfParams},
-};
+use crate::{error::crypto::KeystoreError, keystore::factory::KdfFactory};
 
 const DEFAULT_CIPHER: &str = "aes-128-ctr";
 const DEFAULT_KEY_SIZE: usize = 32usize;
@@ -89,36 +84,6 @@ where
 /// # Ok(())
 /// # }
 /// ```
-pub(crate) fn decrypt_data<P, S>(path: P, password: S) -> Result<Vec<u8>, crate::Error>
-where
-    P: AsRef<Path>,
-    S: AsRef<[u8]>,
-{
-    // Read the file contents as string and deserialize it.
-    let mut contents = String::new();
-    wallet_utils::file_func::read(&mut contents, path)?;
-    let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(&contents)?;
-    // Derive the key.
-    let cx = KdfContext::new(keystore.crypto.kdfparams)?;
-    let key = cx.derive_key(password.as_ref())?;
-
-    // Derive the MAC from the derived key and ciphertext.
-    let derived_mac = mac::Keccak256Mac.compute(&key, &keystore.crypto.ciphertext);
-    if derived_mac.as_slice() != keystore.crypto.mac.as_slice() {
-        return Err(KeystoreError::MacMismatch.into());
-    }
-
-    // Decrypt the private key bytes using AES-128-CTR
-    let mut data = keystore.crypto.ciphertext;
-
-    cipher::Aes128Ctr::decrypt(
-        &key[..16],
-        &keystore.crypto.cipherparams.iv[..16],
-        &mut data,
-    )?;
-
-    Ok(data)
-}
 
 /// Encrypts the given private key using the [Scrypt](https://tools.ietf.org/html/rfc7914.html)
 /// password-based key derivation function, and stores it in the provided directory. On success, it
@@ -261,9 +226,66 @@ mod test {
 
     use hex::FromHex;
 
-    use crate::KdfAlgorithm;
+    use crate::{keystore::factory::KdfParams, KdfAlgorithm};
 
-    use super::*;
+    use super::{
+        kdfs::{
+            argon2id::Argon2idKdf, pbkdf2::Pbkdf2Kdf, scrypt_::ScryptKdf, KeyDerivationFunction,
+        },
+        *,
+    };
+
+    struct KdfContext {
+        strategy: Box<dyn KeyDerivationFunction>,
+    }
+
+    impl KdfContext {
+        pub fn new(params: KdfParams) -> Result<Self, crate::Error> {
+            let strategy: Box<dyn KeyDerivationFunction> = match &params {
+                KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.to_owned())),
+                KdfParams::Scrypt(p) => Box::new(ScryptKdf::new(p.to_owned())),
+                KdfParams::Argon2id(p) => Box::new(Argon2idKdf::new(p.to_owned())),
+            };
+
+            Ok(Self { strategy })
+        }
+
+        pub fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
+            self.strategy.derive_key(password)
+        }
+    }
+
+    pub(crate) fn decrypt_data<P, S>(path: P, password: S) -> Result<Vec<u8>, crate::Error>
+    where
+        P: AsRef<Path>,
+        S: AsRef<[u8]>,
+    {
+        // Read the file contents as string and deserialize it.
+        let mut contents = String::new();
+        wallet_utils::file_func::read(&mut contents, path)?;
+        let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(&contents)?;
+        // Derive the key.
+        let cx = KdfContext::new(keystore.crypto.kdfparams)?;
+        let key = cx.derive_key(password.as_ref())?;
+
+        // Derive the MAC from the derived key and ciphertext.
+        let derived_mac = mac::Keccak256Mac.compute(&key, &keystore.crypto.ciphertext);
+        if derived_mac.as_slice() != keystore.crypto.mac.as_slice() {
+            return Err(KeystoreError::MacMismatch.into());
+        }
+
+        // Decrypt the private key bytes using AES-128-CTR
+        let mut data = keystore.crypto.ciphertext;
+
+        cipher::Aes128Ctr::decrypt(
+            &key[..16],
+            &keystore.crypto.cipherparams.iv[..16],
+            &mut data,
+        )?;
+
+        Ok(data)
+    }
+
     #[tokio::test]
     async fn test_encrypt_key() {
         let dir = Path::new("");

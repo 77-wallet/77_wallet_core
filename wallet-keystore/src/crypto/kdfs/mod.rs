@@ -40,10 +40,7 @@ pub(crate) fn log2(mut n: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        crypto::kdfs::{argon2id::Argon2idKdf, log2, KeyDerivationFunction as _},
-        generate_random_bytes,
-    };
+    use crate::crypto::kdfs::{argon2id::Argon2idKdf, log2, KeyDerivationFunction as _};
 
     #[test]
     fn test_log2() {
