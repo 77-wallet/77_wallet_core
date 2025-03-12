@@ -66,7 +66,6 @@ impl LayoutStrategy for ModernLayout {
                             let path = entry.path();
                             if path.is_file() {
                                 let filename = path.file_name().unwrap().to_str().unwrap();
-                                tracing::info!("filename: {filename}");
                                 let Ok(meta) = self
                                     .parse_meta_data(&path.to_string_lossy().to_string(), filename)
                                 else {

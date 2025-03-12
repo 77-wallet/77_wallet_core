@@ -106,11 +106,9 @@ impl IoStrategy for ModernIo {
         };
 
         let file_name = "root.keystore";
-        let data_path = file_path.as_ref().join(file_name);
         let data = wallet_utils::serde_func::serde_to_vec(&data)?;
 
         let rng = rand::thread_rng();
-        tracing::info!("store root: {:?}", file_path.as_ref());
         KeystoreBuilder::new_encrypt(file_path, password, data, rng, algorithm, file_name)
             .save()?;
 
@@ -134,7 +132,6 @@ impl IoStrategy for ModernIo {
         // let data_path = base_path.join("subs/derived_keys.keystore");
         let meta_path = base_path.join("derived_meta.json");
 
-        tracing::warn!("store_subkey ============ 1");
         // 1. 处理元数据
         let mut metadata = if meta_path.exists() {
             let content = fs::read_to_string(&meta_path).unwrap();
@@ -142,7 +139,6 @@ impl IoStrategy for ModernIo {
         } else {
             DerivedMetadata::default()
         };
-        tracing::warn!("store_subkey ============ 2");
 
         let meta = naming.generate_filemeta(
             FileType::DerivedData,
@@ -152,12 +148,10 @@ impl IoStrategy for ModernIo {
             Some(derivation_path.to_string()),
         )?;
 
-        tracing::warn!("store_subkey ============ 3");
         // 生成密钥文件名
         let key_filename = naming.encode(meta)?;
         // let key_filename = format!("key{}.keystore", account_idx);
 
-        tracing::warn!("store_subkey ============ 4");
         // 添加新条目
         metadata
             .accounts
@@ -169,26 +163,17 @@ impl IoStrategy for ModernIo {
                 derivation_path: derivation_path.to_string(),
             });
 
-        tracing::warn!("store_subkey ============ 5");
         // 写入元数据
         let contents = wallet_utils::serde_func::serde_to_string(&metadata)?;
         tracing::info!("meta_path: {meta_path:?}");
         wallet_utils::file_func::write_all(&meta_path, contents.as_bytes())?;
 
         // 2. 处理密钥数据
-
-        // let data = KeystoreBuilder::new_decrypt(data_path, password).load()?;
-
-        tracing::warn!("store_subkey ============ 6");
-        // let data_path = base_path;
-
         let data_path = base_path.join(&key_filename);
         let mut derived_data = crate::naming::modern::KeystoreData::default();
         if data_path.exists() {
             let keystore = KeystoreBuilder::new_decrypt(&data_path, password).load()?;
             derived_data = keystore.try_into()?;
-            // let pkwallet =
-            // existing_data = keystore.data;
         }
 
         let key = KeyMeta {
@@ -211,7 +196,6 @@ impl IoStrategy for ModernIo {
             &key_filename, // 唯一标识
         )
         .save()?;
-        tracing::warn!("store_subkey ============ 7");
         Ok(())
     }
 
@@ -250,7 +234,6 @@ impl IoStrategy for ModernIo {
         for (account_idx, subkeys) in grouped {
             let key_filename = format!("key{}.keystore", account_idx);
             let data_path = subs_dir.join(&key_filename);
-            tracing::info!("data_path: {data_path:?}");
             // 批量读取和更新数据
             let mut keystore_data = if data_path.exists() {
                 let keystore = KeystoreBuilder::new_decrypt(&data_path, password).load()?;
