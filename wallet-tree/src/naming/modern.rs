@@ -10,9 +10,6 @@ use crate::error::Error;
 #[derive(Clone, Debug)]
 pub enum ModernFileMetas {
     Root(ModernFileMeta),
-    Phrase(ModernFileMeta),
-    PrivateKey(ModernFileMeta),
-    Seed(ModernFileMeta),
     DerivedData(u32),
     DerivedMeta(Vec<ModernFileMeta>),
 }
@@ -48,9 +45,6 @@ impl FileMeta for ModernFileMeta {
 impl FileMeta for ModernFileMetas {
     fn file_type(&self) -> &FileType {
         match self {
-            ModernFileMetas::Phrase(modern_file_meta) => &modern_file_meta.file_type,
-            ModernFileMetas::PrivateKey(modern_file_meta) => &modern_file_meta.file_type,
-            ModernFileMetas::Seed(modern_file_meta) => &modern_file_meta.file_type,
             ModernFileMetas::DerivedData(_) => &FileType::DerivedData,
             ModernFileMetas::DerivedMeta(_) => &FileType::DerivedMeta,
             ModernFileMetas::Root(modern_file_meta) => &modern_file_meta.file_type,
@@ -59,9 +53,6 @@ impl FileMeta for ModernFileMetas {
 
     fn address(&self) -> Option<String> {
         match self {
-            ModernFileMetas::Phrase(modern_file_meta) => modern_file_meta.address.clone(),
-            ModernFileMetas::PrivateKey(modern_file_meta) => modern_file_meta.address.clone(),
-            ModernFileMetas::Seed(modern_file_meta) => modern_file_meta.address.clone(),
             ModernFileMetas::DerivedData(_) => None,
             ModernFileMetas::DerivedMeta(_) => None,
             ModernFileMetas::Root(modern_file_meta) => modern_file_meta.address.clone(),
@@ -70,9 +61,6 @@ impl FileMeta for ModernFileMetas {
 
     fn account_index(&self) -> Option<u32> {
         match self {
-            ModernFileMetas::Phrase(_) => None,
-            ModernFileMetas::PrivateKey(_) => None,
-            ModernFileMetas::Seed(_) => None,
             ModernFileMetas::DerivedData(index) => Some(*index),
             ModernFileMetas::DerivedMeta(_) => None,
             ModernFileMetas::Root(_) => None,
@@ -81,9 +69,6 @@ impl FileMeta for ModernFileMetas {
 
     fn chain_code(&self) -> Option<String> {
         match self {
-            ModernFileMetas::Phrase(_) => None,
-            ModernFileMetas::PrivateKey(_) => None,
-            ModernFileMetas::Seed(_) => None,
             ModernFileMetas::DerivedData(_) => None,
             ModernFileMetas::DerivedMeta(_) => None,
             ModernFileMetas::Root(_) => None,
@@ -92,11 +77,6 @@ impl FileMeta for ModernFileMetas {
 
     fn derivation_path(&self) -> Option<String> {
         match self {
-            ModernFileMetas::Phrase(modern_file_meta) => modern_file_meta.derivation_path.clone(),
-            ModernFileMetas::PrivateKey(modern_file_meta) => {
-                modern_file_meta.derivation_path.clone()
-            }
-            ModernFileMetas::Seed(modern_file_meta) => modern_file_meta.derivation_path.clone(),
             ModernFileMetas::DerivedData(_) => None,
             ModernFileMetas::DerivedMeta(_) => None,
             ModernFileMetas::Root(_) => None,
@@ -144,7 +124,6 @@ impl NamingStrategy for ModernNaming {
             return Ok(Box::new(ModernFileMetas::DerivedData(idx)));
         }
 
-        // let parts: Vec<&str> = filename.split('-').collect();
         match filename {
             "root.keystore" => Ok(Box::new(ModernFileMetas::Root(ModernFileMeta {
                 file_type: FileType::Root,
@@ -171,28 +150,6 @@ impl NamingStrategy for ModernNaming {
 
                 Ok(Box::new(ModernFileMetas::DerivedMeta(metas)))
             }
-            // _ => {
-            //     let suffix = parts[1];
-            //     let file_type = match suffix {
-            //         "phrase" => FileType::Phrase,
-            //         "pk" => FileType::PrivateKey,
-            //         "seed" => FileType::Seed,
-            //         _ => return Err(Error::UnsupportedFileType),
-            //     };
-            //     let meta = ModernFileMeta {
-            //         file_type: file_type.clone(),
-            //         account_index_map: None,
-            //         address: Some(parts[0].to_string()),
-            //         chain_code: Default::default(),
-            //         derivation_path: Default::default(),
-            //     };
-            //     Ok(Box::new(match file_type {
-            //         FileType::PrivateKey => ModernFileMetas::PrivateKey(meta),
-            //         FileType::Phrase => ModernFileMetas::Phrase(meta),
-            //         FileType::Seed => ModernFileMetas::Seed(meta),
-            //         _ => return Err(Error::FilenameInvalid),
-            //     }))
-            // }
             _ => Err(Error::FilenameInvalid),
         }
     }
@@ -228,11 +185,6 @@ impl NamingStrategy for ModernNaming {
     }
 }
 
-// #[derive(Serialize, Deserialize)]
-// pub struct DerivedData {
-//     pub entries: std::collections::HashMap<KeyMeta>,
-// }
-
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct DerivedMetadata {
     pub accounts: std::collections::BTreeMap<u32, KeyMetas>, // 按索引组织的账户
@@ -261,12 +213,6 @@ impl TryFrom<RecoverableData> for KeystoreData {
     type Error = crate::Error;
 
     fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
-        // let s = value.into_string()?;
-
-        // let val =
-        // wallet_utils::serde_func::serde_to_value(value.inner())?;
-        // tracing::warn!("val: {val:?}");
-        // todo!()
         Ok(wallet_utils::serde_func::serde_from_slice(&value.inner())?)
     }
 }

@@ -55,9 +55,9 @@ mod tests {
     fn test_argon2id_basic() {
         let mut rng = rand::thread_rng();
         let kdf = Argon2idKdf::recommended_params(&mut rng);
-        let salt = generate_random_bytes(&mut rng, 16);
+        // let salt = generate_random_bytes(&mut rng, 16);
 
-        let salt = "somesalt".as_bytes();
+        // let salt = "somesalt".as_bytes();
         let start = std::time::Instant::now();
         let key1 = kdf.derive_key(b"password").unwrap();
         println!("time: {}", start.elapsed().as_millis());

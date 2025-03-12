@@ -3,14 +3,8 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 use crate::{
-    naming::{
-        legacy::{LegacyFileMeta, LegacyNaming},
-        FileMeta, FileType, NamingStrategy as _,
-    },
-    wallet_tree::{
-        legecy_adapter::{LegacyWalletBranch, LegacyWalletTree},
-        WalletTreeOps,
-    },
+    naming::{legacy::LegacyNaming, FileMeta, FileType, NamingStrategy as _},
+    wallet_tree::{legecy_adapter::LegacyWalletTree, WalletTreeOps},
 };
 
 use super::LayoutStrategy;
@@ -125,6 +119,8 @@ impl LegacyLayout {
 
 #[cfg(test)]
 mod tests {
+    use crate::naming::legacy::LegacyFileMeta;
+
     use super::*;
     use std::env;
 

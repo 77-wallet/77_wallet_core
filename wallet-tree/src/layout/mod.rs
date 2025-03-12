@@ -1,8 +1,5 @@
-// mod meta;
 pub(crate) mod legacy;
 pub(crate) mod modern;
-// mod v1;
-// mod v2;
 
 use std::path::{Path, PathBuf};
 

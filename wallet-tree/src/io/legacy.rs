@@ -59,7 +59,6 @@ impl IoStrategy for LegacyIo {
         derivation_path: &str,
         subs_dir: &dyn AsRef<std::path::Path>,
         password: &str,
-        // ) -> Result<Box<dyn TryFrom<RecoverableData>>, crate::Error>;
     ) -> Result<Vec<u8>, crate::Error> {
         let pk_meta = naming.generate_filemeta(
             FileType::DerivedData,
@@ -69,10 +68,8 @@ impl IoStrategy for LegacyIo {
             Some(derivation_path.to_string()),
         )?;
         let pk_filename = naming.encode(pk_meta)?;
-
         let data =
             KeystoreBuilder::new_decrypt(subs_dir.as_ref().join(pk_filename), password).load()?;
-        // let pk: PkWallet = data.try_into()?;
         let pk: PkWallet = data.try_into()?;
 
         Ok(pk.pkey())
@@ -88,23 +85,10 @@ impl IoStrategy for LegacyIo {
         password: &str,
         algorithm: wallet_keystore::KdfAlgorithm,
     ) -> Result<(), crate::Error> {
-        let pk_meta = naming.generate_filemeta(FileType::PrivateKey, &address, None, None, None)?;
-        // let root = wallet_tree.get_wallet_branch(address)?.get_root();
         let phrase_meta = naming.generate_filemeta(FileType::Phrase, &address, None, None, None)?;
-        // let pk_meta = naming.generate_filemeta(FileType::PrivateKey, &address, None, None, None)?;
         let seed_meta = naming.generate_filemeta(FileType::Seed, &address, None, None, None)?;
-
-        // let pk_filename = wallet_tree.naming().encode(pk_meta)?;
-        let pk_filename = naming.encode(pk_meta)?;
         let seed_filename = naming.encode(seed_meta)?;
         let phrase_filename = naming.encode(phrase_meta)?;
-        // crate::Keystore::store_data(
-        //     &pk_filename,
-        //     private_key,
-        //     &path,
-        //     password,
-        //     algorithm.clone(),
-        // )?;
 
         crate::Keystore::store_data(
             &seed_filename,
@@ -191,7 +175,6 @@ impl IoStrategy for LegacyIo {
                 None,
                 None,
             )?)?);
-        tracing::info!("[delete root] pk path: {:?}", path);
         wallet_utils::file_func::remove_file(path)?;
         let path = root_dir
             .as_ref()
@@ -202,7 +185,6 @@ impl IoStrategy for LegacyIo {
                 None,
                 None,
             )?)?);
-        tracing::info!("[delete root] phrase path: {:?}", path);
         wallet_utils::file_func::remove_file(path)?;
         let path = root_dir
             .as_ref()
@@ -213,32 +195,8 @@ impl IoStrategy for LegacyIo {
                 None,
                 None,
             )?)?);
-        tracing::info!("[delete root] seed path: {:?}", path);
         wallet_utils::file_func::remove_file(path)?;
 
         Ok(())
     }
-
-    // fn store(
-    //     &self,
-    //     name: &str,
-    //     data: D,
-    //     file_path: &P,
-    //     password: &str,
-    //     algorithm: wallet_keystore::KdfAlgorithm,
-    // ) -> Result<(), crate::Error> {
-    //     let rng = rand::thread_rng();
-    //     KeystoreBuilder::new_encrypt(file_path, password, data, rng, algorithm, &name).save()?;
-    //     Ok(())
-    // }
-
-    // fn load(&self, path: P, password: &str) -> Result<D, crate::Error>
-    // where
-    //     P: AsRef<std::path::Path>,
-    //     D: TryFrom<wallet_keystore::RecoverableData> + Sized,
-    //     crate::Error: From<<D as TryFrom<wallet_keystore::RecoverableData>>::Error>,
-    // {
-    //     let data = KeystoreBuilder::new_decrypt(path, password).load()?;
-    //     Ok(D::try_from(data)?)
-    // }
 }

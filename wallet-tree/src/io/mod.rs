@@ -45,23 +45,7 @@ pub trait IoStrategy: Send + Sync {
         derivation_path: &str,
         subs_dir: &dyn AsRef<std::path::Path>,
         password: &str,
-        // ) -> Result<Box<dyn TryFrom<RecoverableData>>, crate::Error>;
     ) -> Result<Vec<u8>, crate::Error>;
-    // where
-    //     P: AsRef<Path>,
-    //     D: TryFrom<RecoverableData> + Sized,
-    //     crate::Error: From<<D as TryFrom<RecoverableData>>::Error>;
-
-    // fn load_subkey(
-    //     &self,
-    //     naming: Box<dyn crate::naming::NamingStrategy>,
-    //     account_index_map: &wallet_utils::address::AccountIndexMap,
-    //     address: &str,
-    //     chain_code: &str,
-    //     derivation_path: &str,
-    //     path: &dyn AsRef<std::path::Path>,
-    //     password: &str,
-    // ) -> Result<RecoverableData, crate::Error>;(
 
     fn delete_root(
         &self,

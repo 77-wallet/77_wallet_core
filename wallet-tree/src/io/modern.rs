@@ -51,7 +51,6 @@ impl IoStrategy for ModernIo {
         derivation_path: &str,
         subs_dir: &dyn AsRef<std::path::Path>,
         password: &str,
-        // ) -> Result<Box<dyn TryFrom<RecoverableData>>, crate::Error>;
     ) -> Result<Vec<u8>, crate::Error> {
         let pk_meta = naming.generate_filemeta(
             FileType::DerivedData,
@@ -62,16 +61,12 @@ impl IoStrategy for ModernIo {
         )?;
         let pk_filename = naming.encode(pk_meta)?;
 
-        tracing::info!("读取");
         let data =
             KeystoreBuilder::new_decrypt(subs_dir.as_ref().join(pk_filename), password).load()?;
 
         let derived_data: KeystoreData = data.try_into()?;
-        tracing::info!("derived_data: {:#?}", derived_data);
 
         for (k, v) in derived_data.iter() {
-            tracing::info!("k: {:?}, v: {:?}", k, v);
-
             match KeyMeta::decode(k) {
                 Ok(meta) => {
                     if meta.address == address
@@ -87,8 +82,6 @@ impl IoStrategy for ModernIo {
 
         return Err(crate::Error::PrivateKeyNotFound);
     }
-
-    // fn load_subkey(){}
 
     fn store_root(
         &self,
@@ -165,7 +158,6 @@ impl IoStrategy for ModernIo {
 
         // 写入元数据
         let contents = wallet_utils::serde_func::serde_to_string(&metadata)?;
-        tracing::info!("meta_path: {meta_path:?}");
         wallet_utils::file_func::write_all(&meta_path, contents.as_bytes())?;
 
         // 2. 处理密钥数据
@@ -185,7 +177,6 @@ impl IoStrategy for ModernIo {
         derived_data.insert(key.encode(), data.as_ref().to_vec());
 
         let val = wallet_utils::serde_func::serde_to_vec(&derived_data)?;
-        tracing::info!("val: {val:?}");
         let rng = rand::thread_rng();
         KeystoreBuilder::new_encrypt(
             &base_path,
@@ -230,7 +221,6 @@ impl IoStrategy for ModernIo {
             DerivedMetadata::default()
         };
         // 3. 批量处理密钥文件
-        // let mut all_meta_updates = Vec::new();
         for (account_idx, subkeys) in grouped {
             let key_filename = format!("key{}.keystore", account_idx);
             let data_path = subs_dir.join(&key_filename);
@@ -243,7 +233,6 @@ impl IoStrategy for ModernIo {
             };
 
             // 收集本批次的元数据更新
-            // let mut meta_updates = Vec::with_capacity(subkeys.len());
             for subkey in subkeys {
                 let key = KeyMeta {
                     chain_code: subkey.chain_code.to_string(),
@@ -253,7 +242,6 @@ impl IoStrategy for ModernIo {
 
                 // 插入密钥数据
                 keystore_data.insert(key.encode(), subkey.data.to_vec());
-                // meta_updates.push(key);
 
                 metadata
                     .accounts
@@ -262,7 +250,7 @@ impl IoStrategy for ModernIo {
                     .push(key);
             }
 
-            // 保存密钥文件
+            // 4. 保存密钥文件
             let val = wallet_utils::serde_func::serde_to_vec(&keystore_data)?;
             let rng = rand::thread_rng();
             KeystoreBuilder::new_encrypt(
@@ -274,24 +262,7 @@ impl IoStrategy for ModernIo {
                 &key_filename,
             )
             .save()?;
-
-            // all_meta_updates.extend(meta_updates);
         }
-
-        // 4. 批量更新元数据
-        // for key in all_meta_updates {
-        //     metadata
-        //         .accounts
-        //         .entry(key.account_index)
-        //         .or_insert(KeyMetas::default())
-        //         .retain(|m| !(m.chain_code == key.chain_code && m.address == key.address));
-
-        //     metadata
-        //         .accounts
-        //         .entry(key.account_index)
-        //         .or_insert(KeyMetas::default())
-        //         .push(key);
-        // }
 
         // 5. 原子写入元数据
         let temp_meta_path = meta_path.with_extension("tmp");
