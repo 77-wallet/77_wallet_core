@@ -1,7 +1,7 @@
 use rand::{CryptoRng, Rng};
 use uuid::Uuid;
 
-use crate::crypto::kdfs::KeyDerivation;
+use crate::crypto::kdfs::KeyDerivationFunction;
 
 use super::{
     cipher::SymmetricCipher,
@@ -15,14 +15,14 @@ const DEFAULT_IV_SIZE: usize = 16usize;
 
 /// 核心加密层（不涉及文件操作）
 pub struct KeystoreEngine {
-    kdf: Box<dyn KeyDerivation>,
+    kdf: Box<dyn KeyDerivationFunction>,
     // cipher: Box<dyn SymmetricCipher>,
     // mac: Box<dyn MacCalculator>,
 }
 
 impl KeystoreEngine {
     pub fn new(
-        kdf: Box<dyn KeyDerivation>,
+        kdf: Box<dyn KeyDerivationFunction>,
         // cipher: Box<dyn SymmetricCipher>,
         // mac: Box<dyn MacCalculator>,
     ) -> Self {

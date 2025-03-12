@@ -4,7 +4,7 @@ pub(crate) mod argon2id;
 pub(crate) mod pbkdf2;
 pub(crate) mod scrypt_;
 
-pub trait KeyDerivation {
+pub trait KeyDerivationFunction {
     fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError>;
 
     fn params(&self) -> KdfParams;
@@ -41,7 +41,7 @@ pub(crate) fn log2(mut n: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use crate::{
-        crypto::kdfs::{argon2id::Argon2idKdf, log2, KeyDerivation as _},
+        crypto::kdfs::{argon2id::Argon2idKdf, log2, KeyDerivationFunction as _},
         generate_random_bytes,
     };
 

@@ -4,7 +4,7 @@ use crate::{
     KdfAlgorithm,
 };
 
-use super::KeyDerivation;
+use super::KeyDerivationFunction;
 
 pub struct Argon2idKdf {
     pub params: Argon2idParams,
@@ -172,7 +172,7 @@ impl Argon2idKdf {
     }
 }
 
-impl KeyDerivation for Argon2idKdf {
+impl KeyDerivationFunction for Argon2idKdf {
     fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
         let start = std::time::Instant::now();
         let params = argon2::Params::new(
@@ -185,8 +185,7 @@ impl KeyDerivation for Argon2idKdf {
 
         let argon2 =
             argon2::Argon2::new(argon2::Algorithm::Argon2id, argon2::Version::V0x13, params);
-        // argon2.hash_password
-        // argon2.verify_password(b"password", hash);
+
         let mut output_key = vec![0u8; self.params.dklen as usize];
         argon2
             .hash_password_into(password, &self.params.salt, &mut output_key)

@@ -16,8 +16,6 @@ use std::{fs::File, io::Write, path::Path};
 
 mod context;
 pub(crate) mod kdfs;
-// mod pipeline;
-mod rng;
 // mod utils;
 
 // #[cfg(feature = "geth-compat")]

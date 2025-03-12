@@ -2,7 +2,7 @@ use hex::{FromHex as _, ToHex};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::crypto::kdfs::{
-    argon2id::Argon2idKdf, pbkdf2::Pbkdf2Kdf, scrypt_::ScryptKdf, KeyDerivation,
+    argon2id::Argon2idKdf, pbkdf2::Pbkdf2Kdf, scrypt_::ScryptKdf, KeyDerivationFunction,
 };
 
 use super::json::KeystoreJson;
@@ -31,7 +31,7 @@ impl KdfFactory {
     pub fn create(
         algorithm: &KdfAlgorithm,
         salt: &[u8],
-    ) -> Result<Box<dyn KeyDerivation>, crate::Error> {
+    ) -> Result<Box<dyn KeyDerivationFunction>, crate::Error> {
         match algorithm {
             KdfAlgorithm::Scrypt => {
                 let params = ScryptParams::new(
@@ -66,8 +66,8 @@ impl KdfFactory {
 
     pub fn create_from_file(
         keystore: &KeystoreJson,
-    ) -> Result<Box<dyn KeyDerivation>, crate::Error> {
-        let kdf: Box<dyn KeyDerivation> = match &keystore.crypto.kdfparams {
+    ) -> Result<Box<dyn KeyDerivationFunction>, crate::Error> {
+        let kdf: Box<dyn KeyDerivationFunction> = match &keystore.crypto.kdfparams {
             KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.to_owned())),
             KdfParams::Scrypt(p) => Box::new(ScryptKdf::new(p.to_owned())),
             KdfParams::Argon2id(p) => Box::new(Argon2idKdf::new(p.to_owned())),

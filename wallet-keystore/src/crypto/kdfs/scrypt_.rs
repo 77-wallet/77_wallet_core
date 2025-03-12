@@ -4,7 +4,7 @@ use crate::{
     KdfAlgorithm,
 };
 
-use super::KeyDerivation;
+use super::KeyDerivationFunction;
 
 use scrypt::Params as ScryptParams_;
 
@@ -18,7 +18,7 @@ impl ScryptKdf {
     }
 }
 
-impl KeyDerivation for ScryptKdf {
+impl KeyDerivationFunction for ScryptKdf {
     fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError> {
         let start = std::time::Instant::now();
         let mut key = vec![0u8; self.params.dklen as usize];
