@@ -5,7 +5,6 @@ members = [
     "wallet-core",
     "wallet-keystore",
     "wallet-transport",
-    "wallet-tree",
     "wallet-types",
     "wallet-utils",
 ]
@@ -40,7 +39,7 @@ wallet-chain-interact = { version = "0.1.0", default-features = false, path = "w
 wallet-chain-instance = { version = "0.1.0", default-features = false, path = "wallet-chain-instance" }
 wallet-core = { version = "0.1.0", default-features = false, path = "wallet-core" }
 wallet-transport = { version = "0.1.0", default-features = false, path = "wallet-transport" }
-wallet-tree = { version = "0.1.0", default-features = false, path = "wallet-tree" }
+# wallet-tree = { version = "0.1.0", default-features = false, path = "wallet-tree" }
 wallet-keystore = { version = "0.1.0", default-features = false, path = "wallet-keystore" }
 wallet-utils = { version = "0.1.0", default-features = false, path = "wallet-utils" }
 wallet-types = { version = "0.1.0", default-features = false, path = "wallet-types" }
