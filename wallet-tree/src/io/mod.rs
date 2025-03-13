@@ -86,6 +86,13 @@ pub trait IoStrategy: Send + Sync {
         password: &str,
         algorithm: wallet_keystore::KdfAlgorithm,
     ) -> Result<(), crate::Error>;
+
+    fn delete_account(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        account_index_map: &wallet_utils::address::AccountIndexMap,
+        file_path: &dyn AsRef<std::path::Path>,
+    ) -> Result<(), crate::Error>;
 }
 
 pub struct BulkSubkey {

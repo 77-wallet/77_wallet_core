@@ -199,4 +199,14 @@ impl IoStrategy for LegacyIo {
 
         Ok(())
     }
+
+    #[allow(dead_code)]
+    fn delete_account(
+        &self,
+        _naming: Box<dyn crate::naming::NamingStrategy>,
+        _account_index_map: &wallet_utils::address::AccountIndexMap,
+        _file_path: &dyn AsRef<std::path::Path>,
+    ) -> Result<(), crate::Error> {
+        unimplemented!("Never call this method")
+    }
 }

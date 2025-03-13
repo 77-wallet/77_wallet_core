@@ -293,4 +293,75 @@ impl IoStrategy for ModernIo {
 
         Ok(())
     }
+
+    fn delete_account(
+        &self,
+        naming: Box<dyn crate::naming::NamingStrategy>,
+        account_index_map: &wallet_utils::address::AccountIndexMap,
+        file_path: &dyn AsRef<std::path::Path>,
+    ) -> Result<(), crate::Error> {
+        let base_path = file_path.as_ref();
+        let meta_path = base_path.join("derived_meta.json");
+        let subs_dir = base_path;
+
+        // 1. 原子操作元数据
+        let mut metadata: DerivedMetadata = if meta_path.exists() {
+            let content = fs::read_to_string(&meta_path).unwrap();
+            wallet_utils::serde_func::serde_from_str(&content)?
+        } else {
+            return Err(crate::Error::MetadataNotFound);
+        };
+
+        // 移除指定账户的元数据
+        metadata.accounts.remove(&account_index_map.account_id);
+
+        // 2. 生成密钥文件名（保持与存储时相同的命名逻辑）
+        let meta = naming.generate_filemeta(
+            FileType::DerivedData,
+            "", // address 字段在删除时不需要
+            Some(&account_index_map),
+            None, // chain_code
+            None, // derivation_path
+        )?;
+
+        let key_filename = naming.encode(meta)?;
+        let data_path = subs_dir.join(key_filename);
+
+        // 3. 并行处理文件操作
+        let delete_result = std::thread::scope(|s| {
+            // 元数据写入线程
+            let meta_handle: std::thread::ScopedJoinHandle<'_, Result<(), wallet_utils::Error>> = s
+                .spawn(|| {
+                    let temp_path = meta_path.with_extension("tmp");
+                    wallet_utils::file_func::write_all(
+                        &temp_path,
+                        &serde_json::to_vec_pretty(&metadata).unwrap(),
+                    )?;
+                    wallet_utils::file_func::rename(temp_path, meta_path)
+                });
+
+            // 密钥文件删除线程
+            let data_handle: std::thread::ScopedJoinHandle<'_, Result<(), wallet_utils::Error>> = s
+                .spawn(|| {
+                    if data_path.exists() {
+                        wallet_utils::file_func::remove_file(&data_path)?;
+                    }
+                    Ok(())
+                });
+
+            // 等待所有线程完成
+            meta_handle.join().unwrap()?;
+            data_handle.join().unwrap()?;
+            Ok(())
+        });
+
+        // 4. 清理空目录
+        if subs_dir.exists() {
+            if fs::read_dir(&subs_dir).unwrap().next().is_none() {
+                fs::remove_dir(&subs_dir).unwrap();
+            }
+        }
+
+        delete_result
+    }
 }
