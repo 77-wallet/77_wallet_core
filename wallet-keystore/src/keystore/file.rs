@@ -17,19 +17,8 @@ impl<P: AsRef<std::path::Path>> KeystoreFile<P> {
         data: &T,
         password: &[u8],
     ) -> Result<KeystoreJson, crate::Error> {
-        // 序列化业务数据
-        // let serialized = wallet_utils::serde_func::serde_to_vec(data)?;
-
         // 加密核心数据
         let crypto = self.engine.encrypt(rng, data, password)?;
-
-        // 构建完整文件结构
-        // let keystore = KeystoreJson {
-        //     version: 2,
-        //     uuid: Uuid::new_v4(),
-        //     crypto,
-        //     metadata: json!({"type": std::any::type_name::<T>()}),
-        // };
 
         let contents = wallet_utils::serde_func::serde_to_string(&crypto)?;
         // 写入文件

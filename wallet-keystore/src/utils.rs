@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 // src/serde_utils/mod.rs
 use hex::{FromHex, ToHex};
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
@@ -5,9 +7,33 @@ use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HexBytes(pub Vec<u8>);
 
+impl Deref for HexBytes {
+    type Target = Vec<u8>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for HexBytes {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl HexBytes {
     pub fn to_hex(&self) -> String {
         self.0.encode_hex()
+    }
+
+    pub fn from_hex(hex: &str) -> Result<Self, hex::FromHexError> {
+        let bytes = Vec::from_hex(hex)?;
+        Ok(HexBytes(bytes))
+    }
+}
+
+impl From<Vec<u8>> for HexBytes {
+    fn from(bytes: Vec<u8>) -> Self {
+        HexBytes(bytes)
     }
 }
 

@@ -118,15 +118,6 @@ where
     }
 }
 
-// impl<T> KeystoreData for T
-// where
-//     T: serde::Serialize + AsRef<[u8]>,
-// {
-//     fn to_bytes(&self) -> Result<Vec<u8>, crate::Error> {
-//         Ok(wallet_utils::serde_func::serde_to_vec(self)?)
-//     }
-// }
-
 #[derive(Debug)]
 pub struct RecoverableData(Vec<u8>);
 
@@ -143,22 +134,3 @@ impl RecoverableData {
         self.0
     }
 }
-
-// impl<T> RecoverableData for T
-// where
-//     T: serde::de::DeserializeOwned,
-// {
-//     fn from_bytes(data: &[u8]) -> Result<Self, crate::Error> {
-//         let str = wallet_utils::conversion::vec_to_string(data)?;
-//         tracing::info!("str: {str:?}");
-//         Ok(wallet_utils::serde_func::serde_from_str(&str)?)
-//     }
-// }
-
-// pub trait KeystoreData: AsRef<[u8]> {
-//     fn to_bytes(&self) -> Result<Vec<u8>, crate::Error>;
-// }
-
-// pub trait RecoverableData: Sized {
-//     fn from_bytes(data: &[u8]) -> Result<Self, crate::Error>;
-// }

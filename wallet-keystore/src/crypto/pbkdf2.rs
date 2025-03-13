@@ -1,8 +1,8 @@
-use crate::{error::crypto::KeystoreError, keystore::factory::Pbkdf2Params};
+use crate::error::crypto::KeystoreError;
 
-use super::KeyDerivationFunction;
+use super::{KdfParams, KeyDerivationFunction};
 
-use crate::{keystore::factory::KdfParams, KdfAlgorithm};
+use crate::KdfAlgorithm;
 use hmac::Hmac;
 use sha2::Sha256;
 
@@ -30,4 +30,12 @@ impl KeyDerivationFunction for Pbkdf2Kdf {
     fn algorithm(&self) -> KdfAlgorithm {
         KdfAlgorithm::Pbkdf2
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct Pbkdf2Params {
+    pub c: u32,
+    pub dklen: u8,
+    pub prf: String,
+    pub salt: crate::utils::HexBytes,
 }

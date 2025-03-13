@@ -1,10 +1,6 @@
-use crate::{
-    error::crypto::KeystoreError,
-    keystore::factory::{Argon2idParams, KdfParams},
-    KdfAlgorithm,
-};
+use crate::{error::crypto::KeystoreError, KdfAlgorithm};
 
-use super::KeyDerivationFunction;
+use super::{KdfParams, KeyDerivationFunction};
 
 pub struct Argon2idKdf {
     pub params: Argon2idParams,
@@ -203,10 +199,52 @@ impl KeyDerivationFunction for Argon2idKdf {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct Argon2idParams {
+    pub dklen: u8,        // 输出密钥长度
+    pub time_cost: u32,   // 迭代次数
+    pub memory_cost: u32, // 内存成本（单位：KB）
+    pub parallelism: u32, // 并行度
+    pub salt: Vec<u8>,    // 盐值
+}
+
+impl Argon2idParams {
+    pub fn new(dklen: u8, time_cost: u32, memory_cost: u32, parallelism: u32, salt: &[u8]) -> Self {
+        Self {
+            dklen,
+            time_cost,
+            memory_cost,
+            parallelism,
+            salt: salt.to_vec(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use rand::rngs::OsRng;
+
+    #[test]
+    fn test_argon2id_basic() {
+        let mut rng = rand::thread_rng();
+        let kdf = Argon2idKdf::recommended_params(&mut rng);
+        // let salt = generate_random_bytes(&mut rng, 16);
+
+        // let salt = "somesalt".as_bytes();
+        let start = std::time::Instant::now();
+        let key1 = kdf.derive_key(b"password").unwrap();
+        println!("time: {}", start.elapsed().as_millis());
+        let encode = hex::encode(key1);
+        println!("encode: {}", encode);
+        // let key2 = kdf.derive_key(b"password", &salt).unwrap();
+
+        // assert_eq!(key1, key2);
+        assert_eq!(
+            "9e8789c8b42834220afc00085ac73acc308651216994abbfddd69b2592032efd",
+            encode
+        );
+    }
 
     #[test]
     fn test_key_derivation() {

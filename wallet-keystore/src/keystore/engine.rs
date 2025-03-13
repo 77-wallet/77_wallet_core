@@ -1,7 +1,7 @@
 use rand::{CryptoRng, Rng};
 use uuid::Uuid;
 
-use crate::crypto::kdfs::KeyDerivationFunction;
+use crate::crypto::KeyDerivationFunction;
 
 use super::{
     cipher::SymmetricCipher,
@@ -52,11 +52,11 @@ impl KeystoreEngine {
         Ok(KeystoreJson {
             crypto: CryptoJson {
                 cipher: String::from(DEFAULT_CIPHER),
-                cipherparams: CipherparamsJson { iv },
-                ciphertext: data,
+                cipherparams: CipherparamsJson { iv: iv.into() },
+                ciphertext: data.into(),
                 kdf: self.kdf.algorithm(),
                 kdfparams: self.kdf.params(),
-                mac: mac.to_vec(),
+                mac: mac.into(),
             },
             id,
             version: 3,
@@ -81,6 +81,6 @@ impl KeystoreEngine {
             &keystore.crypto.cipherparams.iv[..16],
             &mut data,
         )?;
-        Ok(data)
+        Ok(data.0)
     }
 }
