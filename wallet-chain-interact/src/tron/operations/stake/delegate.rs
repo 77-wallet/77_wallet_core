@@ -148,6 +148,7 @@ pub struct DelegateOther {
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct DelegatedResource {
     #[serde(rename = "delegatedResource")]
+    #[serde(default)]
     pub delegated_resource: Vec<DelegateResouce>,
 }
 

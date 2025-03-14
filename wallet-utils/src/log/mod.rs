@@ -1,14 +1,14 @@
 pub mod file;
 
+use std::sync::OnceLock;
+
 use chrono::Local;
 use tracing_subscriber::fmt::{FmtContext, FormatEvent, FormatFields};
-use tracing_subscriber::registry::LookupSpan; // for fmt::Write
+use tracing_subscriber::registry::LookupSpan;
 
 use tracing_subscriber::fmt::format::Writer;
-// use tracing_subscriber::fmt::{format, time::FormatTime};
 
-// pub const APP_CODE: &str = "123123123123123";
-pub const APP_CODE: &str = "66a7577a2b2f3b0130375e6f";
+pub static APP_CODE: OnceLock<String> = OnceLock::new();
 static SN_CODE: once_cell::sync::Lazy<std::sync::RwLock<Option<String>>> =
     once_cell::sync::Lazy::new(|| std::sync::RwLock::new(None));
 
@@ -22,6 +22,10 @@ pub fn set_sn_code(sn: &str) {
 pub fn get_sn_code() -> String {
     let sn_lock = SN_CODE.read().unwrap();
     sn_lock.clone().unwrap_or("sn".to_string())
+}
+
+pub fn set_app_code(app_code: &str) {
+    APP_CODE.get_or_init(|| app_code.to_string());
 }
 
 static LOG_LEVEL: once_cell::sync::Lazy<std::sync::RwLock<Option<String>>> =
@@ -88,7 +92,11 @@ where
         write!(writer, "{} ", Local::now().format("%Y-%m-%d %H:%M:%S%.3f"))?;
 
         // appcode
-        write!(writer, "{} ", APP_CODE)?;
+        write!(
+            writer,
+            "{} ",
+            APP_CODE.get().unwrap_or(&"appcode".to_string())
+        )?;
 
         // 日志级别
         write!(writer, "{} ", meta.level())?;

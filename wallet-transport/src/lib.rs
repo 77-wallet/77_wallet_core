@@ -1,4 +1,3 @@
-#![feature(async_closure)]
 pub mod client;
 pub mod errors;
 pub mod request_builder;

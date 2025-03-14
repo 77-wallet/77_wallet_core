@@ -4,10 +4,11 @@
 
 use std::fmt;
 
-use crate::error::wallet::WalletError;
+use serde::Deserialize;
 
-pub(crate) mod builder;
-#[derive(Clone)]
+use crate::{error::wallet::WalletError, keystore::builder::RecoverableData};
+
+#[derive(Clone, Deserialize)]
 pub struct PhraseWallet {
     /// The wallet's private key.
     pub phrase: String,
@@ -51,5 +52,13 @@ impl fmt::Debug for PhraseWallet {
 impl PartialEq for PhraseWallet {
     fn eq(&self, other: &Self) -> bool {
         self.phrase.eq(&other.phrase) && self.phrase == other.phrase
+    }
+}
+
+impl TryFrom<RecoverableData> for PhraseWallet {
+    type Error = crate::Error;
+
+    fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
+        Ok(Self::from_phrase(&value.into_string()?)?)
     }
 }

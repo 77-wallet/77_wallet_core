@@ -14,6 +14,13 @@ pub enum Error {
 
 impl From<coins_bip39::MnemonicError> for Error {
     fn from(value: coins_bip39::MnemonicError) -> Self {
-        Error::Mnemonic(value.to_string())
+        let msg = match value {
+            coins_bip39::MnemonicError::InvalidPhrase(_) => "the phrase is invalid".to_string(),
+            coins_bip39::MnemonicError::WordlistError(
+                _e @ coins_bip39::WordlistError::InvalidWord(_),
+            ) => "the word is invalid".to_string(),
+            _ => value.to_string(),
+        };
+        Error::Mnemonic(msg)
     }
 }

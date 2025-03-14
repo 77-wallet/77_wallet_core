@@ -1,5 +1,6 @@
 use crate::error::parse::ParseError;
 use alloy::primitives;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
 use std::str::FromStr;
 
@@ -166,7 +167,7 @@ pub fn index_to_account_id(index: u32) -> u32 {
     }
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountIndexMap {
     pub account_id: u32,

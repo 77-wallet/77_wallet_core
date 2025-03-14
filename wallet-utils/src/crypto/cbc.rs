@@ -5,9 +5,7 @@ use base64::prelude::*;
 type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
 type Aes128CbcEnc = cbc::Encryptor<aes::Aes128>;
 
-pub const AES_KEY: &str = "u3es1w0suq515aiw";
-pub const AES_IV: &str = "0000000000000000";
-
+#[derive(Debug, Clone)]
 pub struct AesCbcCryptor {
     pub key: Vec<u8>,
     pub iv: [u8; 16],

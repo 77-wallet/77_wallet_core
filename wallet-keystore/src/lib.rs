@@ -1,14 +1,24 @@
 // #![feature(const_trait_impl, effects)]
-pub mod api;
+pub mod crypto;
 pub mod error;
-mod eth_keystore;
 pub mod keystore;
+pub mod utils;
 pub mod wallet;
 
-use crate::error::Error;
-pub use keystore::Keystore;
+pub use crate::error::Error;
+// pub use service::Keystore;
 
 pub use alloy::primitives::Address;
+pub use keystore::builder::{KeystoreBuilder, RecoverableData};
+pub use keystore::factory::KdfAlgorithm;
+pub use keystore::json::KeystoreJson;
+// pub use wallet_tree::wallet_tree::WalletTreeStrategy;
+
+fn generate_random_bytes<R: rand::Rng + rand::CryptoRng>(rng: &mut R, len: usize) -> Vec<u8> {
+    let mut bytes = vec![0u8; len];
+    rng.fill_bytes(&mut bytes);
+    bytes
+}
 
 /// Utility to get and set the chain ID on a transaction and the resulting signature within a
 /// signer's `sign_transaction`.

@@ -35,5 +35,5 @@ coins-bip39 = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-ripemd160 = "0.9"
+ripemd160 = { workspace = true }
 hdpath = "0.6.3"
