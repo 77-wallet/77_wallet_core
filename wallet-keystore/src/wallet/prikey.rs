@@ -10,7 +10,7 @@
 
 use std::fmt;
 
-pub(crate) mod builder;
+use crate::keystore::builder::RecoverableData;
 
 /// A wallet instantiated with a locally stored private key
 // pub type LocalWallet = PkWallet<k256::ecdsa::SigningKey>;
@@ -51,17 +51,14 @@ pub struct PkWallet {
     /// The wallet's private key.
     pub pkey: Vec<u8>,
     // /// The wallet's address.
-    pub address: wallet_chain_instance::instance::Address,
+    // pub address: wallet_chain_instance::instance::Address,
 }
 
 impl PkWallet {
     /// Construct a new wallet with an external [`PrehashSigner`].
     #[inline]
-    pub fn new_with_signer(
-        pkey: Vec<u8>,
-        address: wallet_chain_instance::instance::Address,
-    ) -> Self {
-        PkWallet { pkey, address }
+    pub fn new_with_signer(pkey: Vec<u8>) -> Self {
+        PkWallet { pkey }
     }
 
     /// Returns this wallet's signer.
@@ -70,11 +67,11 @@ impl PkWallet {
         self.pkey.clone()
     }
 
-    /// Returns this wallet's chain ID.
-    #[inline]
-    pub fn address(&self) -> wallet_chain_instance::instance::Address {
-        self.address.clone()
-    }
+    // /// Returns this wallet's chain ID.
+    // #[inline]
+    // pub fn address(&self) -> wallet_chain_instance::instance::Address {
+    //     self.address.clone()
+    // }
 }
 
 impl PkWallet {
@@ -88,15 +85,15 @@ impl PkWallet {
     #[inline]
     pub fn from_pkey(
         pkey: &[u8],
-        data: Box<
-            dyn wallet_core::address::GenAddress<
-                Address = wallet_chain_instance::instance::Address,
-                Error = wallet_chain_instance::Error,
-            >,
-        >,
+        // data: Box<
+        //     dyn wallet_core::address::GenAddress<
+        //         Address = wallet_chain_instance::instance::Address,
+        //         Error = wallet_chain_instance::Error,
+        //     >,
+        // >,
     ) -> Result<Self, crate::Error> {
-        let address = data.generate(pkey)?;
-        Ok(Self::new_with_signer(pkey.to_vec(), address))
+        // let address = data.generate(pkey)?;
+        Ok(Self::new_with_signer(pkey.to_vec()))
     }
 
     /// Creates a new Wallet instance from a raw scalar serialized as a byte slice.
@@ -105,16 +102,16 @@ impl PkWallet {
     #[inline]
     pub fn from_slice(
         pkey: &[u8],
-        data: Box<
-            dyn wallet_core::address::GenAddress<
-                Address = wallet_chain_instance::instance::Address,
-                Error = wallet_chain_instance::Error,
-            >,
-        >,
+        // data: Box<
+        //     dyn wallet_core::address::GenAddress<
+        //         Address = wallet_chain_instance::instance::Address,
+        //         Error = wallet_chain_instance::Error,
+        //     >,
+        // >,
     ) -> Result<Self, crate::Error> {
         // Self::from_pkey(pkey, data)
-        let address = data.generate(pkey)?;
-        Ok(Self::new_with_signer(pkey.to_vec(), address))
+        // let address = data.generate(pkey)?;
+        Ok(Self::new_with_signer(pkey.to_vec()))
         // SigningKey::from_slice(bytes).map(|key| Self::from_signing_key(key, chain_code))
     }
 }
@@ -130,5 +127,13 @@ impl fmt::Debug for PkWallet {
 impl PartialEq for PkWallet {
     fn eq(&self, other: &Self) -> bool {
         self.pkey.eq(&other.pkey)
+    }
+}
+
+impl TryFrom<RecoverableData> for PkWallet {
+    type Error = crate::Error;
+
+    fn try_from(value: RecoverableData) -> Result<Self, Self::Error> {
+        Ok(Self::from_slice(&value.inner())?)
     }
 }

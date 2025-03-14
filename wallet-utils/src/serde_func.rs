@@ -23,6 +23,16 @@ pub fn serde_to_value<T: serde::Serialize>(value: T) -> Result<serde_json::Value
     serde_json::to_value(value).map_err(|e| crate::Error::Serde(e.into()))
 }
 
+pub fn serde_to_vec<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, crate::Error> {
+    serde_json::to_vec(value).map_err(|e| crate::Error::Serde(e.into()))
+}
+
+pub fn serde_from_slice<T: for<'a> serde::de::Deserialize<'a>>(
+    value: &[u8],
+) -> Result<T, crate::Error> {
+    serde_json::from_slice(value).map_err(|e| crate::Error::Serde(e.into()))
+}
+
 pub fn deserialize_uppercase_opt<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
     D: serde::Deserializer<'de>,

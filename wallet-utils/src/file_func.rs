@@ -1,7 +1,24 @@
 use std::{
     fs::{self, OpenOptions},
+    io::{Read, Write as _},
     path::Path,
 };
+
+pub fn create_file<P: AsRef<Path>>(path: P) -> Result<fs::File, crate::Error> {
+    Ok(fs::File::create(path)?)
+    // OpenOptions::new()
+    //     .create(true)
+    //     .write(true)
+    //     .read(true)
+    //     .open(path)
+    //     .map_err(crate::Error::IO)
+}
+
+pub fn write_all<P: AsRef<Path>>(path: P, data: &[u8]) -> Result<(), crate::Error> {
+    let mut file = create_file(path)?;
+    file.write_all(data)?;
+    Ok(())
+}
 
 pub fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<(), crate::Error> {
     if !path.as_ref().exists() {
@@ -28,7 +45,10 @@ pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> Result<(), crate::Error> {
 }
 
 pub fn remove_file<P: AsRef<Path>>(path: P) -> Result<(), crate::Error> {
-    fs::remove_file(path).map_err(Into::into)
+    if exists(&path)? {
+        fs::remove_file(path)?;
+    }
+    Ok(())
 }
 
 pub fn rename<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<(), crate::Error> {
@@ -36,11 +56,9 @@ pub fn rename<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<(), crat
 }
 
 pub fn read<P: AsRef<Path>>(buf: &mut String, path: P) -> Result<(), crate::Error> {
-    fs::read_to_string(path)
-        .map(|s| {
-            buf.push_str(&s);
-        })
-        .map_err(Into::into)
+    let mut file = fs::File::open(path)?;
+    file.read_to_string(buf).map_err(crate::Error::IO)?;
+    Ok(())
 }
 
 pub fn read_dir<P: AsRef<Path>>(path: P) -> Result<fs::ReadDir, crate::Error> {
@@ -68,4 +86,18 @@ pub fn is_file_empty<P: AsRef<Path>>(path: P) -> Result<bool, crate::Error> {
     fs::metadata(path)
         .map(|metadata| metadata.len() == 0)
         .map_err(Into::into)
+}
+
+pub fn exists<P: AsRef<Path>>(path: P) -> Result<bool, crate::Error> {
+    fs::metadata(path).map_or_else(
+        |e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                Ok(false)
+            } else {
+                tracing::error!("exists err: {e}");
+                Err(e.into())
+            }
+        },
+        |_| Ok(true),
+    )
 }
