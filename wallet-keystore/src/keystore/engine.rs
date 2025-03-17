@@ -15,21 +15,11 @@ const DEFAULT_IV_SIZE: usize = 16usize;
 /// 核心加密层（不涉及文件操作）
 pub struct KeystoreEngine {
     kdf: Box<dyn KeyDerivationFunction>,
-    // cipher: Box<dyn SymmetricCipher>,
-    // mac: Box<dyn MacCalculator>,
 }
 
 impl KeystoreEngine {
-    pub fn new(
-        kdf: Box<dyn KeyDerivationFunction>,
-        // cipher: Box<dyn SymmetricCipher>,
-        // mac: Box<dyn MacCalculator>,
-    ) -> Self {
-        Self {
-            kdf,
-            //  cipher,
-            // mac,
-        }
+    pub fn new(kdf: Box<dyn KeyDerivationFunction>) -> Self {
+        Self { kdf }
     }
 
     pub fn encrypt<T: AsRef<[u8]>, R: Rng + CryptoRng>(

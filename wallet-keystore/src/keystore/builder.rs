@@ -71,8 +71,7 @@ where
             &self.crypto_mode.data,
             self.password.as_ref(),
         )?;
-        // let data = wallet_utils::conversion::vec_to_string(self.data.as_ref())?;
-        // engine.encrypt(self.crypto_mode.rng, &data_bytes, &self.password)
+
         Ok(())
     }
 }
@@ -89,32 +88,20 @@ where
         }
     }
 
-    // pub fn load<D>(self) -> Result<D, crate::Error>
-    pub fn load(self) -> Result<RecoverableData, crate::Error>
-// where
-    //     D: serde::de::DeserializeOwned,
-    {
+    pub fn load(self) -> Result<RecoverableData, crate::Error> {
         let mut contents = String::new();
         wallet_utils::file_func::read(&mut contents, self.path.as_ref())?;
-
         self.process_decryption(&contents)
     }
 
     /// 解密处理
-    // fn process_decryption<D>(&self, encrypted: &str) -> Result<D, crate::Error>
-    fn process_decryption(&self, encrypted: &str) -> Result<RecoverableData, crate::Error>
-// where
-    //     D: serde::de::DeserializeOwned,
-    {
-        // let engine = KeystoreEngine::from_file(self.path.join(&self.crypto_mode.file_name))?;
+    fn process_decryption(&self, encrypted: &str) -> Result<RecoverableData, crate::Error> {
         let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(encrypted)?;
         let kdf = KdfFactory::create_from_file(&keystore)?;
         let engine = KeystoreEngine::new(kdf);
 
         let decrypted = engine.decrypt(self.password.as_ref(), keystore)?;
-        // Ok(wallet_utils::conversion::vec_to_string(&decrypted)?)
         Ok(RecoverableData(decrypted))
-        // D::from_bytes(&decrypted)
     }
 }
 

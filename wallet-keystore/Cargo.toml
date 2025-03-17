@@ -44,7 +44,7 @@ thiserror.workspace = true
 coins-bip32 = { workspace = true }
 coins-bip39 = { workspace = true }
 
-# tempfile = "3.10.1"
+tempfile = { workspace = true }
 async-trait = { workspace = true }
 
 # keystore

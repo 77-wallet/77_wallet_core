@@ -143,6 +143,8 @@ surge-ping = "0.8.1"
 
 ripemd160 = "0.9"
 
+tempfile = "3.19.0"
+
 [profile.dev]
 codegen-units = 4
 debug = true

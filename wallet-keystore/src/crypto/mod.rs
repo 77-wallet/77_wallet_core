@@ -74,6 +74,7 @@ mod test {
     };
     use rand::{CryptoRng, Rng};
     use scrypt::scrypt;
+    use tempfile::tempdir;
     use uuid::Uuid;
 
     use std::{fs::File, io::Write, path::Path};
@@ -84,6 +85,9 @@ mod test {
     const DEFAULT_KEY_SIZE: usize = 32usize;
     const DEFAULT_IV_SIZE: usize = 16usize;
 
+    const TEST_PASSWORD: &str = "test_password";
+    const TEST_PLAINTEXT: &[u8] = b"this is a test plaintext";
+
     use hex::FromHex;
 
     use crate::KdfAlgorithm;
@@ -93,30 +97,6 @@ mod test {
         KeyDerivationFunction,
     };
 
-    /// Encrypts the given private key using the [Scrypt](https://tools.ietf.org/html/rfc7914.html)
-    /// password-based key derivation function, and stores it in the provided directory. On success, it
-    /// returns the `id` (Uuid) generated for this keystore.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use eth_keystore::encrypt_key;
-    /// use rand::RngCore;
-    /// use std::path::Path;
-    ///
-    /// # async fn foobar() -> Result<(), Box<dyn std::error::Error>> {
-    /// let dir = Path::new("./keys");
-    /// let mut rng = rand::thread_rng();
-    ///
-    /// // Construct a 32-byte random private key.
-    /// let mut private_key = vec![0u8; 32];
-    /// rng.fill_bytes(private_key.as_mut_slice());
-    ///
-    /// // Since we specify a custom filename for the keystore, it will be stored in `$dir/my-key`
-    /// let name = encrypt_key(&dir, &mut rng, &private_key, "password_to_keystore", Some("my-key"))?;
-    /// # Ok(())
-    /// # }
-    /// ```
     fn encrypt_data<P, R, B, S>(
         dir: P,
         rng: &mut R,
@@ -132,7 +112,6 @@ mod test {
         S: AsRef<[u8]>,
     {
         // let start_time = std::time::Instant::now();
-        // tracing::info!("[encrypt_data] encrypting data");
         // Generate a random salt.
         let salt = crate::generate_random_bytes(rng, DEFAULT_KEY_SIZE);
         let iv = crate::generate_random_bytes(rng, DEFAULT_IV_SIZE);
@@ -146,11 +125,7 @@ mod test {
 
         // Calculate the MAC.
         let mac = mac::Keccak256Mac.compute(&key, &ciphertext);
-        // tracing::info!(
-        //     "[encrypt_data] mac: {} (elapsed: {}ms)",
-        //     hex::encode(&mac),
-        //     start_time.elapsed().as_millis()
-        // );
+
         // If a file name is not specified for the keystore, simply use the strigified uuid.
         let id = Uuid::new_v4();
         let name = if let Some(name) = name {
@@ -158,10 +133,6 @@ mod test {
         } else {
             id.to_string()
         };
-        // tracing::info!(
-        //     "[encrypt_data] iv: {iv:?} (elapsed: {}ms)",
-        //     start_time.elapsed().as_millis()
-        // );
 
         // Construct and serialize the encrypted JSON keystore.
         let keystore = KeystoreJson {
@@ -184,24 +155,12 @@ mod test {
             },
         };
 
-        // tracing::info!(
-        //     "[encrypt_data] keystore: {:?} (elapsed: {}ms)",
-        //     keystore,
-        //     start_time.elapsed().as_millis()
-        // );
         let contents = wallet_utils::serde_func::serde_to_string(&keystore)?;
 
         // Create a file in write-only mode, to store the encrypted JSON keystore.
         let file_name = dir.as_ref().join(name);
-        // std::thread::spawn(move || {
-
-        // tracing::warn!(
-        //     "[encrypt_data] file_name: {file_name:?} (elapsed: {}ms)",
-        //     start_time.elapsed().as_millis()
-        // );
         let mut file = File::create(file_name).unwrap();
         file.write_all(contents.as_bytes()).unwrap();
-        // });
 
         Ok(id.to_string())
     }
@@ -267,86 +226,106 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_encrypt_key() {
-        let dir = Path::new("");
+    async fn test_encrypt_decrypt_workflow() {
+        let dir = tempdir().expect("create temp dir failed");
         let mut rng = rand::thread_rng();
 
-        // let provided_master_key_hex =
-        //     "8b09ab2bfb613458f9362c4b79ff5ac8b8c6da10f25017807aa08cea969cd1ca";
-        let seed_hex = "e61b56077fd615fa661b720d3021627d37bee396dcebd11a31f51355259712fe3b92f4cbd923dca32d6a80dfafbc0dd8f25a59aff331749c9afeef097a29d5d6";
-        let provided_master_key_bytes = hex::decode(seed_hex).unwrap();
-        let data_to_encrypt = provided_master_key_bytes.as_slice();
+        // 使用固定测试数据代替真实私钥
+        let data_to_encrypt = TEST_PLAINTEXT;
 
-        // // let data_to_encrypt = b"Hello, world!";
-        // // let data_to_encrypt = alloy::hex!("e61b56077fd615fa661b720d3021627d37bee396dcebd11a31f51355259712fe3b92f4cbd923dca32d6a80dfafbc0dd8f25a59aff331749c9afeef097a29d5d6");
-        // let data_to_encrypt =
-        //     alloy::hex!("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
-        // // let data_to_encrypt = alloy::hex!("hellohellohellohellohello");
+        // 测试所有KDF算法
+        for algorithm in [
+            // KdfAlgorithm::Pbkdf2,
+            KdfAlgorithm::Scrypt,
+            KdfAlgorithm::Argon2id,
+        ] {
+            let file_name = format!("test-key-{:?}", algorithm);
+            let keystore_path = dir.path().join(&file_name);
 
-        let a = data_to_encrypt.to_vec();
-        tracing::info!("[test_encrypt_key] a: {a:?}");
-        tracing::info!("[test_encrypt_key] data: {data_to_encrypt:?}");
+            // 加密测试
+            encrypt_data(
+                dir.path(),
+                &mut rng,
+                data_to_encrypt,
+                TEST_PASSWORD,
+                Some(&file_name),
+                algorithm,
+            )
+            .expect("encryption failed");
 
-        tracing::info!("");
-        let password = "password_to_keystore";
+            // 验证文件存在
+            assert!(keystore_path.exists());
 
-        // Since we specify a custom filename for the keystore, it will be stored in `$dir/my-key`
-        let _name = encrypt_data(
-            &dir,
+            // 解密测试
+            let decrypted = decrypt_data(&keystore_path, TEST_PASSWORD).expect("decryption failed");
+
+            // 验证解密结果
+            assert_eq!(decrypted.as_slice(), data_to_encrypt);
+        }
+    }
+
+    #[test]
+    fn test_error_cases() {
+        // 测试错误密码
+        let dir = tempdir().expect("create temp dir failed");
+        let mut rng = rand::thread_rng();
+        let file_name = "error-test-key";
+
+        encrypt_data(
+            dir.path(),
             &mut rng,
-            &data_to_encrypt,
-            password,
-            Some("my-key"),
-            KdfAlgorithm::Pbkdf2,
+            TEST_PLAINTEXT,
+            TEST_PASSWORD,
+            Some(file_name),
+            KdfAlgorithm::Argon2id,
         )
         .unwrap();
 
-        let path = "./my-key";
-        let data = decrypt_data(path, password).unwrap();
-
-        let data = hex::encode(data);
-
-        // let wallet = Wallet::from_slice(&data).unwrap();
-        // let key = wallet.signer().to_bytes();
-        // let private_key = key.to_vec();
-        // let private_key = alloy::hex::encode(private_key);
-        // let data = alloy::hex::encode(&data);
-        tracing::info!("data: {data}");
+        let keystore_path = dir.path().join(file_name);
+        match decrypt_data(&keystore_path, "wrong_password") {
+            Err(e) => assert!(matches!(
+                e,
+                crate::Error::Keystore(KeystoreError::MacMismatch)
+            )),
+            Ok(_) => panic!("Should have failed with MacMismatch"),
+        }
     }
 
     #[test]
-    fn decrypt() {
-        let subs_dir =
-            "./tron-TFzMRRzQFhY9XFS37veoswLRuWLNtbyhiB-m%2F44%27%2F195%27%2F0%27%2F0%2F0-pk";
-        // let res = KeystoreBuilder::new_decrypt(subs_dir, "q1111111").load();
-        let res = decrypt_data(subs_dir, "q1111111").unwrap();
-        println!("res: {res:?}");
+    fn test_kdf_vectors() {
+        // 使用官方测试向量验证KDF实现
+        let test_vectors = vec![(
+            KdfParams::Argon2id(
+                Argon2idKdf::recommended_params_with_salt(
+                    "e4216e946a28895d743c3f86dc37477ffc006e8e363aea0199c3595d4ff79e4f".as_bytes(),
+                )
+                .params,
+            ),
+            "known_password",
+            hex::decode("8447df3d3bc2ef6d7bfc653a4244b3c8e7b4f2d216176c8e22f435bcd7e80d3d")
+                .unwrap(),
+        )];
+
+        for (params, password, expected) in test_vectors {
+            let strategy: Box<dyn KeyDerivationFunction> = match &params {
+                KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.clone())),
+                KdfParams::Scrypt(p) => Box::new(ScryptKdf::new(p.clone())),
+                KdfParams::Argon2id(p) => Box::new(Argon2idKdf::new(p.clone())),
+            };
+
+            let output = strategy.derive_key(password.as_ref()).unwrap();
+            assert_eq!(output, expected);
+        }
     }
 
     #[test]
-    fn test_hex_decode() {
-        let data = "f1446ee3758d62d2b793ce3834950d10";
-        let res = Vec::from_hex(data).unwrap();
-        println!("res: {res:?}");
+    fn test_hex_decoding() {
+        // 测试hex解码功能
+        let valid_hex = "48656c6c6f"; // "Hello" 的hex编码
+        let decoded = Vec::from_hex(valid_hex).unwrap();
+        assert_eq!(decoded, b"Hello");
+
+        let invalid_hex = "ghijkl";
+        assert!(Vec::from_hex(invalid_hex).is_err());
     }
-
-    // #[test]
-    // fn test_log_n() {
-    //     use rust_decimal::prelude::*;
-    //     let n = 8192;
-    //     let n_decimal = rust_decimal::Decimal::from(n);
-    //     let log2_decomal = n_decimal.log10() / Decimal::from(2).log10();
-
-    //     let log_n = log2_decomal.to_u8().unwrap();
-
-    //     println!("log_n: {log_n}");
-
-    //     let mut log_n = 0;
-    //     let mut value = n;
-    //     while value > 1 {
-    //         value >>= 1; // 右移一位，相当于除以2
-    //         log_n += 1;
-    //     }
-    //     println!("log_n: {log_n}");
-    // }
 }
