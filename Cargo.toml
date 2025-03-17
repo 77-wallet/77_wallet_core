@@ -45,10 +45,15 @@ wallet-utils = { version = "0.1.0", default-features = false, path = "wallet-uti
 wallet-types = { version = "0.1.0", default-features = false, path = "wallet-types" }
 
 # litecoin = { git = "https://git.nexus58.com/pub/rust-litecoin.git", package = "bitcoin", branch = "ltc", features = [
+#     "enable_ltc",
+# ] }
+# dogcoin = { git = "https://git.nexus58.com/pub/rust-litecoin.git", package = "bitcoin", branch = "dog", features = [
+#     "enable_dog",
+# ] }
+
 litecoin = { git = "http://git.ai.com/pub/rust-litecoin.git", package = "bitcoin", branch = "ltc", features = [
     "enable_ltc",
 ] }
-# dogcoin = { git = "https://git.nexus58.com/pub/rust-litecoin.git", package = "bitcoin", branch = "dog", features = [
 dogcoin = { git = "http://git.ai.com/pub/rust-litecoin.git", package = "bitcoin", branch = "dog", features = [
     "enable_dog",
 ] }
@@ -146,7 +151,7 @@ ripemd160 = "0.9"
 tempfile = "3.19.0"
 
 [profile.dev]
-codegen-units = 4
+codegen-units = 4# litecoin = { git = "https://git.nexus58.com/pub/rust-litecoin.git", package = "bitcoin", branch = "ltc", features = [
 debug = true
 debug-assertions = true
 incremental = true
