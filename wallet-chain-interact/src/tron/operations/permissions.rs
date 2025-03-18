@@ -8,7 +8,7 @@ use wallet_utils::address;
 // https://github.com/tronprotocol/java-tron/blob/1f0aa386212feb7817048aeb436779ddecaca534/protocol/src/main/protos/core/Tron.proto#L337
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContractType {
-    // 创建账号(激活账号)
+    // 激活账号
     AccountCreateContract = 0,
     // TRX转账
     TransferContract = 1,
@@ -20,11 +20,11 @@ pub enum ContractType {
     VoteWitnessContract = 4,
     // 申请成为超级代表候选人
     WitnessCreateContract = 5,
-    // 发行TRC10 资产
+    // 发行TRC10通证
     AssetIssueContract = 6,
     // 更新超级代表候选人信息
     WitnessUpdateContract = 8,
-    // Participate in TRC10 Issuance
+    // 购买TRX10通证
     ParticipateAssetIssueContract = 9,
     // 修改账户名称
     AccountUpdateContract = 10,
@@ -32,11 +32,11 @@ pub enum ContractType {
     FreezeBalanceContract = 11,
     // 解锁资产1.0
     UnfreezeBalanceContract = 12,
-    // 提取收益
+    // 领取投票奖励
     WithdrawBalanceContract = 13,
-    // Un_stake TRC10 ? 锁仓提取
+    // TRC10通证锁仓提取
     UnfreezeAssetContract = 14,
-    // 更新TRC10 通证参数
+    // 更新TRC10通证参数
     UpdateAssetContract = 15,
     // 发起提议
     ProposalCreateContract = 16,
@@ -56,13 +56,13 @@ pub enum ContractType {
     GetContract = 32,
     // 更新合约参数
     UpdateSettingContract = 33,
-    // 创建 Bancor 交易
+    // 创建Bancor交易
     ExchangeCreateContract = 41,
-    // Bancor 交易注资
+    // Bancor交易注资
     ExchangeInjectContract = 42,
-    // Bancor 交易撤资
+    // Bancor交易撤资
     ExchangeWithdrawContract = 43,
-    // 执行 Bancor 交易
+    // 执行Bancor交易
     ExchangeTransactionContract = 44,
     // 更新合约能量限制
     UpdateEnergyLimitContract = 45,
