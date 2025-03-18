@@ -39,7 +39,6 @@ wallet-chain-interact = { version = "0.1.0", default-features = false, path = "w
 wallet-chain-instance = { version = "0.1.0", default-features = false, path = "wallet-chain-instance" }
 wallet-core = { version = "0.1.0", default-features = false, path = "wallet-core" }
 wallet-transport = { version = "0.1.0", default-features = false, path = "wallet-transport" }
-# wallet-tree = { version = "0.1.0", default-features = false, path = "wallet-tree" }
 wallet-keystore = { version = "0.1.0", default-features = false, path = "wallet-keystore" }
 wallet-utils = { version = "0.1.0", default-features = false, path = "wallet-utils" }
 wallet-types = { version = "0.1.0", default-features = false, path = "wallet-types" }
@@ -148,7 +147,7 @@ surge-ping = "0.8.1"
 
 ripemd160 = "0.9"
 
-tempfile = "3.19.0"
+tempfile = "3.15.0"
 
 [profile.dev]
 codegen-units = 4# litecoin = { git = "https://git.nexus58.com/pub/rust-litecoin.git", package = "bitcoin", branch = "ltc", features = [

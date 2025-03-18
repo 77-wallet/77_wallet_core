@@ -14,6 +14,7 @@ pub enum ContractType {
     TransferContract = 1,
     // TRC10通证转账
     TransferAssetContract = 2,
+    // 链上没有
     VoteAssetContract = 3,
     // 投票Vote
     VoteWitnessContract = 4,
@@ -33,7 +34,7 @@ pub enum ContractType {
     UnfreezeBalanceContract = 12,
     // 提取收益
     WithdrawBalanceContract = 13,
-    // Unstake TRC10 ? 锁仓提取
+    // Un_stake TRC10 ? 锁仓提取
     UnfreezeAssetContract = 14,
     // 更新TRC10 通证参数
     UpdateAssetContract = 15,
@@ -43,12 +44,15 @@ pub enum ContractType {
     ProposalApproveContract = 17,
     // 撤销提议
     ProposalDeleteContract = 18,
+    // 链上没有
     SetAccountIdContract = 19,
+    // 链上没有
     CustomContract = 20,
     // 创建智能合约
     CreateSmartContract = 30,
     // 触发智能合约(TRC20/TRC721转账)
     TriggerSmartContract = 31,
+    // 链上没有
     GetContract = 32,
     // 更新合约参数
     UpdateSettingContract = 33,
@@ -68,8 +72,11 @@ pub enum ContractType {
     ClearABIContract = 48,
     // 更新超级代表佣金比例
     UpdateBrokerageContract = 49,
+    // 链上没有
     ShieldedTransferContract = 51,
+    // 链上没有
     MarketSellAssetContract = 52,
+    // 链上没有
     MarketCancelOrderContract = 53,
     // 质押资产2.0
     FreezeBalanceV2Contract = 54,
@@ -149,9 +156,9 @@ impl Default for PermissionTypes {
             ContractType::ParticipateAssetIssueContract,   // Participate in TRC10 Issuance
             ContractType::AccountUpdateContract,           // Update Account Name
             ContractType::FreezeBalanceContract,           // TRX Stake (1.0)
-            ContractType::UnfreezeBalanceContract,         // TRX Unstake (1.0)
+            ContractType::UnfreezeBalanceContract,         // TRX Un_stake (1.0)
             ContractType::WithdrawBalanceContract,         // Claim Voting Rewards
-            ContractType::UnfreezeAssetContract,           // Unstake TRC10
+            ContractType::UnfreezeAssetContract,           // Un_stake TRC10
             ContractType::UpdateAssetContract,             // Update TRC10 Parameters
             ContractType::ProposalCreateContract,          // Create Proposal
             ContractType::ProposalApproveContract,         // Approve Proposal
@@ -244,14 +251,14 @@ impl TryFrom<&TronAccount> for PermissionUpdateArgs {
     type Error = crate::Error;
 
     fn try_from(value: &TronAccount) -> Result<Self, Self::Error> {
-        // owner permison
+        // owner permission
         let mut keys = vec![];
         for item in value.owner_permission.keys.iter() {
             keys.push(Keys::new(&item.address, item.weight)?);
         }
         let owner = Permission::new_owner(value.owner_permission.threshold, keys);
 
-        // actvies permison
+        // actives permission
         let mut actives = vec![];
         for permission in value.active_permission.iter() {
             if let Some(operations) = permission.operations.as_ref() {

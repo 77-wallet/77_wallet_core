@@ -7,7 +7,7 @@ use wallet_utils::serde_func;
 
 pub mod contract;
 pub mod multisig;
-pub mod permisions;
+pub mod permissions;
 pub mod stake;
 pub mod transfer;
 
