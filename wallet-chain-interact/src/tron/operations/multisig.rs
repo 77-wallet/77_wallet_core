@@ -27,7 +27,7 @@ impl MultisigAccountOpt {
         })
     }
 
-    pub fn owner_to_keys(&self, weight: i8) -> Vec<Keys> {
+    pub fn owner_to_keys(&self, weight: i32) -> Vec<Keys> {
         self.owners
             .iter()
             .map(|item| Keys {
@@ -178,10 +178,10 @@ impl Permission {
 pub struct Keys {
     // address 作为参数是hex类型,tron账户信息响应的是bs58格式的
     pub address: String,
-    pub weight: i8,
+    pub weight: i32,
 }
 impl Keys {
-    pub fn new(address: &str, weight: i8) -> crate::Result<Self> {
+    pub fn new(address: &str, weight: i32) -> crate::Result<Self> {
         Ok(Self {
             address: address::bs58_addr_to_hex(address)?,
             weight,
