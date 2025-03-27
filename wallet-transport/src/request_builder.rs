@@ -7,7 +7,7 @@ pub struct ReqBuilder(pub RequestBuilder);
 
 impl ReqBuilder {
     pub fn json(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::info!("request params: {}", serde_json::to_string(&v).unwrap());
+        tracing::debug!("request params: {}", serde_json::to_string(&v).unwrap());
         self.0 = self.0.json(&v);
         self
     }
@@ -62,7 +62,7 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        tracing::info!("response = {}", response);
+        tracing::debug!("response = {}", response);
         Ok(response)
     }
 
