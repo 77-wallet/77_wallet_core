@@ -54,6 +54,7 @@ wallet-types = { version = "0.1.0", default-features = false, path = "wallet-typ
 litecoin = { git = "http://git.ai.com/pub/rust-litecoin.git", package = "bitcoin", branch = "ltc", features = [
     "enable_ltc",
 ] }
+
 dogcoin = { git = "http://git.ai.com/pub/rust-litecoin.git", package = "bitcoin", branch = "dog", features = [
     "enable_dog",
 ] }
