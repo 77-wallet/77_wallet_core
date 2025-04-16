@@ -97,10 +97,7 @@ impl TronAccount {
     }
 
     pub fn is_multisig_account(&self) -> bool {
-        self.active_permission
-            .iter()
-            .any(|permission| permission.keys.len() >= 2)
-            || self.owner_permission.keys.len() >= 2
+        self.owner_permission.keys.len() >= 2
     }
 
     // unit is trx
