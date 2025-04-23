@@ -77,6 +77,43 @@ pub fn parse_sol_address(pubkey: &str) -> Result<solana_sdk::pubkey::Pubkey, cra
     })
 }
 
+pub fn eth_addr_to_tron_addr(eth_addr: &str) -> Result<String, crate::Error> {
+    let hex_trimmed = eth_addr.trim_start_matches("0x");
+    let eth_bytes = hex::decode(hex_trimmed).expect("invalid hex address");
+
+    assert_eq!(eth_bytes.len(), 20);
+
+    // 拼接 0x41 前缀
+    let mut tron_raw = vec![0x41];
+    tron_raw.extend(eth_bytes);
+
+    // 计算 checksum
+    let hash1 = Sha256::digest(&tron_raw);
+    let hash2 = Sha256::digest(&hash1);
+    let checksum = &hash2[0..4];
+
+    // 拼接后编码
+    let mut full = tron_raw.clone();
+    full.extend_from_slice(checksum);
+
+    Ok(bs58::encode(full).into_string())
+}
+
+pub fn tron_addr_to_eth_addr(tron_addr: &str) -> Result<String, String> {
+    let decoded = bs58::decode(tron_addr)
+        .into_vec()
+        .map_err(|e| format!("Base58 decode error: {:?}", e))?;
+
+    if decoded[0] != 0x41 {
+        return Err("Invalid TRON address format".into());
+    }
+
+    // 截取后 20 字节
+    let eth_bytes = &decoded[1..21];
+
+    Ok(format!("0x{}", hex::encode(eth_bytes)))
+}
+
 // pub const BIP32_HARDEN: u32 = 2147483648 (0x80000000)
 // pub const MAX: Self = 2147483647 (0x7FFFFFFF)
 pub fn i32_index_to_hardened_u32(index: i32) -> Result<u32, crate::Error> {
