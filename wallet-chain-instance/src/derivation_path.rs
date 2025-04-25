@@ -66,7 +66,9 @@ pub fn get_account_hd_path_from_path(derivation_path: &str) -> Result<HDPath, cr
     };
 
     let hd_path = match coin_type {
-        ETH_TYPE | TRON_TYPE | BTC_TYPE | BTC_86_TYPE | LTC_TYPE => HDPath::Other(custom_hd_path),
+        ETH_TYPE | TRON_TYPE | BTC_TYPE | BTC_86_TYPE | LTC_TYPE | DOG_TYPE => {
+            HDPath::Other(custom_hd_path)
+        }
         SOLANA_TYPE => HDPath::Solana(
             hdpath::AccountHDPath::from_str(&derivation_path)
                 .map_err(|e| Into::<crate::Error>::into(e))?,
