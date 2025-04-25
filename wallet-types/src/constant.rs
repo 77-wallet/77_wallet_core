@@ -74,7 +74,7 @@ pub mod chain_code {
     pub const BNB: &str = "bnb";
     pub const BTC: &str = "btc";
     pub const LTC: &str = "ltc";
-    pub const DOG: &str = "dog";
+    pub const DOG: &str = "doge";
 }
 
 pub mod coin {
