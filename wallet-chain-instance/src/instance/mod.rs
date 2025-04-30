@@ -3,6 +3,7 @@ pub mod dog;
 pub mod eth;
 pub mod ltc;
 pub mod sol;
+pub mod sui;
 pub mod trx;
 
 use std::fmt::Display;
@@ -13,6 +14,7 @@ use dog::DogcoinInstance;
 use eth::EthereumInstance;
 use ltc::LitecoinInstance;
 use sol::SolanaInstance;
+use sui::SuiInstance;
 use trx::TronInstance;
 use wallet_core::derive::{Derive, GenDerivation, GenDerivationDog, GenDerivationLtc};
 use wallet_types::chain::{address::r#type::AddressType, chain, network};
@@ -26,6 +28,7 @@ pub enum Address {
     SolAddress(solana_sdk::pubkey::Pubkey),
     TrxAddress(anychain_tron::TronAddress),
     BnbAddress(alloy::primitives::Address),
+    SuiAddress(String),
 }
 
 impl Display for Address {
@@ -38,6 +41,7 @@ impl Display for Address {
             Address::SolAddress(address) => write!(f, "{}", address),
             Address::TrxAddress(address) => write!(f, "{}", address.to_base58()),
             Address::BnbAddress(address) => write!(f, "{}", address),
+            Address::SuiAddress(address) => write!(f, "{}", address),
         }
     }
 }
@@ -51,6 +55,7 @@ pub enum ChainObject {
     Btc(crate::instance::btc::BitcoinInstance),
     Ltc(crate::instance::ltc::LitecoinInstance),
     Dog(crate::instance::dog::DogcoinInstance),
+    Sui(crate::instance::sui::SuiInstance),
 }
 
 impl ChainObject {
@@ -74,6 +79,7 @@ impl ChainObject {
             ChainObject::Btc(i) => &i.chain_code,
             ChainObject::Ltc(i) => &i.chain_code,
             ChainObject::Dog(i) => &i.chain_code,
+            ChainObject::Sui(i) => &i.chain_code,
         }
     }
 
@@ -86,6 +92,7 @@ impl ChainObject {
             ChainObject::Btc(i) => AddressType::Btc(i.address_type),
             ChainObject::Ltc(i) => AddressType::Ltc(i.address_type),
             ChainObject::Dog(i) => AddressType::Dog(i.address_type),
+            ChainObject::Sui(i) => AddressType::Other,
         }
     }
 
@@ -140,6 +147,12 @@ impl ChainObject {
                 let res = Box::new(res);
                 Ok(res)
             }
+            ChainObject::Sui(i) => {
+                let derivation_path = SuiInstance::generate(&None, input_index)?;
+                let res = i.derive_with_derivation_path(seed.to_vec(), &derivation_path)?;
+                let res = Box::new(res);
+                Ok(res)
+            }
         }
     }
 
@@ -185,6 +198,11 @@ impl ChainObject {
                 let res = Box::new(res);
                 Ok(res)
             }
+            ChainObject::Sui(i) => {
+                let res = i.derive_with_derivation_path(seed.to_vec(), derivation_path)?;
+                let res = Box::new(res);
+                Ok(res)
+            }
         }
     }
 
@@ -220,6 +238,7 @@ impl ChainObject {
                 address_type: i.address_type,
                 network: i.network,
             }),
+            ChainObject::Sui(i) => Box::new(crate::instance::sui::address::SuiGenAddress {}),
         })
     }
 }
@@ -304,6 +323,10 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
                     network,
                 })
             } // ChainCode::Unknown => return Err(crate::Error::UnknownChainCode),
+            ChainCode::Sui => ChainObject::Sui(crate::instance::sui::SuiInstance {
+                chain_code: value.to_owned(),
+                network,
+            }),
         };
         Ok(res)
     }

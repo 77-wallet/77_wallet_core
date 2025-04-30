@@ -60,7 +60,7 @@ dogcoin = { git = "http://git.ai.com/pub/rust-litecoin.git", package = "bitcoin"
 ] }
 
 
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.44.2", features = ["macros", "rt-multi-thread"] }
 # time
 chrono = { version = "0.4", features = ["serde"] }
 
@@ -104,6 +104,10 @@ alloy = { git = "https://github.com/alloy-rs/alloy", default-features = false, f
     "signers",
     "signer-keystore",
 ], rev = "ea5eb7d504a1f4eb6c9937af7913577f78fee121" }
+
+sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
+sui-crypto = { git = "https://github.com/mystenlabs/sui", package = "sui-crypto"}
+
 
 bitcoin = { version = "0.32.2", features = [
     "rand-std",
