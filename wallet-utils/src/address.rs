@@ -160,9 +160,7 @@ pub fn u32_hardened_index_to_i32(hardend_index: u32) -> Result<i32, crate::Error
                 .checked_sub_unsigned(i32::MAX as u32 + 1)
                 .ok_or(crate::Error::AddressIndexOverflowOccured)?
         };
-        // let negative_index = unmarked_index
-        //     .checked_sub(0x80000000) // 0x80000000 = i32::MAX + 1
-        //     .ok_or(crate::Error::AddressIndexOverflowOccured)? as i32;
+
         tracing::debug!("negative_index = {}", negative_index);
         Ok(negative_index)
     } else {
@@ -170,23 +168,6 @@ pub fn u32_hardened_index_to_i32(hardend_index: u32) -> Result<i32, crate::Error
         Ok(hardend_index as i32)
     }
 }
-
-// pub fn u32_index_to_i32(index: u32) -> Result<i32, crate::Error> {
-//     // if index > i32::MAX as u32 {
-
-//     tracing::warn!("index = {}", index);
-//     if index & 0x80000000 != 0 {
-//         let unmarked_index = index & 0x7FFFFFFF;
-//         // let negative_index = index
-//         let negative_index = unmarked_index.checked_sub(i32::MAX as u32 + 1);
-//         tracing::warn!("unmarked_index = {}", unmarked_index);
-//         tracing::warn!("negative_index = {:?}", negative_index);
-//         let negative_index = negative_index.ok_or(crate::Error::AddressIndexOverflowOccured)?;
-//         Ok(negative_index as i32)
-//     } else {
-//         Ok(index as i32)
-//     }
-// }
 
 pub fn account_id_to_index(account_id: u32) -> u32 {
     if account_id == 0 {
@@ -214,14 +195,6 @@ pub struct AccountIndexMap {
 }
 
 impl AccountIndexMap {
-    // pub fn new(account_id: u32, index: u32, input_index: i32) -> Self {
-    //     Self {
-    //         account_id,
-    //         hardened_index: index,
-    //         input_index,
-    //     }
-    // }
-
     pub fn from_input_index(input_index: i32) -> Result<Self, crate::Error> {
         let hardened_index = i32_index_to_hardened_u32(input_index)?;
         let unhardend_index = i32_index_to_unhardened_u32(input_index)?;
@@ -294,9 +267,19 @@ pub fn to_checksum_address(address: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::address::hex_to_bs58_addr;
+    use crate::address::{hex_to_bs58_addr, AccountIndexMap};
 
     use super::to_checksum_address;
+
+    #[test]
+    fn test_from_input_index() {
+        let input_index = -3;
+        let account_index_map = AccountIndexMap::from_input_index(input_index).unwrap();
+        println!("account_index_map: {account_index_map:?}");
+        assert_eq!(account_index_map.account_id, 0);
+        assert_eq!(account_index_map.hardened_index, 0);
+        assert_eq!(account_index_map.unhardend_index, 0);
+    }
 
     #[test]
     fn test_to_checksum_address() {
