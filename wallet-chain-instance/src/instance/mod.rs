@@ -3,6 +3,7 @@ pub mod dog;
 pub mod eth;
 pub mod ltc;
 pub mod sol;
+pub mod ton;
 pub mod trx;
 
 use std::fmt::Display;
@@ -308,43 +309,3 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
         Ok(res)
     }
 }
-
-// impl ChainCode {
-//     pub fn gen_instance(self) -> Result<ChainInstance, crate::Error> {}
-// }
-
-// impl wallet_core::derive::Derive for ChainInstance {
-//     type Error = crate::Error;
-//     type Item = Box<dyn wallet_core::KeyPair<Error = crate::Error>>;
-
-//     fn derive(&self, seed: Vec<u8>, index: u32) -> Result<Self::Item, Self::Error> {
-//         match self {
-//             ChainInstance::Eth(instance) => {
-//                 let eth_keypair = instance.derive(seed, index)?;
-//                 Ok(eth_keypair)
-//             }
-//             ChainInstance::Trx(instance) => {
-//                 let trx_keypair = instance.derive(seed, index)?;
-//                 Ok(trx_keypair)
-//             }
-//         }
-//     }
-// }
-
-// impl ChainCode {
-//     pub fn gen_instance(
-//         self,
-//     ) -> Box<
-//         dyn wallet_core::derive::Derive<
-//             Item = Box<dyn wallet_core::KeyPair<Error = crate::Error>>,
-//             Error = crate::Error,
-//         >,
-//     > {
-//         match self {
-//             ChainCode::Eth => Box::new(crate::instance::eth::EthereumInstance {}),
-//             // ChainCode::Bnb => Box::new(crate::instance::btc::BitcoinInstance {}),
-//             // ChainCode::Btc => Box::new(crate::instance::btc::BitcoinInstance {}),
-//             ChainCode::Trx => Box::new(crate::instance::trx::TronInstance {}),
-//         }
-//     }
-// }
