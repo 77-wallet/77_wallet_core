@@ -106,8 +106,7 @@ alloy = { git = "https://github.com/alloy-rs/alloy", default-features = false, f
 ], rev = "ea5eb7d504a1f4eb6c9937af7913577f78fee121" }
 
 sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
-sui-crypto = { git = "https://github.com/mystenlabs/sui", package = "sui-crypto"}
-
+sui-crypto = "0.0.4"
 
 bitcoin = { version = "0.32.2", features = [
     "rand-std",
@@ -140,6 +139,7 @@ coins-bip39 = "0.8.7"
 coins-bip32 = "0.8.7"
 # coins-bip32 = { path = "../coins/crates/bip32" }
 
+ed25519-dalek = { version = "1.0.1", features = ["serde"] }
 
 rand = "0.8.5"
 

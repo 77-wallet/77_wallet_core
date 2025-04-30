@@ -20,10 +20,13 @@ dogcoin = { workspace = true }
 
 libsecp256k1 = { workspace = true }
 secp256k1 = { version = "0.29" }
+ed25519-dalek = { workspace = true }
 
 tracing = { workspace = true }
 
 hex = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
 sha3 = { workspace = true }
 bs58 = { workspace = true }
 bech32 = { workspace = true }
