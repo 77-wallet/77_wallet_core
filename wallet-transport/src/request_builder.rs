@@ -62,7 +62,7 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        tracing::debug!("response = {}", response);
+        tracing::info!("response = {}", response);
         Ok(response)
     }
 
