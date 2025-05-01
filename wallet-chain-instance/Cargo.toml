@@ -43,3 +43,7 @@ hdpath = "0.6.3"
 
 sui_sdk = { workspace = true }
 sui-crypto = { workspace = true }
+blake2 = { workspace = true }
+generic-array = { workspace = true }
+typenum = { workspace = true }
+base64 = { workspace = true }

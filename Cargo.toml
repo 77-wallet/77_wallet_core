@@ -139,7 +139,11 @@ coins-bip39 = "0.8.7"
 coins-bip32 = "0.8.7"
 # coins-bip32 = { path = "../coins/crates/bip32" }
 
-ed25519-dalek = { version = "1.0.1", features = ["serde"] }
+ed25519-dalek = { version = "2.1.1", features = ["serde"] }
+blake2 = "0.10.6"
+generic-array = "0.14"
+typenum = "1.16"
+fastcrypto = "0.1.9"
 
 rand = "0.8.5"
 
