@@ -74,6 +74,18 @@ impl HttpClient {
         self.get(endpoint).send::<R>().await
     }
 
+    pub async fn get_with_params<T, R>(
+        &self,
+        endpoint: &str,
+        payload: T,
+    ) -> Result<R, TransportError>
+    where
+        R: serde::de::DeserializeOwned,
+        T: serde::Serialize + std::fmt::Debug,
+    {
+        self.get(endpoint).query(payload).send::<R>().await
+    }
+
     pub async fn post_request<T, U>(&self, endpoint: &str, payload: T) -> Result<U, TransportError>
     where
         T: serde::Serialize + std::fmt::Debug,
