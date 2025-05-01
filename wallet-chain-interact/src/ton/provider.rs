@@ -2,7 +2,13 @@ use alloy::primitives::U256;
 use wallet_transport::client::HttpClient;
 use wallet_utils::unit;
 
-use super::protocol::block::{BlocksShards, MasterChainInfo};
+use super::{
+    params::LocateTxParams,
+    protocol::{
+        block::{BlocksShards, MasterChainInfo},
+        transaction::RawTransaction,
+    },
+};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct TonResponse<T> {
@@ -44,6 +50,53 @@ impl Provider {
         let res = self
             .client
             .get_with_params::<_, TonResponse<BlocksShards>>("shards", params)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    pub async fn get_transaction(&self, address: &str) -> crate::Result<Vec<RawTransaction>> {
+        let params = std::collections::HashMap::from([("address", address)]);
+
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<Vec<RawTransaction>>>("getTransactions", params)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    // 定位交易
+    pub async fn try_locate_tx(&self, locate: LocateTxParams) -> crate::Result<RawTransaction> {
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<RawTransaction>>("tryLocateTx", locate)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    // 向后定位交易
+    pub async fn try_locate_result_tx(
+        &self,
+        locate: LocateTxParams,
+    ) -> crate::Result<RawTransaction> {
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<RawTransaction>>("tryLocateResultTx", locate)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    // 向前定位交易
+    pub async fn try_locate_source_tx(
+        &self,
+        locate: LocateTxParams,
+    ) -> crate::Result<RawTransaction> {
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<RawTransaction>>("tryLocateSourceTx", locate)
             .await?;
 
         Ok(res.result)
