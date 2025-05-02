@@ -8,6 +8,7 @@ pub use dog::script as dog_scripts;
 pub mod eth;
 pub mod factory;
 pub mod sol;
+pub mod sui;
 pub mod tron;
 mod utils;
 pub use utils::*;
