@@ -40,6 +40,10 @@ pub enum ParseError {
     UnitConvertFailed(String),
     #[error("Uri error: {0}")]
     Uri(#[from] url::ParseError),
+    #[error("TryFromSliceError: {0}")]
+    TryFromSliceError(#[from] std::array::TryFromSliceError),
+    #[error("InvalidLength: {0}")]
+    InvalidLength(#[from] hmac::digest::crypto_common::InvalidLength),
 }
 
 impl ParseError {
@@ -65,6 +69,8 @@ impl ParseError {
             ParseError::UnitConvertFailed(_) => 6311,
             ParseError::SolanaSignatureError(_) => 6311,
             ParseError::Uri(_) => 6311,
+            ParseError::TryFromSliceError(_) => 6311,
+            ParseError::InvalidLength(_) => 6311,
         }
     }
 }

@@ -88,11 +88,11 @@ impl ChainObject {
             ChainObject::Eth(_)
             | ChainObject::Trx(_)
             | ChainObject::Sol(_)
-            | ChainObject::Bnb(_) => AddressType::Other,
+            | ChainObject::Bnb(_)
+            | ChainObject::Sui(_) => AddressType::Other,
             ChainObject::Btc(i) => AddressType::Btc(i.address_type),
             ChainObject::Ltc(i) => AddressType::Ltc(i.address_type),
             ChainObject::Dog(i) => AddressType::Dog(i.address_type),
-            ChainObject::Sui(i) => AddressType::Other,
         }
     }
 
@@ -238,7 +238,7 @@ impl ChainObject {
                 address_type: i.address_type,
                 network: i.network,
             }),
-            ChainObject::Sui(i) => Box::new(crate::instance::sui::address::SuiGenAddress {}),
+            ChainObject::Sui(_) => Box::new(crate::instance::sui::address::SuiGenAddress {}),
         })
     }
 }

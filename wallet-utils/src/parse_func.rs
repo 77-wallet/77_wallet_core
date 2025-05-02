@@ -56,3 +56,13 @@ pub fn derivation_path_percent_encode(
 pub fn parse_bech32_hrp(hrp: &str) -> Result<bech32::Hrp, crate::Error> {
     bech32::Hrp::parse(hrp).map_err(|e| crate::Error::Parse(e.into()))
 }
+
+type HmacSha512 = hmac::Hmac<sha2::Sha512>;
+use hmac::Mac;
+
+pub fn hmac_sha512(key: &[u8], data: &[u8]) -> Result<[u8; 64], crate::Error> {
+    let mut hmac = HmacSha512::new_from_slice(key).map_err(|e| crate::Error::Parse(e.into()))?;
+    hmac.update(data);
+    let result = hmac.finalize();
+    Ok(result.into_bytes().into())
+}
