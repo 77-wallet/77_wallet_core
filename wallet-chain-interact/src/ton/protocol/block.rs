@@ -4,11 +4,9 @@ use serde::Deserialize;
 pub struct MasterChainInfo {
     #[serde(rename = "@type")]
     pub type_field: String,
-
     pub last: BlockIdExt,
     pub state_root_hash: String,
     pub init: BlockIdExt,
-
     #[serde(rename = "@extra")]
     pub extra: String,
 }
@@ -17,7 +15,6 @@ pub struct MasterChainInfo {
 pub struct BlockIdExt {
     #[serde(rename = "@type")]
     pub type_field: String,
-
     pub workchain: i32,
     pub shard: String,
     pub seqno: u32,
@@ -29,9 +26,7 @@ pub struct BlockIdExt {
 pub struct BlocksShards {
     #[serde(rename = "@type")]
     pub type_field: String,
-
     pub shards: Vec<BlockIdExt>,
-
     #[serde(rename = "@extra")]
     pub extra: String,
 }

@@ -4,7 +4,6 @@ use serde::Deserialize;
 pub struct RawTransaction {
     #[serde(rename = "@type")]
     pub type_field: String,
-
     pub utime: u64,
     pub data: String,
     pub transaction_id: TransactionId,
@@ -19,7 +18,6 @@ pub struct RawTransaction {
 pub struct TransactionId {
     #[serde(rename = "@type")]
     pub type_field: String,
-
     pub lt: String,
     pub hash: String,
 }
@@ -28,7 +26,6 @@ pub struct TransactionId {
 pub struct RawMessage {
     #[serde(rename = "@type")]
     pub type_field: String,
-
     pub source: String,
     pub destination: String,
     pub value: String,
@@ -37,8 +34,6 @@ pub struct RawMessage {
     pub created_lt: String,
     pub body_hash: String,
     pub msg_data: MsgData,
-
-    // `message` 字段是选填（可能在某些消息中缺失）
     pub message: Option<String>,
 }
 
@@ -56,4 +51,39 @@ pub struct SendBocReturn {
     pub hash: String,
     #[serde(rename = "@extra")]
     pub extra: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct EstimateFeeResp {
+    #[serde(rename = "@type")]
+    pub type_field: String,
+    pub source_fees: SourceFees,
+    pub destination_fees: Vec<DestinationFees>,
+    #[serde(rename = "@extra")]
+    pub extra: String,
+}
+
+impl EstimateFeeResp {
+    pub fn get_fee(&self) -> u64 {
+        self.source_fees.in_fwd_fee
+            + self.source_fees.storage_fee
+            + self.source_fees.gas_fee
+            + self.source_fees.fwd_fee
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SourceFees {
+    #[serde(rename = "@type")]
+    pub type_field: String,
+
+    pub in_fwd_fee: u64,
+    pub storage_fee: u64,
+    pub gas_fee: u64,
+    pub fwd_fee: u64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DestinationFees {
+    // 如果 destination_fees 不为空，你可以根据实际字段结构补充此结构体
 }

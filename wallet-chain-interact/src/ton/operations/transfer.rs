@@ -1,51 +1,48 @@
+use super::BuildInternalMsg;
+use crate::ton::{address::parse_addr_from_bs64_url, consts::TON_DECIMAL};
 use num_bigint::BigUint;
-use std::sync::Arc;
-use tonlib_core::{
-    cell::CellBuilder,
-    message::{CommonMsgInfo, ExternalIncomingMessage, TransferMessage},
-    TonAddress,
-};
+use tonlib_core::{message::InternalMessage, TonAddress};
 
 pub struct TransferOpt {
-    pub from: String,
-    pub to: String,
-    pub value: String,
+    pub from: TonAddress,
+    pub to: TonAddress,
+    pub value: u64,
 }
 
 impl TransferOpt {
     pub fn new(from: &str, to: &str, value: &str) -> crate::Result<Self> {
+        let value = wallet_utils::unit::convert_to_u256(value, TON_DECIMAL)?.to::<u64>();
+
         Ok(Self {
-            from: from.to_string(),
-            to: to.to_string(),
-            value: value.to_string(),
+            from: parse_addr_from_bs64_url(from)?,
+            to: parse_addr_from_bs64_url(to)?,
+            value,
         })
     }
+}
 
-    pub fn to_message(&self) -> crate::Result<TransferMessage> {
-        let src = TonAddress::from_base64_url(&self.from).unwrap();
-        let dest = TonAddress::from_base64_url(&self.to).unwrap();
-        let value = BigUint::from(10_000_000u32);
-
-        let external_msg_info = ExternalIncomingMessage {
-            src: src.clone(),
-            dest: dest.clone(),
-            import_fee: value.clone(),
+impl BuildInternalMsg for TransferOpt {
+    fn build(
+        &self,
+        now_time: u32,
+        bounce: bool,
+    ) -> Result<InternalMessage, crate::ton::errors::TonError> {
+        let internal = InternalMessage {
+            ihr_disabled: true,
+            bounce,
+            bounced: false,
+            src: self.from.clone(),
+            dest: self.to.clone(),
+            value: BigUint::from(self.value),
+            ihr_fee: 0u32.into(),
+            fwd_fee: 0u32.into(),
+            created_lt: 0,
+            created_at: now_time,
         };
+        Ok(internal)
+    }
 
-        let mut msg_builder = CellBuilder::new();
-
-        msg_builder.store_u32(6, 0b10).unwrap();
-        msg_builder.store_address(&dest).unwrap();
-        msg_builder.store_coins(&value).unwrap();
-        msg_builder.store_u8(8, 0).unwrap(); // no flags
-        msg_builder.store_u32(32, 0).unwrap(); // empty payload
-        let internal_msg = Arc::new(msg_builder.build().unwrap());
-
-        let common_msg_info = CommonMsgInfo::ExternalIncomingMessage(external_msg_info);
-
-        let mut msg = TransferMessage::new(common_msg_info);
-        msg.with_data(internal_msg.into());
-
-        Ok(msg)
+    fn get_src(&self) -> TonAddress {
+        self.from.clone()
     }
 }

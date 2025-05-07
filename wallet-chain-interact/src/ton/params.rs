@@ -18,13 +18,13 @@ pub struct EstimateFeeParams {
     pub ignore_chksig: bool,
 }
 impl EstimateFeeParams {
-    pub fn new(address: &str, body: &str) -> Self {
+    pub fn new(address: &str, body: String) -> Self {
         Self {
             address: address.to_owned(),
-            body: body.to_owned(),
+            body,
             init_code: None,
             init_data: None,
-            ignore_chksig: false,
+            ignore_chksig: true,
         }
     }
 }

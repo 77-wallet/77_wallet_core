@@ -2,6 +2,8 @@ use chrono::TimeZone;
 use regex::Regex;
 use serde::de;
 use thiserror::Error;
+
+use crate::ton::errors::TonError;
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Error, Debug)]
@@ -109,6 +111,8 @@ pub enum Error {
     AbiParseError(String),
     #[error("types error {0}")]
     Types(#[from] wallet_types::Error),
+    #[error("Ton error {0}")]
+    TonError(#[from] TonError),
     // flow to optimize
     #[error("hex error {0}")]
     HexError(String),

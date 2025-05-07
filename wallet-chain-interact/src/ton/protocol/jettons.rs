@@ -1,12 +1,13 @@
+use super::common::RunGetMethodParams;
+use crate::ton::{
+    address::parse_addr_from_bs64_url, consts::DEFAULT_WORKCHAIN, errors::TonError,
+    provider::Provider,
+};
 use std::sync::Arc;
 use tonlib_core::{
     cell::{BagOfCells, CellBuilder},
     TonAddress,
 };
-
-use crate::ton::provider::Provider;
-
-use super::common::RunGetMethodParams;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct TokenDataResp {
@@ -25,26 +26,18 @@ impl JettonWalletAddress {
         code: &str,
         jetton_master: &str,
         owner: &str,
-    ) -> crate::Result<TonAddress> {
-        let jetton_master = TonAddress::from_base64_url(jetton_master).unwrap();
-        let owner = TonAddress::from_base64_url(owner).unwrap();
+    ) -> Result<TonAddress, TonError> {
+        let jetton_master = parse_addr_from_bs64_url(jetton_master)?;
+        let owner = parse_addr_from_bs64_url(owner)?;
 
         let data = CellBuilder::new()
-            .store_address(&jetton_master)
-            .unwrap()
-            .store_address(&owner)
-            .unwrap()
-            .build()
-            .unwrap();
+            .store_address(&jetton_master)?
+            .store_address(&owner)?
+            .build()?;
 
-        let code = BagOfCells::parse_base64(code)
-            .unwrap()
-            .single_root()
-            .unwrap();
+        let code = BagOfCells::parse_base64(code)?.single_root()?;
 
-        let c = TonAddress::derive(0, code, Arc::new(data)).unwrap();
-
-        Ok(c)
+        Ok(TonAddress::derive(DEFAULT_WORKCHAIN, code, Arc::new(data))?)
     }
 
     // get jetton wallet address by contract
@@ -52,45 +45,30 @@ impl JettonWalletAddress {
         jetton_master: &str,
         owner: &str,
         provider: &Provider,
-    ) -> crate::Result<TonAddress> {
-        let address = TonAddress::from_base64_url(owner).unwrap();
+    ) -> Result<TonAddress, TonError> {
+        let address = TonAddress::from_base64_url(owner)?;
 
         let mut builder = CellBuilder::new();
-        builder.store_address(&address).unwrap();
-        let cell = builder.build().unwrap();
-        let boc = BagOfCells::from_root(cell).serialize(false).unwrap();
+        let cell = builder.store_address(&address)?.build()?;
+
+        let boc = BagOfCells::from_root(cell).serialize(false)?;
         let address = wallet_utils::bytes_to_base64(&boc);
 
-        tracing::warn!("add {}", address);
-
         let slice_param = vec!["tvm.Slice".to_string(), address];
-        let stack = vec![slice_param];
 
-        let params = RunGetMethodParams::new(jetton_master, "get_wallet_address", stack);
+        let params =
+            RunGetMethodParams::new(jetton_master, "get_wallet_address", vec![slice_param]);
 
-        let response = provider.run_get_method(params).await.unwrap();
+        let response = provider.run_get_method(params).await?;
 
         match &response.stack[0] {
             super::common::StackItem::Slice(_, r) => {
-                let bag = BagOfCells::parse_base64(&r.bytes).unwrap();
-
-                let cell = bag.single_root().unwrap();
-
-                Ok(cell.parser().load_address().unwrap())
+                let cell = BagOfCells::parse_base64(&r.bytes)?.single_root()?;
+                Ok(cell.parser().load_address()?)
             }
-            _ => panic!("runGetMethod response error"),
+            _ => Err(TonError::RunGetMethodResp(format!(
+                "parse runGetMethod resp error"
+            ))),
         }
     }
-}
-
-#[test]
-fn test_add() {
-    let bag = BagOfCells::parse_base64(
-        "te6cckEBAQEAJAAAQ4ASFYBStVb6FFw67Qm7QBnRb0vG2Rlrwi+kZgLPfhbTmFCOM0d3",
-    )
-    .unwrap();
-    let cell = bag.single_root().unwrap();
-
-    let data = cell.parser().load_address().unwrap();
-    println!("address {}", data.to_base64_url());
 }

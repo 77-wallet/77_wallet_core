@@ -1,5 +1,7 @@
+use tonlib_core::TonAddress;
+
 use super::{block::BlockIdExt, common::RunGetMethodParams, transaction::TransactionId};
-use crate::ton::provider::Provider;
+use crate::ton::{errors::TonError, provider::Provider};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct AddressInformation {
@@ -17,17 +19,20 @@ pub struct AddressInformation {
     pub state: String,
 }
 impl AddressInformation {
-    pub async fn seqno(address: &str, provider: &Provider) -> crate::Result<u32> {
-        let params = RunGetMethodParams::<()>::new(address, "seqno", vec![]);
+    pub async fn seqno(address: TonAddress, provider: &Provider) -> crate::Result<u32> {
+        let params = RunGetMethodParams::<()>::new(&address.to_base64_url(), "seqno", vec![]);
         let result = provider.run_get_method(params).await?;
 
         match &result.stack[0] {
             super::common::StackItem::Num(_, r) => {
-                let value = u32::from_str_radix(r.trim_start_matches("0x"), 16)
-                    .expect("get seqno invalid hex");
+                let value = u32::from_str_radix(r.trim_start_matches("0x"), 16).map_err(|_e| {
+                    crate::errors::ParseErr::ValueErr(format!("parse hex to u32 seqno error"))
+                })?;
                 Ok(value)
             }
-            _ => panic!("error"),
+            _ => Err(TonError::RunGetMethodResp(format!(
+                "seqno:not match response stack"
+            )))?,
         }
     }
 }
