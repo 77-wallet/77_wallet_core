@@ -62,7 +62,7 @@ impl HttpClient {
 
     pub fn get(&self, endpoint: &str) -> ReqBuilder {
         let url = format!("{}/{}", self.base_url, endpoint);
-        tracing::debug!("request url = {}", url);
+        tracing::info!("request url = {}", url);
         let build = self.client.get(url);
         ReqBuilder(build)
     }

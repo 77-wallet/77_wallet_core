@@ -48,3 +48,12 @@ pub enum MsgData {
     #[serde(rename = "msg.dataRaw")]
     Raw { body: String, init_state: String },
 }
+
+#[derive(Debug, Deserialize)]
+pub struct SendBocReturn {
+    #[serde(rename = "@type")]
+    pub type_field: String,
+    pub hash: String,
+    #[serde(rename = "@extra")]
+    pub extra: String,
+}
