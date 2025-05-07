@@ -8,8 +8,9 @@ thiserror = { workspace = true }
 wallet-core = { workspace = true }
 wallet-utils = { workspace = true }
 wallet-types = { workspace = true }
-slip10 = { workspace = true }
+
 tonlib-core = { workspace = true }
+ed25519-dalek-bip32 = { workspace = true }
 
 alloy = { workspace = true }
 

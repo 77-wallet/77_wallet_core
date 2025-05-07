@@ -3,10 +3,13 @@ use wallet_transport::client::HttpClient;
 use wallet_utils::unit;
 
 use super::{
-    params::LocateTxParams,
+    params::{EstimateFeeParams, LocateTxParams},
     protocol::{
+        account::AddressInformation,
         block::{BlocksShards, MasterChainInfo},
-        transaction::RawTransaction,
+        common::{RunGetMethodParams, RunGetMethodResp},
+        jettons::TokenDataResp,
+        transaction::{RawTransaction, SendBocReturn},
     },
 };
 
@@ -34,6 +37,17 @@ impl Provider {
             .await?;
 
         Ok(unit::u256_from_str(&res.result)?)
+    }
+
+    pub async fn account_info(&self, addr: &str) -> crate::Result<AddressInformation> {
+        let params = std::collections::HashMap::from([("address", addr)]);
+
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<AddressInformation>>("getAddressInformation", params)
+            .await?;
+
+        Ok(res.result)
     }
 
     pub async fn master_chain_info(&self) -> crate::Result<MasterChainInfo> {
@@ -97,6 +111,53 @@ impl Provider {
         let res = self
             .client
             .get_with_params::<_, TonResponse<RawTransaction>>("tryLocateSourceTx", locate)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    // 发送原始的交易数据
+    pub async fn send_boc_return(&self, body: String) -> crate::Result<String> {
+        let data = std::collections::HashMap::from([("boc", body)]);
+
+        let res = self
+            .client
+            .post_request::<_, TonResponse<SendBocReturn>>("sendBocReturnHash", data)
+            .await?;
+
+        Ok(res.result.hash)
+    }
+
+    pub async fn estimate_fee(&self, params: EstimateFeeParams) -> crate::Result<String> {
+        let res = self
+            .client
+            .post_request::<_, TonResponse<String>>("estimateFee", params)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    pub async fn token_data(&self, addr: &str) -> crate::Result<TokenDataResp> {
+        let payload = std::collections::HashMap::from([("address", addr)]);
+
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<TokenDataResp>>("getTokenData", payload)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    pub async fn run_get_method<T>(
+        &self,
+        params: RunGetMethodParams<T>,
+    ) -> crate::Result<RunGetMethodResp>
+    where
+        T: serde::Serialize + std::fmt::Debug,
+    {
+        let res = self
+            .client
+            .post_request::<_, TonResponse<RunGetMethodResp>>("runGetMethod", params)
             .await?;
 
         Ok(res.result)
