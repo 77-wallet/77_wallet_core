@@ -1,4 +1,11 @@
-use super::{protocol::jettons::JettonWalletAddress, provider::Provider};
+use super::{
+    errors::TonError,
+    get_keypair,
+    operations::BuildInternalMsg,
+    params::EstimateFeeParams,
+    protocol::{jettons::JettonWalletAddress, transaction::EstimateFeeResp},
+    provider::Provider,
+};
 use crate::{ton::protocol::account::AddressInformation, types::ChainPrivateKey};
 use alloy::primitives::U256;
 use num_bigint::BigUint;
@@ -36,117 +43,79 @@ impl TonChain {
         }
     }
 
-    pub async fn exec(
+    pub async fn estimate_fee<T: BuildInternalMsg>(
         &self,
-        account: &str,
-        msg: TransferMessage,
-        key: ChainPrivateKey,
-    ) -> crate::Result<String> {
-        // 构建wallet
-        let sk = ed25519_dalek_bip32::SecretKey::from_bytes(&key.to_bytes()?).unwrap();
-        let pk = ed25519_dalek_bip32::PublicKey::from(&sk);
+        args: T,
+    ) -> crate::Result<EstimateFeeResp> {
+        let now_time = wallet_utils::time::now().timestamp() as u32;
+        let internal = args.build(now_time, true)?;
 
-        let mut sk = sk.as_bytes().to_vec();
-        let pk = pk.as_bytes().to_vec();
-        sk.extend(&pk);
-
-        let key_pair = KeyPair {
-            secret_key: sk,
-            public_key: pk,
-        };
-
-        let wallet = TonWallet::new(WalletVersion::V4R2, key_pair).unwrap();
-
-        let seqno = AddressInformation::seqno(account, &self.provider).await?;
-        tracing::warn!("seqno {}", seqno);
-
-        let now = wallet_utils::time::now().timestamp() as u32;
-        let body = wallet
-            .create_external_body(now + 60, seqno, vec![Arc::new(msg.build().unwrap())])
+        let address = args.get_src().to_base64_url();
+        let msg = TransferMessage::new(CommonMsgInfo::InternalMessage(internal))
+            .build()
             .unwrap();
 
-        let signed = wallet.sign_external_body(&body).unwrap();
-        let wrapped = wallet.wrap_signed_body(signed, false).unwrap();
-
-        let boc = BagOfCells::from_root(wrapped);
+        let boc = BagOfCells::from_root(msg);
         let tx = boc.serialize(true).unwrap();
 
-        let base64_str = wallet_utils::bytes_to_base64(&tx);
+        let body = wallet_utils::bytes_to_base64(&tx);
 
-        self.provider.send_boc_return(base64_str).await
+        let params = EstimateFeeParams::new(&address, body);
+
+        let result = self.provider.estimate_fee(params).await?;
+
+        Ok(result)
     }
 
-    pub async fn exec1(&self, key: ChainPrivateKey) -> crate::Result<String> {
-        let src = TonAddress::from_base64_url("UQAPwCDD910mi8FO1cd5qYdfTHWwEyqMB-RsGkRv-PI2w05u")
-            .unwrap();
-        let dest = TonAddress::from_base64_url("UQBud2VI5S1IhaPm3OJ7wYUewhBSK7VhfPbnp_0tvvBpx7ze")
-            .unwrap();
+    pub async fn exec<T: BuildInternalMsg>(
+        &self,
+        args: T,
+        key: ChainPrivateKey,
+    ) -> crate::Result<String> {
+        let key_pair = get_keypair(key)?;
 
-        let sk = ed25519_dalek_bip32::SecretKey::from_bytes(&key.to_bytes().unwrap()).unwrap();
-        let pk = ed25519_dalek_bip32::PublicKey::from(&sk);
+        let wallet = TonWallet::new(WalletVersion::V4R2, key_pair).map_err(TonError::CellBuild)?;
 
-        let mut sk_bytes = sk.as_bytes().to_vec();
-        let pk_bytes = pk.as_bytes().to_vec();
-        sk_bytes.extend(&pk_bytes);
+        let address = args.get_src();
+        let seqno = AddressInformation::seqno(address, &self.provider).await?;
 
-        let key_pair = KeyPair {
-            secret_key: sk_bytes,
-            public_key: pk_bytes,
-        };
+        let now_time = wallet_utils::time::now().timestamp() as u32;
 
-        let wallet = TonWallet::new(WalletVersion::V4R2, key_pair).unwrap();
+        let internal = args.build(now_time, false)?;
+        let boc_str = self.build_boc(internal, now_time, wallet, seqno)?;
 
-        let seqno = AddressInformation::seqno(
-            "UQAPwCDD910mi8FO1cd5qYdfTHWwEyqMB-RsGkRv-PI2w05u",
-            &self.provider,
-        )
-        .await
-        .unwrap();
-        tracing::warn!("seqno {}", seqno);
+        self.provider.send_boc_return(boc_str).await
+    }
 
-        let now = wallet_utils::time::now().timestamp() as u32;
-        let internal = InternalMessage {
-            ihr_disabled: true,
-            bounce: false,
-            bounced: false,
-            src: src.clone(),
-            dest: dest.clone(),
-            value: BigUint::from(10_000_000u64),
-            ihr_fee: 0u32.into(),
-            fwd_fee: 0u32.into(),
-            created_lt: 0,
-            created_at: now,
-        };
+    fn build_boc(
+        &self,
+        internal: InternalMessage,
+        now_time: u32,
+        wallet: TonWallet,
+        seqno: u32,
+    ) -> Result<String, TonError> {
+        let expire_at = now_time + 60;
 
-        let transfer = TransferMessage::new(CommonMsgInfo::InternalMessage(internal));
-        let cell = transfer.build().unwrap(); // build once only
+        let msg = TransferMessage::new(CommonMsgInfo::InternalMessage(internal)).build()?;
+        let internal_msgs = vec![Arc::new(msg)];
 
-        let now = wallet_utils::time::now().timestamp() as u32;
-        let body = wallet
-            .create_external_body(now + 60, seqno, vec![Arc::new(cell)])
-            .unwrap();
-
-        let signed = wallet.sign_external_body(&body).unwrap();
-        let wrapped = wallet.wrap_signed_body(signed, false).unwrap();
+        let body = wallet.create_external_body(expire_at, seqno, internal_msgs)?;
+        let signed = wallet.sign_external_body(&body)?;
+        let wrapped = wallet.wrap_signed_body(signed, false)?;
 
         let boc = BagOfCells::from_root(wrapped);
-        let tx = boc.serialize(true).unwrap();
+        let tx = boc.serialize(true)?;
 
-        let base64_str = wallet_utils::bytes_to_base64(&tx);
-
-        self.provider.send_boc_return(base64_str).await
+        Ok(wallet_utils::bytes_to_base64(&tx))
     }
 
     pub async fn token_transfer(&self, key: ChainPrivateKey) -> crate::Result<String> {
         let src = TonAddress::from_base64_url("UQAPwCDD910mi8FO1cd5qYdfTHWwEyqMB-RsGkRv-PI2w05u")
             .unwrap();
 
-        let seqno = AddressInformation::seqno(
-            "UQAPwCDD910mi8FO1cd5qYdfTHWwEyqMB-RsGkRv-PI2w05u",
-            &self.provider,
-        )
-        .await
-        .unwrap();
+        let seqno = AddressInformation::seqno(src.clone(), &self.provider)
+            .await
+            .unwrap();
 
         // usdt
         let jetton_master = "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs";

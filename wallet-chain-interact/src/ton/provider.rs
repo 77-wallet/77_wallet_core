@@ -9,7 +9,7 @@ use super::{
         block::{BlocksShards, MasterChainInfo},
         common::{RunGetMethodParams, RunGetMethodResp},
         jettons::TokenDataResp,
-        transaction::{RawTransaction, SendBocReturn},
+        transaction::{EstimateFeeResp, RawTransaction, SendBocReturn},
     },
 };
 
@@ -128,10 +128,10 @@ impl Provider {
         Ok(res.result.hash)
     }
 
-    pub async fn estimate_fee(&self, params: EstimateFeeParams) -> crate::Result<String> {
+    pub async fn estimate_fee(&self, params: EstimateFeeParams) -> crate::Result<EstimateFeeResp> {
         let res = self
             .client
-            .post_request::<_, TonResponse<String>>("estimateFee", params)
+            .post_request::<_, TonResponse<EstimateFeeResp>>("estimateFee", params)
             .await?;
 
         Ok(res.result)
@@ -148,10 +148,11 @@ impl Provider {
         Ok(res.result)
     }
 
+    // run get method
     pub async fn run_get_method<T>(
         &self,
         params: RunGetMethodParams<T>,
-    ) -> crate::Result<RunGetMethodResp>
+    ) -> Result<RunGetMethodResp, wallet_transport::TransportError>
     where
         T: serde::Serialize + std::fmt::Debug,
     {
