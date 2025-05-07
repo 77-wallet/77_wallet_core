@@ -35,11 +35,13 @@ bs58 = { workspace = true }
 aes = { workspace = true }
 ecb = { workspace = true }
 cbc = { workspace = true }
+bcs = { workspace = true }
 
 libsecp256k1 = "0.6"
 
 alloy = { workspace = true }
 solana-sdk = { workspace = true }
+sui_sdk = { workspace = true }
 
 rust_decimal = { workspace = true }
 percent-encoding = { workspace = true }

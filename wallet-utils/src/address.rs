@@ -114,6 +114,17 @@ pub fn tron_addr_to_eth_addr(tron_addr: &str) -> Result<String, String> {
     Ok(format!("0x{}", hex::encode(eth_bytes)))
 }
 
+pub fn parse_sui_address(
+    address: &str,
+) -> Result<sui_sdk::types::base_types::SuiAddress, crate::Error> {
+    sui_sdk::types::base_types::SuiAddress::from_str(address.trim()).map_err(|e| {
+        crate::Error::Parse(ParseError::AddressConvertFailed(format!(
+            "to_sui_address err:{}:address = {}",
+            e, address
+        )))
+    })
+}
+
 // pub const BIP32_HARDEN: u32 = 2147483648 (0x80000000)
 // pub const MAX: Self = 2147483647 (0x7FFFFFFF)
 pub fn i32_index_to_hardened_u32(index: i32) -> Result<u32, crate::Error> {

@@ -23,6 +23,12 @@ pub fn decimal_from_str(balance: &str) -> Result<rust_decimal::Decimal, crate::E
         .map_err(|e| crate::Error::Parse(e.into()))
 }
 
+pub fn u64_from_str(balance: &str) -> Result<u64, crate::Error> {
+    balance
+        .parse::<u64>()
+        .map_err(|e| crate::Error::Parse(e.into()))
+}
+
 pub fn f64_from_str(balance: &str) -> Result<f64, crate::Error> {
     balance
         .parse::<f64>()

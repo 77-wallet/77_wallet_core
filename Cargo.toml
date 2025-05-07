@@ -84,6 +84,7 @@ sha3 = "0.10.0"
 bs58 = "0.4"
 base64 = "0.22.1"
 hmac = "0.12.0"
+bcs = "0.1" 
 
 # http
 reqwest = { version = "0.12.4", default-features = false, features = [
@@ -106,6 +107,7 @@ alloy = { git = "https://github.com/alloy-rs/alloy", default-features = false, f
 ], rev = "ea5eb7d504a1f4eb6c9937af7913577f78fee121" }
 
 sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
+sui_types =  { git = "https://github.com/mystenlabs/sui", package = "sui-types" }
 sui-crypto = "0.0.4"
 
 bitcoin = { version = "0.32.2", features = [

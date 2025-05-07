@@ -45,6 +45,7 @@ regex = { workspace = true }
 chrono = { workspace = true }
 
 sui_sdk = { workspace = true }
+sui_types = { workspace = true }
 
 [dev-dependencies]
 libsecp256k1 = "0.6"

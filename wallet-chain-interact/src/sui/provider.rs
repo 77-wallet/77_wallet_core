@@ -11,16 +11,14 @@ impl Provider {
         Ok(Self { client: rpc_client })
     }
 
-    /// 统一地址解析方法
-    fn parse_address(addr: &str) -> crate::Result<sui_sdk::types::base_types::SuiAddress> {
-        Ok(addr
-            .parse()
-            .map_err(|e| crate::ParseErr::AddressPraseErr(format!("err:{} address:{}", e, addr)))?)
-    }
     pub async fn balance(&self, addr: &str) -> crate::Result<sui_sdk::rpc_types::Balance> {
         // 将字符串地址转换为 SuiAddress 类型
-        let parsed_addr = Self::parse_address(addr)?;
-
+        let parsed_addr = wallet_utils::address::parse_sui_address(addr)?;
+        // self._client
+        // .transaction_builder()
+        // .
+        // self._client
+        // .transaction_builder()
         let params = JsonRpcParams::default()
             .method("suix_getBalance")
             .params(json!([parsed_addr.to_string(), "0x2::sui::SUI"])); // 明确指定 SUI 类型
@@ -34,7 +32,7 @@ impl Provider {
         addr: &str,
         coin_type: &str,
     ) -> crate::Result<sui_sdk::rpc_types::Balance> {
-        let parsed_addr = Self::parse_address(addr)?;
+        let parsed_addr = wallet_utils::address::parse_sui_address(addr)?;
         // self._client.coin_read_api()
         // .get_balance(owner, coin_type)
 
@@ -51,11 +49,76 @@ impl Provider {
             .method("suix_getReferenceGasPrice")
             .no_params();
 
-        let response: serde_json::Value = self.client.invoke_request(params).await?;
+        let gas: String = self.client.invoke_request(params).await?;
+        let gas_price = wallet_utils::parse_func::u64_from_str(&gas)?;
+        Ok(gas_price)
+    }
 
-        response["result"]
-            .as_u64()
-            .ok_or_else(|| crate::Error::RpcError("Invalid gas price response".into()))
+    pub async fn calculate_gas_budget(
+        &self,
+        gas_price: u64,
+        gas_budget: u64,
+    ) -> crate::Result<u64> {
+        // TODO:
+        let gas_budget = gas_price * gas_budget;
+        Ok(gas_budget)
+    }
+
+    pub async fn get_owned_objects(
+        &self,
+        addr: &str,
+        filter: Option<serde_json::Value>,
+        cursor: Option<String>,
+        limit: Option<u64>,
+    ) -> crate::Result<sui_sdk::rpc_types::ObjectsPage> {
+        let params = JsonRpcParams::default()
+            .method("suix_getOwnedObjects")
+            .params(json!([
+                addr,
+                {
+                    "filter": filter,
+                    "options": {
+                        "showType": true,
+                        "showContent": true
+                    }
+                },
+                cursor,
+                limit
+            ]));
+        let res = self.client.invoke_request(params).await?;
+        Ok(res)
+    }
+
+    pub(crate) fn sui_coin_filter() -> serde_json::Value {
+        json!({
+            "MatchAll": [
+                { "StructType": "0x2::coin::Coin<0x2::sui::SUI>" }
+            ]
+        })
+    }
+
+    pub async fn dry_run_transaction(
+        &self,
+        tx_data: &sui_sdk::types::transaction::TransactionData,
+    ) -> crate::Result<sui_sdk::rpc_types::DryRunTransactionBlockResponse> {
+        let tx_data = wallet_utils::serde_func::bcs_to_bytes(tx_data)?;
+        let tx_data = wallet_utils::base58_encode(&tx_data);
+        let params = JsonRpcParams::default()
+            .method("sui_dryRunTransactionBlock")
+            .params(json!([tx_data]));
+        let res = self.client.invoke_request(params).await?;
+        Ok(res)
+    }
+
+    pub async fn send_transaction(&self, signed_b64: String) -> crate::Result<String> {
+        let params = JsonRpcParams::default()
+            .method("suix_dryRunTransaction")
+            .params(json!([
+                signed_b64,
+                { "showEffects": true, "showEvents": true }
+            ]));
+        let res = self.client.invoke_request(params).await?;
+        Ok(res)
     }
 }
 
@@ -101,5 +164,25 @@ mod tests {
         // 验证基础属性
         assert!(!balance.coin_type.is_empty());
         assert!(balance.total_balance > 0);
+    }
+
+    #[tokio::test]
+    async fn test_estimate_gas() {
+        let sui = get_chain();
+        let gas = sui.provider.estimate_gas().await.unwrap();
+        println!("gas: {}", gas);
+        assert!(gas > 0);
+    }
+
+    #[tokio::test]
+    async fn test_get_owned_objects() {
+        let sui = get_chain();
+        let filter = Provider::sui_coin_filter();
+        let objects = sui
+            .provider
+            .get_owned_objects(TEST_ADDRESS, Some(filter), None, None)
+            .await
+            .unwrap();
+        println!("objects: {:#?}", objects);
     }
 }
