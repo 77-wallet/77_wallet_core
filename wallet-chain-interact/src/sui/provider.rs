@@ -1,4 +1,5 @@
 use serde_json::json;
+use sui_sdk::rpc_types::SuiMoveNormalizedModule;
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
 
 pub struct Provider {
@@ -44,7 +45,7 @@ impl Provider {
     }
 
     /// Gas 费估算（简化版）
-    pub async fn estimate_gas(&self) -> crate::Result<u64> {
+    pub async fn get_reference_gas_price(&self) -> crate::Result<u64> {
         let params: JsonRpcParams<()> = JsonRpcParams::default()
             .method("suix_getReferenceGasPrice")
             .no_params();
@@ -89,6 +90,17 @@ impl Provider {
         Ok(res)
     }
 
+    pub async fn get_object_by_id(
+        &self,
+        id: &str,
+    ) -> crate::Result<sui_sdk::rpc_types::SuiObjectResponse> {
+        let params = JsonRpcParams::default()
+            .method("sui_getObject")
+            .params(json!([id]));
+        let res = self.client.invoke_request(params).await?;
+        Ok(res)
+    }
+
     pub(crate) fn sui_coin_filter() -> serde_json::Value {
         json!({
             "MatchAll": [
@@ -117,6 +129,17 @@ impl Provider {
                 signed_b64,
                 { "showEffects": true, "showEvents": true }
             ]));
+        let res = self.client.invoke_request(params).await?;
+        Ok(res)
+    }
+
+    pub async fn get_normalized_move_modules_by_package_id(
+        &self,
+        package_id: &str,
+    ) -> crate::Result<std::collections::BTreeMap<String, SuiMoveNormalizedModule>> {
+        let params = JsonRpcParams::default()
+            .method("sui_getNormalizedMoveModulesByPackage")
+            .params(json!([package_id]));
         let res = self.client.invoke_request(params).await?;
         Ok(res)
     }
@@ -169,7 +192,7 @@ mod tests {
     #[tokio::test]
     async fn test_estimate_gas() {
         let sui = get_chain();
-        let gas = sui.provider.estimate_gas().await.unwrap();
+        let gas = sui.provider.get_reference_gas_price().await.unwrap();
         println!("gas: {}", gas);
         assert!(gas > 0);
     }
@@ -184,5 +207,33 @@ mod tests {
             .await
             .unwrap();
         println!("objects: {:#?}", objects);
+    }
+
+    #[tokio::test]
+    async fn test_get_object_by_id() {
+        let sui = get_chain();
+        let object = sui.provider.get_object_by_id(TEST_ADDRESS).await.unwrap();
+        println!("object: {:#?}", object);
+    }
+
+    #[tokio::test]
+    async fn test_get_normalized_move_modules_by_package_id() {
+        let sui = get_chain();
+        let modules = sui
+            .provider
+            .get_normalized_move_modules_by_package_id("0x2")
+            .await
+            .unwrap();
+        // println!("modules: {:#?}", modules);
+
+        for (module_name, module) in modules {
+            println!("module_name: {}", module_name);
+            // println!("module name: {}", module.name);
+            println!("module_address: {}", module.address);
+            if module_name.eq("transfer") {
+                println!("module exposed functions: {:#?}", module.exposed_functions);
+            }
+            // println!("module: {:#?}", module);
+        }
     }
 }

@@ -134,8 +134,8 @@ pub enum Error {
     AnyChainError(#[from] anychain_core::error::Error),
     #[error("any chain transaction")]
     AnyTransaction(#[from] anychain_core::TransactionError),
-    #[error("sui sdk error {0}")]
-    SuiSdk(#[from] sui_sdk::error::Error),
+    #[error("sui error {0}")]
+    SuiError(#[from] crate::sui::error::SuiError),
 }
 
 impl Error {
