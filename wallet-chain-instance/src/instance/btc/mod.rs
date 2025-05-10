@@ -146,14 +146,6 @@ impl KeyPair for BitcoinKeyPair {
     }
 }
 
-// fn get_network(chain_code: &Chain) -> Result<Network, crate::Error> {
-//     let network = match chain_code {
-//         Chain::Btc => Network::Bitcoin,
-//         _ => return Err(wallet_core::Error::UnknownChain.into()),
-//     };
-//     Ok(network)
-// }
-
 fn generate(
     seed: Vec<u8>,
     derivation_path: &str,

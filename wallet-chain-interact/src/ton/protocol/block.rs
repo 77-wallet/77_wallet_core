@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use super::transaction::RawTransaction;
+
 #[derive(Debug, Deserialize)]
 pub struct MasterChainInfo {
     #[serde(rename = "@type")]
@@ -27,6 +29,24 @@ pub struct BlocksShards {
     #[serde(rename = "@type")]
     pub type_field: String,
     pub shards: Vec<BlockIdExt>,
+    #[serde(rename = "@extra")]
+    pub extra: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConsensusBlock {
+    pub consensus_block: u64,
+    pub timestamp: f64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BlockTransactionExt<T> {
+    #[serde(rename = "@type")]
+    pub type_filed: String,
+    pub id: BlockIdExt,
+    pub req_count: i64,
+    pub incomplete: bool,
+    pub transactions: Vec<RawTransaction<T>>,
     #[serde(rename = "@extra")]
     pub extra: String,
 }

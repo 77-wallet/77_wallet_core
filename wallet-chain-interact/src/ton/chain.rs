@@ -8,13 +8,14 @@ use super::{
 };
 use crate::{ton::protocol::account::AddressInformation, types::ChainPrivateKey};
 use alloy::primitives::U256;
-use num_bigint::BigUint;
 use std::sync::Arc;
 use tonlib_core::{
-    cell::{BagOfCells, Cell, EitherCellLayout},
-    message::{CommonMsgInfo, InternalMessage, JettonTransferMessage, TonMessage, TransferMessage},
-    wallet::{mnemonic::KeyPair, ton_wallet::TonWallet, wallet_version::WalletVersion},
-    TonAddress,
+    cell::{BagOfCells, CellBuilder},
+    message::{TonMessage, TransferMessage},
+    wallet::{
+        ton_wallet::TonWallet, version_helper::VersionHelper, versioned::DEFAULT_WALLET_ID,
+        wallet_version::WalletVersion,
+    },
 };
 
 pub struct TonChain {
@@ -47,26 +48,51 @@ impl TonChain {
         &self,
         args: T,
     ) -> crate::Result<EstimateFeeResp> {
+        let address = args.get_src();
+        let seqno = AddressInformation::seqno(address.clone(), &self.provider).await?;
+
+        let address = args.get_src().to_base64_url_flags(false, false);
+
         let now_time = wallet_utils::time::now().timestamp() as u32;
-        let internal = args.build(now_time, true)?;
-
-        let address = args.get_src().to_base64_url();
-        let msg = TransferMessage::new(CommonMsgInfo::InternalMessage(internal))
+        let trans = args
+            .build(now_time, false, &self.provider)
+            .await?
             .build()
-            .unwrap();
+            .map_err(TonError::TonMsg)?;
+        let msgs_refs = vec![Arc::new(trans)];
 
-        let boc = BagOfCells::from_root(msg);
-        let tx = boc.serialize(true).unwrap();
+        // 构建body
+        let ext_msg = VersionHelper::build_ext_msg(
+            WalletVersion::V4R2,
+            now_time + 60,
+            seqno,
+            DEFAULT_WALLET_ID,
+            msgs_refs,
+        )
+        .map_err(TonError::CellBuild)?;
 
-        let body = wallet_utils::bytes_to_base64(&tx);
+        let bytes = vec![
+            63, 75, 245, 118, 99, 227, 251, 194, 161, 58, 74, 88, 143, 140, 10, 193, 197, 73, 16,
+            230, 118, 214, 181, 42, 174, 11, 55, 135, 195, 140, 0, 221, 3, 156, 4, 115, 152, 226,
+            75, 132, 53, 66, 19, 148, 98, 213, 124, 218, 182, 215, 97, 52, 71, 190, 141, 251, 157,
+            245, 109, 38, 197, 132, 11, 89,
+        ];
+        let mut builder = CellBuilder::new();
+        builder.store_slice(&bytes).map_err(TonError::CellBuild)?;
+        builder.store_cell(&ext_msg).map_err(TonError::CellBuild)?;
+        let signed = builder.build().map_err(TonError::CellBuild)?;
 
-        let params = EstimateFeeParams::new(&address, body);
+        let boc = BagOfCells::from_root(signed)
+            .serialize(false)
+            .map_err(TonError::CellBuild)?;
+        let body = wallet_utils::bytes_to_base64(&boc);
 
-        let result = self.provider.estimate_fee(params).await?;
+        let params = EstimateFeeParams::new(&address, body, true);
 
-        Ok(result)
+        self.provider.estimate_fee(params).await
     }
 
+    // exec transaction
     pub async fn exec<T: BuildInternalMsg>(
         &self,
         args: T,
@@ -77,11 +103,11 @@ impl TonChain {
         let wallet = TonWallet::new(WalletVersion::V4R2, key_pair).map_err(TonError::CellBuild)?;
 
         let address = args.get_src();
-        let seqno = AddressInformation::seqno(address, &self.provider).await?;
+        let seqno = AddressInformation::seqno(address.clone(), &self.provider).await?;
 
         let now_time = wallet_utils::time::now().timestamp() as u32;
+        let internal = args.build(now_time, false, &self.provider).await?;
 
-        let internal = args.build(now_time, false)?;
         let boc_str = self.build_boc(internal, now_time, wallet, seqno)?;
 
         self.provider.send_boc_return(boc_str).await
@@ -89,17 +115,17 @@ impl TonChain {
 
     fn build_boc(
         &self,
-        internal: InternalMessage,
+        internal: TransferMessage,
         now_time: u32,
         wallet: TonWallet,
         seqno: u32,
     ) -> Result<String, TonError> {
-        let expire_at = now_time + 60;
+        let expire_at = now_time + 500;
 
-        let msg = TransferMessage::new(CommonMsgInfo::InternalMessage(internal)).build()?;
-        let internal_msgs = vec![Arc::new(msg)];
+        let internal_msgs = vec![Arc::new(internal.build()?)];
 
         let body = wallet.create_external_body(expire_at, seqno, internal_msgs)?;
+
         let signed = wallet.sign_external_body(&body)?;
         let wrapped = wallet.wrap_signed_body(signed, false)?;
 
@@ -109,95 +135,9 @@ impl TonChain {
         Ok(wallet_utils::bytes_to_base64(&tx))
     }
 
-    pub async fn token_transfer(&self, key: ChainPrivateKey) -> crate::Result<String> {
-        let src = TonAddress::from_base64_url("UQAPwCDD910mi8FO1cd5qYdfTHWwEyqMB-RsGkRv-PI2w05u")
-            .unwrap();
+    pub async fn decimals(&self, address: &str) -> crate::Result<u32> {
+        let result = self.provider.token_data(address).await?;
 
-        let seqno = AddressInformation::seqno(src.clone(), &self.provider)
-            .await
-            .unwrap();
-
-        // usdt
-        let jetton_master = "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs";
-
-        let src_jetton_address = JettonWalletAddress::wallet_address(
-            jetton_master,
-            "UQAPwCDD910mi8FO1cd5qYdfTHWwEyqMB-RsGkRv-PI2w05u",
-            &self.provider,
-        )
-        .await
-        .unwrap();
-        tracing::warn!("src_jetton {}", src_jetton_address.to_base64_url());
-
-        let dest = TonAddress::from_base64_url("UQBud2VI5S1IhaPm3OJ7wYUewhBSK7VhfPbnp_0tvvBpx7ze")
-            .unwrap();
-
-        let keypair = self.get_keypair(key).unwrap();
-        let wallet = TonWallet::new(WalletVersion::V4R2, keypair).unwrap();
-
-        // jetton transfer
-        let query_id = wallet_utils::time::now().timestamp() as u64;
-        let jetton_amount = BigUint::from(100_000u64);
-        let jetton_transfer = JettonTransferMessage {
-            query_id,
-            amount: jetton_amount,
-            destination: dest.clone(),
-            response_destination: src.clone(),
-            custom_payload: None,
-            forward_ton_amount: BigUint::from(1u32),
-            forward_payload: Arc::new(Cell::default()),
-            forward_payload_layout: EitherCellLayout::Native,
-        }
-        .build()
-        .unwrap();
-
-        // 基础消息
-        let ton_amount = BigUint::from(10000000u64);
-
-        let now = wallet_utils::time::now().timestamp() as u32;
-        let internal = InternalMessage {
-            ihr_disabled: true,
-            bounce: false,
-            bounced: false,
-            src: src.clone(),
-            dest: src_jetton_address,
-            value: ton_amount,
-            ihr_fee: 0u32.into(),
-            fwd_fee: 0u32.into(),
-            created_lt: 0,
-            created_at: now,
-        };
-
-        let common_msg_info = CommonMsgInfo::InternalMessage(internal);
-        let transfer = TransferMessage::new(common_msg_info)
-            .with_data(jetton_transfer.into())
-            .build()
-            .unwrap();
-
-        let now = wallet_utils::time::now().timestamp() as u32;
-        let body = wallet
-            .create_external_body(now + 60, seqno, vec![Arc::new(transfer)])
-            .unwrap();
-        let signed = wallet.sign_external_body(&body).unwrap();
-        let wrapped = wallet.wrap_signed_body(signed, false).unwrap();
-        let boc = BagOfCells::from_root(wrapped);
-        let tx = boc.serialize(true).unwrap();
-
-        let base64_str = wallet_utils::bytes_to_base64(&tx);
-        self.provider.send_boc_return(base64_str).await
-    }
-
-    fn get_keypair(&self, key: ChainPrivateKey) -> crate::Result<KeyPair> {
-        let sk = ed25519_dalek_bip32::SecretKey::from_bytes(&key.to_bytes().unwrap()).unwrap();
-        let pk = ed25519_dalek_bip32::PublicKey::from(&sk);
-        let mut sk_bytes = sk.as_bytes().to_vec();
-        let pk_bytes = pk.as_bytes().to_vec();
-        sk_bytes.extend(&pk_bytes);
-        let key_pair = KeyPair {
-            secret_key: sk_bytes,
-            public_key: pk_bytes,
-        };
-
-        Ok(key_pair)
+        Ok(result.balance as u32)
     }
 }

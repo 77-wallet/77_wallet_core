@@ -1,4 +1,6 @@
+use crate::ton::protocol::block::BlockTransactionExt;
 use alloy::primitives::U256;
+use serde_json::json;
 use wallet_transport::client::HttpClient;
 use wallet_utils::unit;
 
@@ -6,10 +8,10 @@ use super::{
     params::{EstimateFeeParams, LocateTxParams},
     protocol::{
         account::AddressInformation,
-        block::{BlocksShards, MasterChainInfo},
-        common::{RunGetMethodParams, RunGetMethodResp},
+        block::{BlocksShards, ConsensusBlock, MasterChainInfo},
+        common::{ConfigParams, RunGetMethodParams, RunGetMethodResp},
         jettons::TokenDataResp,
-        transaction::{EstimateFeeResp, RawTransaction, SendBocReturn},
+        transaction::{AddressId, EstimateFeeResp, RawTransaction, SendBocReturn},
     },
 };
 
@@ -20,7 +22,7 @@ pub struct TonResponse<T> {
 }
 
 pub struct Provider {
-    client: HttpClient,
+    pub client: HttpClient,
 }
 
 impl Provider {
@@ -75,16 +77,6 @@ impl Provider {
         let res = self
             .client
             .get_with_params::<_, TonResponse<Vec<RawTransaction>>>("getTransactions", params)
-            .await?;
-
-        Ok(res.result)
-    }
-
-    // 定位交易
-    pub async fn try_locate_tx(&self, locate: LocateTxParams) -> crate::Result<RawTransaction> {
-        let res = self
-            .client
-            .get_with_params::<_, TonResponse<RawTransaction>>("tryLocateTx", locate)
             .await?;
 
         Ok(res.result)
@@ -159,6 +151,54 @@ impl Provider {
         let res = self
             .client
             .post_request::<_, TonResponse<RunGetMethodResp>>("runGetMethod", params)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    pub async fn config_params(
+        &self,
+        config_id: u32,
+    ) -> Result<ConfigParams, wallet_transport::TransportError> {
+        let payload = std::collections::HashMap::from([("config_id", config_id)]);
+
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<ConfigParams>>("getConfigParam", payload)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    pub async fn consensus_block(
+        &self,
+    ) -> Result<ConsensusBlock, wallet_transport::TransportError> {
+        let res = self
+            .client
+            .get_request::<TonResponse<ConsensusBlock>>("getConsensusBlock")
+            .await?;
+
+        Ok(res.result)
+    }
+
+    pub async fn get_block_transaction(
+        &self,
+        workchain: u64,
+        shard: &str,
+        seqno: u32,
+    ) -> Result<BlockTransactionExt<AddressId>, wallet_transport::TransportError> {
+        let payload = json!({
+            "workchain":workchain,
+            "shard":shard,
+            "seqno":seqno,
+        });
+
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<BlockTransactionExt<AddressId>>>(
+                "getBlockTransactionsExt",
+                payload,
+            )
             .await?;
 
         Ok(res.result)

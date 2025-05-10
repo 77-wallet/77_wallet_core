@@ -79,6 +79,7 @@ pub mod chain_code {
     pub const BTC: &str = "btc";
     pub const LTC: &str = "ltc";
     pub const DOG: &str = "doge";
+    pub const TON: &str = "ton";
     pub const SUI: &str = "sui";
 }
 

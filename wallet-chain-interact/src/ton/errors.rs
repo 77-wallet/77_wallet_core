@@ -13,4 +13,6 @@ pub enum TonError {
     TonMsg(#[from] TonMessageError),
     #[error("{0}")]
     TonNodeError(#[from] wallet_transport::errors::TransportError),
+    #[error("{0}")]
+    NotTokenParse(String),
 }
