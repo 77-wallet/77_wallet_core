@@ -7,7 +7,7 @@ pub enum ChainCode {
     BnbSmartChain,
     Litecoin,
     Dogcoin,
-    // Ton,
+    Ton,
 }
 
 impl TryFrom<&str> for ChainCode {
@@ -22,6 +22,7 @@ impl TryFrom<&str> for ChainCode {
             crate::constant::chain_code::BNB => ChainCode::BnbSmartChain,
             crate::constant::chain_code::LTC => ChainCode::Litecoin,
             crate::constant::chain_code::DOG => ChainCode::Dogcoin,
+            crate::constant::chain_code::TON => ChainCode::Ton,
             _ => return Err(crate::Error::UnknownChainCode),
         };
         Ok(res)
@@ -38,7 +39,7 @@ impl std::fmt::Display for ChainCode {
             ChainCode::Bitcoin => write!(f, "{}", crate::constant::chain_code::BTC),
             ChainCode::Litecoin => write!(f, "{}", crate::constant::chain_code::LTC),
             ChainCode::Dogcoin => write!(f, "{}", crate::constant::chain_code::DOG),
-            // ChainCode::Unknown => write!(f, "Unknown"),
+            ChainCode::Ton => write!(f, "{}", crate::constant::chain_code::TON),
         }
     }
 }
@@ -59,10 +60,6 @@ impl TryFrom<u32> for ChainCodes {
             crate::constant::chain_type::BTC_TYPE => vec![ChainCode::Bitcoin],
             crate::constant::chain_type::LTC_TYPE => vec![ChainCode::Litecoin],
             crate::constant::chain_type::DOG_TYPE => vec![ChainCode::Dogcoin],
-            // crate::constant::chain_type::BTC_86_TYPE => vec![
-            //     ChainCode::Btc,
-            //     ChainCode::BtcTest,
-            // ],
             _ => return Err(crate::Error::UnknownChainCode),
         };
 

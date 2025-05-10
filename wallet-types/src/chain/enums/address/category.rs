@@ -1,12 +1,13 @@
+use super::r#type::{AddressType, BtcAddressType, DogAddressType, LtcAddressType, TonAddressType};
 use crate::constant::btc_address_catecory::*;
 
-use super::r#type::{AddressType, BtcAddressType, DogAddressType, LtcAddressType};
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(untagged)]
 pub enum AddressCategory {
     Btc(BtcAddressCategory),
     Ltc(LtcAddressCategory),
     Dog(DogAddressCategory),
+    Ton(TonAddressType),
     Other,
 }
 
@@ -184,6 +185,7 @@ impl From<AddressType> for AddressCategory {
             AddressType::Btc(addr_type) => AddressCategory::Btc(addr_type.into()),
             AddressType::Ltc(addr_type) => AddressCategory::Ltc(addr_type.into()),
             AddressType::Dog(addr_type) => AddressCategory::Dog(addr_type.into()),
+            AddressType::Ton(addr_type) => AddressCategory::Ton(addr_type),
             AddressType::Other => AddressCategory::Other,
         }
     }

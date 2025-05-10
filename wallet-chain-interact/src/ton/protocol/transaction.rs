@@ -1,7 +1,13 @@
+use crate::ton::{consts::TON_VALUE, errors::TonError};
 use serde::Deserialize;
+use tonlib_core::{
+    cell::BagOfCells,
+    message::{JettonTransferMessage, TonMessage},
+    tlb_types::traits::TLBObject,
+};
 
 #[derive(Debug, Deserialize)]
-pub struct RawTransaction {
+pub struct RawTransaction<T = String> {
     #[serde(rename = "@type")]
     pub type_field: String,
     pub utime: u64,
@@ -10,8 +16,18 @@ pub struct RawTransaction {
     pub fee: String,
     pub storage_fee: String,
     pub other_fee: String,
-    pub in_msg: RawMessage,
-    pub out_msgs: Vec<RawMessage>,
+    pub in_msg: RawMessage<T>,
+    pub out_msgs: Vec<RawMessage<T>>,
+}
+
+impl<T> RawTransaction<T> {
+    pub fn get_fee(&self) -> Result<f64, TonError> {
+        let fee = self.fee.parse::<u64>().unwrap();
+        let s_fee = self.storage_fee.parse::<u64>().unwrap();
+        let o_fee = self.other_fee.parse::<u64>().unwrap();
+
+        Ok((fee + s_fee + o_fee) as f64 / TON_VALUE as f64)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,11 +39,11 @@ pub struct TransactionId {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct RawMessage {
+pub struct RawMessage<T> {
     #[serde(rename = "@type")]
     pub type_field: String,
-    pub source: String,
-    pub destination: String,
+    pub source: T,
+    pub destination: T,
     pub value: String,
     pub fwd_fee: String,
     pub ihr_fee: String,
@@ -37,11 +53,61 @@ pub struct RawMessage {
     pub message: Option<String>,
 }
 
+impl<T> RawMessage<T> {
+    // 简单验证是否是token交易:目前根据操作码进行判断的,后续估计需要加入地址类型
+    pub fn is_token(&self) -> Result<Option<bool>, TonError> {
+        match &self.msg_data {
+            MsgData::Raw {
+                body,
+                init_state: _,
+            } => {
+                let bag = BagOfCells::parse_base64(&body)?;
+                let cell = bag.single_root()?.to_cell()?;
+
+                if cell.data().is_empty() {
+                    Ok(Some(false))
+                } else {
+                    let mut parse = cell.parser();
+
+                    let op_code = parse.load_u32(32)?;
+
+                    Ok(Some(op_code == 0x0f8a7ea5))
+                }
+            }
+            MsgData::Text { text: _ } => Ok(None),
+        }
+    }
+
+    pub fn parse_token_transfer(&self) -> Result<JettonTransferMessage, TonError> {
+        match &self.msg_data {
+            MsgData::Raw {
+                body,
+                init_state: _,
+            } => {
+                let bag = BagOfCells::parse_base64(&body)?;
+                let cell = bag.single_root()?.to_cell()?;
+
+                Ok(JettonTransferMessage::parse(&cell)?)
+            }
+            MsgData::Text { text: _ } => Err(TonError::NotTokenParse("text raw_data ".to_string())),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddressId {
+    #[serde(rename = "@type")]
+    pub type_field: String,
+    pub account_address: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(tag = "@type")]
 pub enum MsgData {
     #[serde(rename = "msg.dataRaw")]
     Raw { body: String, init_state: String },
+    #[serde(rename = "msg.dataText")]
+    Text { text: String },
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,6 +135,10 @@ impl EstimateFeeResp {
             + self.source_fees.storage_fee
             + self.source_fees.gas_fee
             + self.source_fees.fwd_fee
+    }
+
+    pub fn get_fee_ton(&self) -> f64 {
+        self.get_fee() as f64 / TON_VALUE as f64
     }
 }
 

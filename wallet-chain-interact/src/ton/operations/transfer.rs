@@ -1,7 +1,11 @@
 use super::BuildInternalMsg;
-use crate::ton::{address::parse_addr_from_bs64_url, consts::TON_DECIMAL};
+use crate::ton::{address::parse_addr_from_bs64_url, consts::TON_DECIMAL, provider::Provider};
+use async_trait::async_trait;
 use num_bigint::BigUint;
-use tonlib_core::{message::InternalMessage, TonAddress};
+use tonlib_core::{
+    message::{CommonMsgInfo, InternalMessage, TransferMessage},
+    TonAddress,
+};
 
 pub struct TransferOpt {
     pub from: TonAddress,
@@ -21,12 +25,14 @@ impl TransferOpt {
     }
 }
 
+#[async_trait]
 impl BuildInternalMsg for TransferOpt {
-    fn build(
+    async fn build(
         &self,
         now_time: u32,
         bounce: bool,
-    ) -> Result<InternalMessage, crate::ton::errors::TonError> {
+        _provider: &Provider,
+    ) -> Result<TransferMessage, crate::ton::errors::TonError> {
         let internal = InternalMessage {
             ihr_disabled: true,
             bounce,
@@ -39,7 +45,9 @@ impl BuildInternalMsg for TransferOpt {
             created_lt: 0,
             created_at: now_time,
         };
-        Ok(internal)
+
+        let common_msg_info = CommonMsgInfo::InternalMessage(internal);
+        Ok(TransferMessage::new(common_msg_info))
     }
 
     fn get_src(&self) -> TonAddress {

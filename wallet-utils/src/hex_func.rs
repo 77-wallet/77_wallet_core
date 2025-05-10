@@ -67,10 +67,7 @@ pub fn bs64_decode<T: serde::de::DeserializeOwned>(data: &str) -> Result<T, crat
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        base64_to_bytes,
-        hex_func::{hex_to_utf8, utf8_to_hex},
-    };
+    use crate::hex_func::{hex_to_utf8, utf8_to_hex};
 
     #[test]
     fn test_hex_to_utf8() {

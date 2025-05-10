@@ -4,7 +4,10 @@ use std::str::FromStr;
 use tonlib_core::wallet::{
     mnemonic::KeyPair, ton_wallet::TonWallet, wallet_version::WalletVersion,
 };
-use wallet_types::chain::{address::r#type::BtcAddressType, chain::ChainCode};
+use wallet_types::chain::{
+    address::r#type::{BtcAddressType, TonAddressType},
+    chain::ChainCode,
+};
 pub struct TonKeyPair {
     tron_family: ChainCode,
     private_key: ExtendedSecretKey,
@@ -16,10 +19,40 @@ pub struct TonKeyPair {
 pub struct TonInstance {
     pub(crate) chain_code: ChainCode,
     pub network: wallet_types::chain::network::NetworkKind,
+    pub address_type: TonAddressType,
 }
 
 impl TonInstance {
     pub const TON_DERIVATION_PATH: &'static str = "m/44'/607'/0'";
+
+    pub fn address_from_private_key(
+        private_key: &str,
+        address_type: TonAddressType,
+    ) -> Result<String, crate::Error> {
+        let bytes = wallet_utils::hex_func::hex_decode(private_key)?;
+
+        let sk = ed25519_dalek_bip32::SecretKey::from_bytes(&bytes)
+            .map_err(|_e| crate::Error::PriKey("ton invalid private key".to_string()))?;
+
+        let pk = ed25519_dalek_bip32::PublicKey::from(&sk);
+
+        let mut sk = sk.as_bytes().to_vec();
+        let pk = pk.as_bytes().to_vec();
+        sk.extend(&pk);
+
+        let key_pair = KeyPair {
+            secret_key: sk,
+            public_key: pk,
+        };
+
+        let version = match address_type {
+            TonAddressType::V4R2 => WalletVersion::V4R2,
+            TonAddressType::V5R1 => WalletVersion::V5R1,
+        };
+
+        let wallet = TonWallet::new(version, key_pair).unwrap();
+        Ok(wallet.address.to_base64_url())
+    }
 }
 
 //  获取派生路径
@@ -63,9 +96,6 @@ impl wallet_core::KeyPair for TonKeyPair {
             .unwrap()
             .derive(&drive_path)
             .unwrap();
-
-        // let path = BIP32Path::from_str(derivation_path).unwrap();
-        // let key = derive_key_from_path(&seed, slip10::Curve::Ed25519, &path).unwrap();
 
         Ok(Self {
             tron_family: chain_code.to_owned(),

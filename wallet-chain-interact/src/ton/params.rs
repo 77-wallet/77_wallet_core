@@ -3,7 +3,7 @@
 pub struct LocateTxParams {
     pub source: String,
     pub destination: String,
-    pub created_tl: u64,
+    pub created_lt: u64,
 }
 
 // 预估手续费参数
@@ -18,13 +18,13 @@ pub struct EstimateFeeParams {
     pub ignore_chksig: bool,
 }
 impl EstimateFeeParams {
-    pub fn new(address: &str, body: String) -> Self {
+    pub fn new(address: &str, body: String, ignore_chksig: bool) -> Self {
         Self {
             address: address.to_owned(),
             body,
             init_code: None,
             init_data: None,
-            ignore_chksig: true,
+            ignore_chksig,
         }
     }
 }

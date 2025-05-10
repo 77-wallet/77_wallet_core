@@ -13,7 +13,7 @@ impl ReqBuilder {
     }
 
     pub fn query(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::debug!("request params: {:?}", v);
+        tracing::info!("request params: {:?}", v);
         self.0 = self.0.query(&v);
         self
     }
@@ -36,6 +36,7 @@ impl ReqBuilder {
             // 尝试解析出 json respose:: btc now node 返回的不标准。
             match res.text().await {
                 Ok(response) => {
+                    tracing::info!("response = {}", response);
                     if let Ok(rs) = Self::try_to_paras_json(&response) {
                         return Err(TransportError::NodeResponseError(NodeResponseError::new(
                             rs.0,
