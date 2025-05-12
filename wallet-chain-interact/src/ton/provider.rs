@@ -5,12 +5,11 @@ use wallet_transport::client::HttpClient;
 use wallet_utils::unit;
 
 use super::{
-    params::{EstimateFeeParams, LocateTxParams},
+    params::{EstimateFeeParams, LocateTxParams, QueryTransParams},
     protocol::{
-        account::AddressInformation,
+        account::{AccountTransactions, AddressInformation},
         block::{BlocksShards, ConsensusBlock, MasterChainInfo},
         common::{ConfigParams, RunGetMethodParams, RunGetMethodResp},
-        jettons::TokenDataResp,
         transaction::{AddressId, EstimateFeeResp, RawTransaction, SendBocReturn},
     },
 };
@@ -19,6 +18,8 @@ use super::{
 pub struct TonResponse<T> {
     pub ok: bool,
     pub result: T,
+    pub error: Option<String>,
+    pub code: Option<i64>,
 }
 
 pub struct Provider {
@@ -29,6 +30,26 @@ impl Provider {
     pub fn new(client: HttpClient) -> Self {
         Self { client }
     }
+
+    // async fn do_get<T, R>(&self, endpoint: &str, params: T) -> crate::Result<R>
+    // where
+    //     T: serde::Serialize + std::fmt::Debug,
+    //     R: serde::de::DeserializeOwned,
+    // {
+    //     let res = self
+    //         .client
+    //         .get_with_params::<T, TonResponse<R>>(endpoint, params)
+    //         .await?;
+
+    //     if !res.ok {
+    //         Err(TransportError::NodeResponseError(NodeResponseError::new(
+    //             res.code.unwrap_or_default(),
+    //             res.error,
+    //         )))?
+    //     } else {
+    //         Ok(res.result)
+    //     }
+    // }
 
     pub async fn balance(&self, addr: &str) -> crate::Result<U256> {
         let params = std::collections::HashMap::from([("address", addr)]);
@@ -71,12 +92,13 @@ impl Provider {
         Ok(res.result)
     }
 
-    pub async fn get_transaction(&self, address: &str) -> crate::Result<Vec<RawTransaction>> {
-        let params = std::collections::HashMap::from([("address", address)]);
-
+    pub async fn get_transaction(
+        &self,
+        payload: &QueryTransParams,
+    ) -> crate::Result<AccountTransactions> {
         let res = self
             .client
-            .get_with_params::<_, TonResponse<Vec<RawTransaction>>>("getTransactions", params)
+            .get_with_params::<_, TonResponse<AccountTransactions>>("getTransactions", payload)
             .await?;
 
         Ok(res.result)
@@ -129,12 +151,16 @@ impl Provider {
         Ok(res.result)
     }
 
-    pub async fn token_data(&self, addr: &str) -> crate::Result<TokenDataResp> {
+    // jetton wallet ,jetton master,nft
+    pub async fn token_data<T>(&self, addr: &str) -> crate::Result<T>
+    where
+        T: serde::de::DeserializeOwned + std::fmt::Debug,
+    {
         let payload = std::collections::HashMap::from([("address", addr)]);
 
         let res = self
             .client
-            .get_with_params::<_, TonResponse<TokenDataResp>>("getTokenData", payload)
+            .get_with_params::<_, TonResponse<T>>("getTokenData", payload)
             .await?;
 
         Ok(res.result)

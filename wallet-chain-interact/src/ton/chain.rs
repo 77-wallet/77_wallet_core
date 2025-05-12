@@ -3,7 +3,10 @@ use super::{
     get_keypair,
     operations::BuildInternalMsg,
     params::EstimateFeeParams,
-    protocol::{jettons::JettonWalletAddress, transaction::EstimateFeeResp},
+    protocol::{
+        jettons::{JettonMasterResp, JettonWalletAddress, JettonWalletResp},
+        transaction::EstimateFeeResp,
+    },
     provider::Provider,
 };
 use crate::{ton::protocol::account::AddressInformation, types::ChainPrivateKey};
@@ -35,7 +38,7 @@ impl TonChain {
 
             let result = self
                 .provider
-                .token_data(&jetton_address.to_base64_url())
+                .token_data::<JettonWalletResp>(&jetton_address.to_base64_url())
                 .await?;
 
             Ok(U256::from(result.balance))
@@ -135,9 +138,12 @@ impl TonChain {
         Ok(wallet_utils::bytes_to_base64(&tx))
     }
 
-    pub async fn decimals(&self, address: &str) -> crate::Result<u32> {
-        let result = self.provider.token_data(address).await?;
+    pub async fn decimals(&self, address: &str) -> crate::Result<u8> {
+        let result = self
+            .provider
+            .token_data::<JettonMasterResp>(address)
+            .await?;
 
-        Ok(result.balance as u32)
+        result.decimal()
     }
 }

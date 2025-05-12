@@ -1,7 +1,7 @@
 use crate::{errors::NodeResponseError, types::JsonRpcResult, TransportError};
 use reqwest::RequestBuilder;
 use serde::{de::DeserializeOwned, Serialize};
-use std::fmt::Debug;
+use std::{fmt::Debug, str::FromStr};
 
 pub struct ReqBuilder(pub RequestBuilder);
 
@@ -33,23 +33,31 @@ impl ReqBuilder {
 
         let status = res.status();
         if !status.is_success() {
-            // 尝试解析出 json respose:: btc now node 返回的不标准。
+            // 尝试解析出 json response:: btc now node 返回的不标准。
             match res.text().await {
                 Ok(response) => {
-                    tracing::info!("response = {}", response);
                     if let Ok(rs) = Self::try_to_paras_json(&response) {
                         return Err(TransportError::NodeResponseError(NodeResponseError::new(
                             rs.0,
                             Some(rs.1),
                         )));
                     } else {
+                        // 尝试提出error
+                        let message = match serde_json::Value::from_str(&response) {
+                            Ok(value) => {
+                                let e = value.get("error");
+                                e.map(|e| e.to_string())
+                            }
+                            Err(_) => None,
+                        };
                         return Err(TransportError::NodeResponseError(NodeResponseError::new(
                             status.as_u16() as i64,
-                            None,
+                            message,
                         )));
                     }
                 }
                 Err(e) => {
+                    tracing::warn!("e {}", e);
                     return Err(TransportError::NodeResponseError(NodeResponseError::new(
                         status.as_u16() as i64,
                         Some(e.to_string()),
@@ -63,7 +71,7 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        tracing::info!("response = {}", response);
+        // tracing::info!("response = {}", response);
         Ok(response)
     }
 

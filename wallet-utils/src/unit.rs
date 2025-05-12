@@ -1,5 +1,6 @@
 use crate::error::parse;
 use crate::error::Error;
+use std::fmt::Display;
 use std::str::FromStr;
 
 use alloy::primitives::{
@@ -58,6 +59,16 @@ pub fn string_to_f64(value: &str) -> Result<f64, crate::Error> {
     Ok(res)
 }
 
+pub fn str_to_num<T>(value: &str) -> Result<T, crate::Error>
+where
+    T: Sized + std::str::FromStr,
+    T::Err: Display,
+{
+    Ok(value
+        .parse::<T>()
+        .map_err(|e| crate::Error::Other(format!("str to num error :{}", e)))?)
+}
+
 pub fn truncate_to_8_decimals(input: &str) -> String {
     let input = input.trim();
     if input.is_empty() {
@@ -87,7 +98,7 @@ pub fn truncate_to_8_decimals(input: &str) -> String {
 
 #[cfg(test)]
 mod test {
-    use super::string_to_f64;
+    use super::{str_to_num, string_to_f64};
 
     #[test]
     fn test_string_to_f64() {
@@ -98,5 +109,11 @@ mod test {
         let a = "0.0003".to_string();
         let a = string_to_f64(&a).unwrap();
         println!("{}", a);
+    }
+
+    #[test]
+    fn test_str_to_f64() {
+        let res = str_to_num::<f64>("1").unwrap();
+        println!("{res}")
     }
 }
