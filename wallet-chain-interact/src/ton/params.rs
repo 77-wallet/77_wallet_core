@@ -10,11 +10,9 @@ pub struct LocateTxParams {
 #[derive(Debug, serde::Serialize)]
 pub struct EstimateFeeParams {
     pub address: String,
-    // msg body
     pub body: String,
     pub init_code: Option<String>,
     pub init_data: Option<String>,
-    // 是否验证签名
     pub ignore_chksig: bool,
 }
 impl EstimateFeeParams {
@@ -25,6 +23,24 @@ impl EstimateFeeParams {
             init_code: None,
             init_data: None,
             ignore_chksig,
+        }
+    }
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct QueryTransParams {
+    pub address: String,
+    pub limit: Option<i32>,
+    pub lt: Option<u64>,
+    pub hash: Option<String>,
+}
+impl QueryTransParams {
+    pub fn new_with_limit(address: &str, limit: i32) -> Self {
+        Self {
+            address: address.to_owned(),
+            limit: Some(limit),
+            lt: None,
+            hash: None,
         }
     }
 }

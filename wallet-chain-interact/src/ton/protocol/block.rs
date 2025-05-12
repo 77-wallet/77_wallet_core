@@ -40,7 +40,7 @@ pub struct ConsensusBlock {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct BlockTransactionExt<T> {
+pub struct BlockTransactionExt<T: std::fmt::Debug> {
     #[serde(rename = "@type")]
     pub type_filed: String,
     pub id: BlockIdExt,

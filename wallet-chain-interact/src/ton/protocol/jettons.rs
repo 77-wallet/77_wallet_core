@@ -10,7 +10,38 @@ use tonlib_core::{
 };
 
 #[derive(Debug, serde::Deserialize)]
-pub struct TokenDataResp {
+pub struct JettonMasterResp {
+    pub total_supply: u64,
+    pub mintable: bool,
+    pub admin_address: String,
+    pub jetton_content: JettonContent,
+    pub jetton_wallet_code: String,
+    pub contract_type: String,
+}
+
+impl JettonMasterResp {
+    pub fn decimal(&self) -> crate::Result<u8> {
+        Ok(wallet_utils::unit::str_to_num(
+            &self.jetton_content.data.decimals,
+        )?)
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct JettonContent {
+    #[serde(rename = "type")]
+    pub content_type: String,
+    pub data: JettonData,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct JettonData {
+    pub uri: String,
+    pub decimals: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct JettonWalletResp {
     pub balance: u64,
     pub owner: String,
     pub jetton: String,

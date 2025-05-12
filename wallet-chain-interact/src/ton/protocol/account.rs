@@ -1,7 +1,10 @@
-use tonlib_core::TonAddress;
-
-use super::{block::BlockIdExt, common::RunGetMethodParams, transaction::TransactionId};
+use super::{
+    block::BlockIdExt,
+    common::RunGetMethodParams,
+    transaction::{RawTransaction, TransactionId},
+};
 use crate::ton::{errors::TonError, provider::Provider};
+use tonlib_core::TonAddress;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct AddressInformation {
@@ -34,5 +37,19 @@ impl AddressInformation {
                 "seqno:not match response stack"
             )))?,
         }
+    }
+}
+
+// 地址的交易列表
+#[derive(Debug, serde::Deserialize)]
+pub struct AccountTransactions(pub Vec<RawTransaction>);
+
+impl AccountTransactions {
+    pub fn find(&self, tx: &str) -> Option<&RawTransaction> {
+        self.0.iter().find(|trans| {
+            trans.transaction_id.hash == tx
+                || trans.in_msg.hash == tx
+                || trans.out_msgs.iter().any(|out| out.hash == tx)
+        })
     }
 }
