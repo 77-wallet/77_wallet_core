@@ -109,12 +109,43 @@ impl Provider {
         })
     }
 
+    pub async fn get_all_coins_by_owner(
+        &self,
+        addr: &str,
+        coin_type: &str,
+    ) -> crate::Result<Vec<sui_sdk::rpc_types::Coin>> {
+        let mut cursor: Option<String> = None;
+        let mut all_coins = Vec::new();
+        loop {
+            let params = JsonRpcParams::default()
+                .method("suix_getCoins")
+                .params(json!([
+                    addr,
+                    coin_type,
+                    cursor,
+                    50  // 每页最多50个
+                ]));
+
+            let page: sui_sdk::rpc_types::CoinPage = self.client.invoke_request(params).await?;
+            all_coins.extend(page.data);
+
+            if page.has_next_page {
+                cursor = page.next_cursor;
+            } else {
+                break;
+            }
+        }
+
+        Ok(all_coins)
+    }
+
     pub async fn dry_run_transaction(
         &self,
         tx_data: &sui_sdk::types::transaction::TransactionData,
     ) -> crate::Result<sui_sdk::rpc_types::DryRunTransactionBlockResponse> {
+        tracing::info!("dry_run_transaction: {:?}", tx_data);
         let tx_data = wallet_utils::serde_func::bcs_to_bytes(tx_data)?;
-        let tx_data = wallet_utils::base58_encode(&tx_data);
+        let tx_data = wallet_utils::bytes_to_base64(&tx_data);
         let params = JsonRpcParams::default()
             .method("sui_dryRunTransactionBlock")
             .params(json!([tx_data]));
@@ -122,12 +153,20 @@ impl Provider {
         Ok(res)
     }
 
-    pub async fn send_transaction(&self, signed_b64: String) -> crate::Result<String> {
+    pub async fn send_transaction(
+        &self,
+        tx_bytes_b64: String,
+        signatures_b64: Vec<String>,
+    ) -> crate::Result<sui_sdk::rpc_types::SuiTransactionBlockResponse> {
         let params = JsonRpcParams::default()
-            .method("suix_dryRunTransaction")
+            .method("sui_executeTransactionBlock")
             .params(json!([
-                signed_b64,
-                { "showEffects": true, "showEvents": true }
+                tx_bytes_b64,
+                signatures_b64,
+                {
+                    "showEffects": true,
+                    "showEvents": true
+                }
             ]));
         let res = self.client.invoke_request(params).await?;
         Ok(res)
@@ -219,9 +258,12 @@ mod tests {
     #[tokio::test]
     async fn test_get_normalized_move_modules_by_package_id() {
         let sui = get_chain();
+        // let package = ""
         let modules = sui
             .provider
-            .get_normalized_move_modules_by_package_id("0x2")
+            .get_normalized_move_modules_by_package_id(
+                "0xaf9ef585e2efd13321d0a2181e1c0715f9ba28ed052055d33a8b164f6c146a56",
+            )
             .await
             .unwrap();
         // println!("modules: {:#?}", modules);
@@ -230,7 +272,7 @@ mod tests {
             println!("module_name: {}", module_name);
             // println!("module name: {}", module.name);
             println!("module_address: {}", module.address);
-            if module_name.eq("transfer") {
+            if module_name.eq("coin") {
                 println!("module exposed functions: {:#?}", module.exposed_functions);
             }
             // println!("module: {:#?}", module);

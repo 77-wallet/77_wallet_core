@@ -108,6 +108,7 @@ alloy = { git = "https://github.com/alloy-rs/alloy", default-features = false, f
 
 sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
 sui_types =  { git = "https://github.com/mystenlabs/sui", package = "sui-types" }
+shared-crypto =  { git = "https://github.com/mystenlabs/sui", package = "shared-crypto" }
 sui-crypto = "0.0.4"
 
 bitcoin = { version = "0.32.2", features = [

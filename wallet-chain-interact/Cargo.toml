@@ -46,6 +46,7 @@ chrono = { workspace = true }
 
 sui_sdk = { workspace = true }
 sui_types = { workspace = true }
+shared-crypto = { workspace = true }
 
 [dev-dependencies]
 libsecp256k1 = "0.6"
