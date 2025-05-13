@@ -10,6 +10,8 @@ pub mod params;
 pub mod protocol;
 pub mod provider;
 
+pub use tonlib_core::cell::Cell;
+
 pub fn get_keypair(key: ChainPrivateKey) -> crate::Result<KeyPair> {
     let sk = ed25519_dalek_bip32::SecretKey::from_bytes(&key.to_bytes()?)
         .map_err(|_e| crate::Error::SignError(format!("ton parse keypair from error")))?;
