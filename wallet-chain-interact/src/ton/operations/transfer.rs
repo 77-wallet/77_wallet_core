@@ -1,11 +1,16 @@
 use super::BuildInternalMsg;
-use crate::ton::{address::parse_addr_from_bs64_url, consts::TON_DECIMAL, provider::Provider};
+use crate::ton::{
+    address::parse_addr_from_bs64_url, consts::TON_DECIMAL, protocol::account::AddressInformation,
+    provider::Provider,
+};
 use async_trait::async_trait;
 use num_bigint::BigUint;
 use tonlib_core::{
+    cell::Cell,
     message::{CommonMsgInfo, InternalMessage, TransferMessage},
     TonAddress,
 };
+use wallet_types::chain::address::r#type::TonAddressType;
 
 pub struct TransferOpt {
     pub from: TonAddress,
@@ -23,17 +28,9 @@ impl TransferOpt {
             value,
         })
     }
-}
 
-#[async_trait]
-impl BuildInternalMsg for TransferOpt {
-    async fn build(
-        &self,
-        now_time: u32,
-        bounce: bool,
-        _provider: &Provider,
-    ) -> Result<TransferMessage, crate::ton::errors::TonError> {
-        let internal = InternalMessage {
+    pub fn internal_msg(&self, bounce: bool, now_time: u32) -> InternalMessage {
+        InternalMessage {
             ihr_disabled: true,
             bounce,
             bounced: false,
@@ -44,10 +41,27 @@ impl BuildInternalMsg for TransferOpt {
             fwd_fee: 0u32.into(),
             created_lt: 0,
             created_at: now_time,
-        };
+        }
+    }
+}
 
-        let common_msg_info = CommonMsgInfo::InternalMessage(internal);
-        Ok(TransferMessage::new(common_msg_info))
+#[async_trait]
+impl BuildInternalMsg for TransferOpt {
+    async fn build_trans(
+        &self,
+        address_type: TonAddressType,
+        provider: &Provider,
+    ) -> crate::Result<Cell> {
+        let now_time = wallet_utils::time::now().timestamp() as u32;
+        let bounce = false;
+
+        let internal_msg = self.internal_msg(bounce, now_time);
+        let common_msg_info = CommonMsgInfo::InternalMessage(internal_msg);
+        let trans = TransferMessage::new(common_msg_info);
+
+        let seqno = AddressInformation::seqno(self.from.clone(), provider).await?;
+
+        self.build_ext_msg(trans, address_type, now_time, seqno)
     }
 
     fn get_src(&self) -> TonAddress {

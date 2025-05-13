@@ -1,5 +1,7 @@
 use crate::ton::{
-    address::parse_addr_from_bs64_url, errors::TonError, protocol::jettons::JettonWalletAddress,
+    address::parse_addr_from_bs64_url,
+    errors::TonError,
+    protocol::{account::AddressInformation, jettons::JettonWalletAddress},
     provider::Provider,
 };
 use alloy::primitives::U256;
@@ -13,6 +15,7 @@ use tonlib_core::{
     },
     TonAddress,
 };
+use wallet_types::chain::address::r#type::TonAddressType;
 
 use super::BuildInternalMsg;
 
@@ -54,25 +57,15 @@ impl TokenTransferOpt {
 
         Ok(jetton_transfer)
     }
-}
 
-#[async_trait]
-impl BuildInternalMsg for TokenTransferOpt {
-    async fn build(
+    fn internal_msg(
         &self,
-        now_time: u32,
         bounce: bool,
-        provider: &Provider,
-    ) -> Result<TransferMessage, crate::ton::errors::TonError> {
-        // 代币转账参数
-        let jetton_transfer = self.transfer_body()?;
-
-        let src_jetton_address =
-            JettonWalletAddress::wallet_address(&self.token, &self.from.to_base64_url(), provider)
-                .await?;
-
+        now_time: u32,
+        src_jetton_address: TonAddress,
+    ) -> InternalMessage {
         let ton_amount = BigUint::from(10000000u64);
-        let internal = InternalMessage {
+        InternalMessage {
             ihr_disabled: true,
             bounce,
             bounced: false,
@@ -83,14 +76,34 @@ impl BuildInternalMsg for TokenTransferOpt {
             fwd_fee: 0u32.into(),
             created_lt: 0,
             created_at: now_time,
-        };
+        }
+    }
+}
+
+#[async_trait]
+impl BuildInternalMsg for TokenTransferOpt {
+    async fn build_trans(
+        &self,
+        address_type: TonAddressType,
+        provider: &Provider,
+    ) -> crate::Result<Cell> {
+        let now_time = wallet_utils::time::now().timestamp() as u32;
+        // 代币转账参数
+        let jetton_transfer = self.transfer_body()?;
+
+        let src_jetton_address =
+            JettonWalletAddress::wallet_address(&self.token, &self.from.to_base64_url(), provider)
+                .await?;
+        let internal = self.internal_msg(false, now_time, src_jetton_address);
 
         let common_msg_info = CommonMsgInfo::InternalMessage(internal);
-        let transfer = TransferMessage::new(common_msg_info)
+        let trans = TransferMessage::new(common_msg_info)
             .with_data(jetton_transfer.into())
             .to_owned();
 
-        Ok(transfer)
+        let seqno = AddressInformation::seqno(self.from.clone(), provider).await?;
+
+        self.build_ext_msg(trans, address_type, now_time, seqno)
     }
 
     fn get_src(&self) -> TonAddress {
