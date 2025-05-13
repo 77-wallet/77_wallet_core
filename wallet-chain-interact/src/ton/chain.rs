@@ -1,7 +1,6 @@
 use super::{
     errors::TonError,
     get_keypair,
-    operations::BuildInternalMsg,
     params::EstimateFeeParams,
     protocol::{
         jettons::{JettonMasterResp, JettonWalletAddress, JettonWalletResp},
@@ -9,17 +8,13 @@ use super::{
     },
     provider::Provider,
 };
-use crate::{ton::protocol::account::AddressInformation, types::ChainPrivateKey};
+use crate::{ton::protocol::jettons::JettonMeta, types::ChainPrivateKey, QueryTransactionResult};
 use alloy::primitives::U256;
-use std::sync::Arc;
 use tonlib_core::{
-    cell::{BagOfCells, CellBuilder},
-    message::{TonMessage, TransferMessage},
-    wallet::{
-        ton_wallet::TonWallet, version_helper::VersionHelper, versioned::DEFAULT_WALLET_ID,
-        wallet_version::WalletVersion,
-    },
+    cell::{BagOfCells, Cell, CellBuilder},
+    wallet::{ton_wallet::TonWallet, wallet_version::WalletVersion},
 };
+use wallet_types::chain::address::r#type::TonAddressType;
 
 pub struct TonChain {
     pub provider: Provider,
@@ -47,45 +42,40 @@ impl TonChain {
         }
     }
 
-    pub async fn estimate_fee<T: BuildInternalMsg>(
+    pub async fn estimate_fee(
         &self,
-        args: T,
+        msg_cell: Cell,
+        address: &str,
+        address_type: TonAddressType,
     ) -> crate::Result<EstimateFeeResp> {
-        let address = args.get_src();
-        let seqno = AddressInformation::seqno(address.clone(), &self.provider).await?;
-
-        let address = args.get_src().to_base64_url_flags(false, false);
-
-        let now_time = wallet_utils::time::now().timestamp() as u32;
-        let trans = args
-            .build(now_time, false, &self.provider)
-            .await?
-            .build()
-            .map_err(TonError::TonMsg)?;
-        let msgs_refs = vec![Arc::new(trans)];
-
-        // 构建body
-        let ext_msg = VersionHelper::build_ext_msg(
-            WalletVersion::V4R2,
-            now_time + 60,
-            seqno,
-            DEFAULT_WALLET_ID,
-            msgs_refs,
-        )
-        .map_err(TonError::CellBuild)?;
-
-        let bytes = vec![
+        // use default sign to estimate fee
+        let sign = vec![
             63, 75, 245, 118, 99, 227, 251, 194, 161, 58, 74, 88, 143, 140, 10, 193, 197, 73, 16,
             230, 118, 214, 181, 42, 174, 11, 55, 135, 195, 140, 0, 221, 3, 156, 4, 115, 152, 226,
             75, 132, 53, 66, 19, 148, 98, 213, 124, 218, 182, 215, 97, 52, 71, 190, 141, 251, 157,
             245, 109, 38, 197, 132, 11, 89,
         ];
-        let mut builder = CellBuilder::new();
-        builder.store_slice(&bytes).map_err(TonError::CellBuild)?;
-        builder.store_cell(&ext_msg).map_err(TonError::CellBuild)?;
-        let signed = builder.build().map_err(TonError::CellBuild)?;
+        let version = match address_type {
+            TonAddressType::V4R2 => WalletVersion::V4R2,
+            TonAddressType::V5R1 => WalletVersion::V5R1,
+        };
+        let signed_cell = match version {
+            // different order
+            WalletVersion::V5R1 => {
+                let mut builder = CellBuilder::new();
+                builder.store_cell(&msg_cell).map_err(TonError::CellBuild)?;
+                builder.store_slice(&sign).map_err(TonError::CellBuild)?;
+                builder.build().map_err(TonError::CellBuild)?
+            }
+            _ => {
+                let mut builder = CellBuilder::new();
+                builder.store_slice(&sign).map_err(TonError::CellBuild)?;
+                builder.store_cell(&msg_cell).map_err(TonError::CellBuild)?;
+                builder.build().map_err(TonError::CellBuild)?
+            }
+        };
 
-        let boc = BagOfCells::from_root(signed)
+        let boc = BagOfCells::from_root(signed_cell)
             .serialize(false)
             .map_err(TonError::CellBuild)?;
         let body = wallet_utils::bytes_to_base64(&boc);
@@ -96,46 +86,32 @@ impl TonChain {
     }
 
     // exec transaction
-    pub async fn exec<T: BuildInternalMsg>(
+    pub async fn exec(
         &self,
-        args: T,
+        msg_cell: Cell,
         key: ChainPrivateKey,
+        address_type: TonAddressType,
     ) -> crate::Result<String> {
         let key_pair = get_keypair(key)?;
 
-        let wallet = TonWallet::new(WalletVersion::V4R2, key_pair).map_err(TonError::CellBuild)?;
+        let version = match address_type {
+            TonAddressType::V4R2 => WalletVersion::V4R2,
+            TonAddressType::V5R1 => WalletVersion::V5R1,
+        };
+        let wallet = TonWallet::new(version, key_pair).map_err(TonError::CellBuild)?;
 
-        let address = args.get_src();
-        let seqno = AddressInformation::seqno(address.clone(), &self.provider).await?;
-
-        let now_time = wallet_utils::time::now().timestamp() as u32;
-        let internal = args.build(now_time, false, &self.provider).await?;
-
-        let boc_str = self.build_boc(internal, now_time, wallet, seqno)?;
-
-        self.provider.send_boc_return(boc_str).await
-    }
-
-    fn build_boc(
-        &self,
-        internal: TransferMessage,
-        now_time: u32,
-        wallet: TonWallet,
-        seqno: u32,
-    ) -> Result<String, TonError> {
-        let expire_at = now_time + 500;
-
-        let internal_msgs = vec![Arc::new(internal.build()?)];
-
-        let body = wallet.create_external_body(expire_at, seqno, internal_msgs)?;
-
-        let signed = wallet.sign_external_body(&body)?;
-        let wrapped = wallet.wrap_signed_body(signed, false)?;
+        let signed = wallet
+            .sign_external_body(&msg_cell)
+            .map_err(TonError::CellBuild)?;
+        let wrapped = wallet
+            .wrap_signed_body(signed, false)
+            .map_err(TonError::TonMsg)?;
 
         let boc = BagOfCells::from_root(wrapped);
-        let tx = boc.serialize(true)?;
+        let tx = boc.serialize(true).map_err(TonError::CellBuild)?;
 
-        Ok(wallet_utils::bytes_to_base64(&tx))
+        let boc_str = wallet_utils::bytes_to_base64(&tx);
+        self.provider.send_boc_return(boc_str).await
     }
 
     pub async fn decimals(&self, address: &str) -> crate::Result<u8> {
@@ -145,5 +121,62 @@ impl TonChain {
             .await?;
 
         result.decimal()
+    }
+
+    pub async fn query_tx_res(&self, _hash: &str) -> crate::Result<Option<QueryTransactionResult>> {
+        // 这个需要 新的api 支持
+        Ok(None)
+    }
+
+    pub async fn token_symbol(&self, token: &str) -> crate::Result<String> {
+        let token_data = self.provider.token_data::<JettonMasterResp>(token).await?;
+
+        // 从meta uri 获取 symbol
+        let uri = token_data.jetton_content.data.uri;
+        let mete = self
+            .provider
+            .client
+            .client
+            .get(uri)
+            .send()
+            .await
+            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
+        let content = mete
+            .text()
+            .await
+            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
+
+        let meta = wallet_utils::serde_func::serde_from_str::<JettonMeta>(&content)?;
+
+        Ok(meta.symbol)
+    }
+
+    pub async fn token_name(&self, token: &str) -> crate::Result<String> {
+        let token_data = self.provider.token_data::<JettonMasterResp>(token).await?;
+
+        // 从meta uri 获取 symbol
+        let uri = token_data.jetton_content.data.uri;
+        let mete = self
+            .provider
+            .client
+            .client
+            .get(uri)
+            .send()
+            .await
+            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
+        let content = mete
+            .text()
+            .await
+            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
+
+        let meta = wallet_utils::serde_func::serde_from_str::<JettonMeta>(&content)?;
+
+        Ok(meta.name)
+    }
+
+    pub async fn block_num(&self) -> crate::Result<u64> {
+        let block = self.provider.consensus_block().await?;
+
+        Ok(block.consensus_block)
     }
 }
