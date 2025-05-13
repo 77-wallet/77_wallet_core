@@ -11,9 +11,9 @@ use tonlib_core::{
 
 #[derive(Debug, serde::Deserialize)]
 pub struct JettonMasterResp {
-    pub total_supply: u64,
+    pub total_supply: serde_json::Value,
     pub mintable: bool,
-    pub admin_address: String,
+    pub admin_address: Option<String>,
     pub jetton_content: JettonContent,
     pub jetton_wallet_code: String,
     pub contract_type: String,
@@ -25,6 +25,12 @@ impl JettonMasterResp {
             &self.jetton_content.data.decimals,
         )?)
     }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct JettonMeta {
+    pub name: String,
+    pub symbol: String,
 }
 
 #[derive(Debug, serde::Deserialize)]
