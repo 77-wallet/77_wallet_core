@@ -2,7 +2,7 @@ use crate::types;
 
 use super::provider::Provider;
 use shared_crypto::intent::{Intent, IntentMessage};
-use sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI;
+use sui_sdk::rpc_types::{Coin, SuiTransactionBlockEffectsAPI};
 
 use sui_types::crypto::Signature;
 use sui_types::transaction::{SenderSignedData, TransactionData, TransactionDataAPI};
@@ -119,47 +119,62 @@ impl SuiChain {
         Ok(tx_hash)
     }
 
+    async fn fetch_sorted(&self, owner: &str, coin_type: &str) -> crate::Result<Vec<Coin>> {
+        let mut coins = self
+            .provider
+            .get_all_coins_by_owner(owner, coin_type)
+            .await?;
+        coins.sort_by_key(|c| std::cmp::Reverse(c.balance));
+        Ok(coins)
+    }
+
     pub async fn select_sufficient_coins(
         &self,
         owner: &str,
-        coin_type: &str,
+        coin_type: Option<&str>,
         amount_needed: u64,
     ) -> crate::Result<(
         Vec<sui_types::base_types::ObjectRef>,
         Vec<sui_types::base_types::ObjectRef>,
     )> {
-        let mut coins = self
-            .provider
-            .get_all_coins_by_owner(owner, coin_type)
-            .await?;
-
-        // 按余额从大到小排序（贪心）
-        coins.sort_by(|a, b| b.balance.cmp(&a.balance));
+        // 1. Select transfer coins (custom token or SUI)
+        let transfer_type = coin_type.unwrap_or("0x2::sui::SUI");
+        let coins = self.fetch_sorted(owner, transfer_type).await?;
 
         let mut transfer_coins = Vec::new();
-        let mut gas_coins = Vec::new();
-        let mut total: u64 = 0;
-
-        for coin in coins {
+        let mut sum = 0u128;
+        for coin in &coins {
             let obj = (coin.coin_object_id, coin.version, coin.digest);
-            if total < amount_needed {
-                transfer_coins.push(obj.clone());
+            if sum < amount_needed as u128 {
+                transfer_coins.push(obj);
+                sum += coin.balance as u128;
             } else {
-                gas_coins.push(obj.clone());
+                break;
             }
-            total += coin.balance;
+        }
+        if sum < amount_needed as u128 {
+            return Err(crate::Error::SuiError(
+                crate::sui::error::SuiError::InsufficientBalance(sum as u64, amount_needed),
+            ));
         }
 
-        // 2. 剩余的 coins 用于 gas
-        // gas_coins.extend_from_slice(&coins[transfer_coins.len()..]);
-
-        if total < amount_needed {
-            Err(crate::Error::SuiError(
-                crate::sui::error::SuiError::InsufficientBalance(total, amount_needed),
-            ))
+        // 2. Select gas coins
+        let gas_coins = if coin_type.is_none() {
+            // For SUI transfers, remaining coins from the same list
+            coins
+                .into_iter()
+                .skip(transfer_coins.len())
+                .map(|c| (c.coin_object_id, c.version, c.digest))
+                .collect()
         } else {
-            Ok((transfer_coins, gas_coins))
-        }
+            // For custom token transfer, fetch SUI coins for gas
+            let sui_coins = self.fetch_sorted(owner, "0x2::sui::SUI").await?;
+            sui_coins
+                .into_iter()
+                .map(|c| (c.coin_object_id, c.version, c.digest))
+                .collect()
+        };
+        Ok((transfer_coins, gas_coins))
     }
 }
 
@@ -218,9 +233,10 @@ mod tests {
 
         let amount = 1;
         let (transfer_coins, gas_coins) = sui
-            .select_sufficient_coins(TEST_ADDRESS, "0x2::sui::SUI", amount)
+            .select_sufficient_coins(TEST_ADDRESS, None, amount)
             .await
             .unwrap();
+
         // let gas_budget = 1;
         // let gas_price = sui.provider.get_reference_gas_price().await.unwrap();
         // let contract = None;
@@ -229,5 +245,43 @@ mod tests {
             TransferOpt::new(TEST_ADDRESS, to, amount, transfer_coins, gas_coins, None).unwrap();
         let gas = sui.exec_transaction(params, keypair).await.unwrap();
         println!("gas: {}", gas);
+    }
+
+    #[tokio::test]
+    async fn test_execute_token_transaction() {
+        let sui = get_chain();
+
+        let pkey = "eae2c009537e02f1c1dff4859065dbaeefa098abe730a4fcb52c52704b781456";
+        let pkey_bytes = hex::decode(pkey).unwrap();
+        let key = AccountPrivateKey::from_bytes(pkey_bytes.as_slice()).unwrap();
+
+        let keypair = AccountKeyPair::from(key);
+        let to = "0x807718c3c1f0cadc2c5715fb1d42fb4714e9a6b43c1df68b8b9c3773ccd93545";
+
+        let amount = 1;
+        let contract =
+            "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
+        let (transfer_coins, gas_coins) = sui
+            .select_sufficient_coins(TEST_ADDRESS, Some(contract), amount)
+            .await
+            .unwrap();
+        let id = transfer_coins[0].0;
+        let obj = sui.provider.get_object_by_id(&id.to_string()).await;
+        tracing::info!("obj: {:?}", obj);
+        // let gas_budget = 1;
+        // let gas_price = sui.provider.get_reference_gas_price().await.unwrap();
+        // let contract = None;
+
+        let params = TransferOpt::new(
+            TEST_ADDRESS,
+            to,
+            amount,
+            transfer_coins,
+            gas_coins,
+            Some(contract.to_string()),
+        )
+        .unwrap();
+        let gas = sui.exec_transaction(params, keypair).await;
+        println!("gas: {:?}", gas);
     }
 }

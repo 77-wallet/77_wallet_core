@@ -1,15 +1,13 @@
 use std::str::FromStr;
 
 use crate::types;
-use sui_sdk::types::{
-    base_types::{ObjectID, SuiAddress},
-    transaction::TransactionData,
-};
+use move_core_types::language_storage::StructTag;
+use sui_sdk::types::transaction::TransactionData;
 use sui_types::{
     base_types::ObjectRef,
     programmable_transaction_builder::ProgrammableTransactionBuilder,
-    transaction::{Argument, Command},
-    Identifier,
+    transaction::{Command, ProgrammableMoveCall},
+    Identifier, TypeTag,
 };
 use wallet_utils::address;
 
@@ -17,7 +15,7 @@ use super::SuiBaseTransaction;
 
 pub struct TransferOpt {
     pub base: SuiBaseTransaction,
-    pub contract: Option<SuiAddress>,
+    pub struct_tag: Option<StructTag>,
 }
 
 impl TransferOpt {
@@ -30,7 +28,7 @@ impl TransferOpt {
         gas_coins: Vec<ObjectRef>,
         // gas_budget: u64,
         // gas_price: u64,
-        contract: Option<String>,
+        struct_tag: Option<String>,
     ) -> crate::Result<Self> {
         let base = SuiBaseTransaction::new(
             from, // recipients,
@@ -40,12 +38,12 @@ impl TransferOpt {
             gas_coins, // gas_budget, gas_price,
         )?;
 
-        let contract = contract
+        let struct_tag = struct_tag
             .as_ref()
-            .map(|contract| address::parse_sui_address(contract))
+            .map(|struct_tag| address::parse_sui_struct_tag(struct_tag))
             .transpose()?;
 
-        Ok(Self { base, contract })
+        Ok(Self { base, struct_tag })
     }
 }
 
@@ -53,7 +51,7 @@ impl types::Transaction<TransactionData> for TransferOpt {
     fn build_transaction(&self) -> Result<TransactionData, crate::Error> {
         let mut builder = ProgrammableTransactionBuilder::new();
 
-        let primary_ref = self.base.transfer_coins[0];
+        // let primary_ref = self.base.transfer_coins[0];
         let mut coin_inputs = vec![];
         for coin in &self.base.transfer_coins {
             let coin_arg = builder
@@ -69,37 +67,78 @@ impl types::Transaction<TransactionData> for TransferOpt {
             builder.command(Command::MergeCoins(primary, to_merge.to_vec()));
         }
 
-        if let Some(contract) = self.contract {
+        if let Some(struct_tag) = &self.struct_tag {
             // 合约调用交易（类似 ERC20 转账）
             // 构造纯数据参数
-            let amount_arg = sui_types::transaction::CallArg::Pure(
-                wallet_utils::serde_func::bcs_to_bytes(&self.base.amount)?,
-            );
-            let to_arg = sui_types::transaction::CallArg::Pure(
-                wallet_utils::serde_func::bcs_to_bytes(&self.base.to)?,
-            );
-
-            let module: Identifier = Identifier::from_str("coin")
+            // let amount_arg = sui_types::transaction::CallArg::Pure(
+            //     wallet_utils::serde_func::bcs_to_bytes(&self.base.amount)?,
+            // );
+            // builder.split_coin(self.base.to, primary_ref, vec![self.base.amount]);
+            let split_amount = builder
+                .pure(self.base.amount /* u64 */)
                 .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
-            let function: Identifier = Identifier::from_str("transfer")
-                .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+            // let split_arg = builder
+            //     .split_coin(primary_arg.clone(), vec![amount_arg])
+            //     .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
 
-            builder
-                .move_call(
-                    contract.into(),
-                    module,
-                    function,
-                    vec![],
-                    vec![amount_arg, to_arg],
+            let split_result = builder.command(Command::SplitCoins(primary, vec![split_amount]));
+            let sui_types::transaction::Argument::Result(index) = split_result else {
+                return Err(crate::sui::error::SuiError::MoveError(
+                    "SplitCoins did not return Result".into(),
                 )
+                .into());
+            };
+            let split_coin_arg = sui_types::transaction::Argument::NestedResult(index, 0);
+
+            // let coins_arg = sui_types::transaction::CallArg::Object(
+            //     sui_types::transaction::ObjectArg::ImmOrOwnedObject(split_ref),
+            // );
+            // let to_arg = sui_types::transaction::CallArg::Pure(
+            //     wallet_utils::serde_func::bcs_to_bytes(&self.base.to)?,
+            // );
+
+            let to_arg = builder
+                .pure(self.base.to)
                 .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+
+            let module: Identifier = Identifier::from_str("transfer")
+                .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+            let function: Identifier = Identifier::from_str("public_transfer")
+                .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+            // struct_tag.
+
+            let coin_struct_tag = StructTag {
+                address: move_core_types::account_address::AccountAddress::from_str("0x2").unwrap(),
+                module: Identifier::new("coin").unwrap(),
+                name: Identifier::new("Coin").unwrap(),
+                type_params: vec![TypeTag::Struct(Box::new(struct_tag.clone()))],
+            };
+
+            builder.command(Command::move_call(
+                address::parse_object_id_from_hex("0x2")?,
+                module,
+                function,
+                // vec![TypeTag::Struct(Box::new(struct_tag.clone()))],
+                vec![TypeTag::Struct(Box::new(coin_struct_tag))],
+                vec![split_coin_arg, to_arg],
+            ));
+            // builder
+            //     .move_call(
+            //         address::parse_object_id_from_hex("0x2")?,
+            //         // struct_tag.address.into(),
+            //         module,
+            //         function,
+            //         vec![TypeTag::Struct(Box::new(struct_tag.clone()))],
+            //         vec![coins_arg, to_arg],
+            //     )
+            //     .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
             let pt = builder.finish();
             Ok(TransactionData::new_programmable(
                 self.base.from,
-                vec![primary_ref],
+                self.base.gas_coins.clone(),
                 pt,
-                0,
-                0,
+                10_000_000,
+                10000,
             ))
         } else {
             // 3. Split 出需要转账的金额（如果不等于 coin 全额）

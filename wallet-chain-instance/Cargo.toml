@@ -41,7 +41,7 @@ serde_json = { workspace = true }
 ripemd160 = { workspace = true }
 hdpath = "0.6.3"
 
-sui_sdk = { workspace = true }
+sui-sdk = { workspace = true }
 sui-crypto = { workspace = true }
 blake2 = { workspace = true }
 generic-array = { workspace = true }

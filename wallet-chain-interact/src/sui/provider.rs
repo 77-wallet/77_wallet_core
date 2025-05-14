@@ -262,7 +262,7 @@ mod tests {
         let modules = sui
             .provider
             .get_normalized_move_modules_by_package_id(
-                "0xaf9ef585e2efd13321d0a2181e1c0715f9ba28ed052055d33a8b164f6c146a56",
+                "0x8190b041122eb492bf63cb464476bd68c6b7e570a4079645a8b28732b6197a82",
             )
             .await
             .unwrap();
@@ -272,9 +272,12 @@ mod tests {
             println!("module_name: {}", module_name);
             // println!("module name: {}", module.name);
             println!("module_address: {}", module.address);
-            if module_name.eq("coin") {
-                println!("module exposed functions: {:#?}", module.exposed_functions);
-            }
+            println!("module_structs: {:#?}", module.structs);
+            println!("module enums: {:#?}", module.enums);
+
+            // if module_name.eq("coin") {
+            // println!("module exposed functions: {:#?}", module.exposed_functions);
+            // }
             // println!("module: {:#?}", module);
         }
     }
