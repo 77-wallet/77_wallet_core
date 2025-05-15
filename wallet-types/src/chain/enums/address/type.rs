@@ -52,6 +52,17 @@ impl TonAddressType {
     }
 }
 
+impl TryFrom<&str> for TonAddressType {
+    type Error = crate::Error;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value {
+            "v5r1" => TonAddressType::V5R1,
+            "v4r2" => TonAddressType::V4R2,
+            _ => return Err(crate::Error::TonAddressTypeInvalid(value.to_string())),
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 pub enum BtcAddressType {
     /// Pay to public hash (legacy)

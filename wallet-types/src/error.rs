@@ -26,4 +26,6 @@ pub enum Error {
     DogAddressCategoryInvalid(String),
     #[error("Miss address type")]
     MissAddressType,
+    #[error("ton address type  invalid: {0}")]
+    TonAddressTypeInvalid(String),
 }
