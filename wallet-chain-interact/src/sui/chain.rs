@@ -1,11 +1,13 @@
-use crate::types;
+use crate::types::{self, ChainPrivateKey};
+use crate::QueryTransactionResult;
 
 use super::provider::Provider;
+use alloy::primitives::U256;
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::rpc_types::{Coin, SuiTransactionBlockEffectsAPI};
 
-use sui_types::crypto::Signature;
-use sui_types::transaction::{SenderSignedData, TransactionData, TransactionDataAPI};
+use sui_types::crypto::{AccountKeyPair, AccountPrivateKey, Signature};
+use sui_types::transaction::TransactionDataAPI;
 use wallet_types::chain::chain::ChainCode;
 use wallet_types::chain::network;
 
@@ -30,18 +32,33 @@ impl SuiChain {
 }
 
 impl SuiChain {
-    pub async fn balance(
-        &self,
-        addr: &str,
-        token: Option<String>,
-    ) -> crate::Result<sui_sdk::rpc_types::Balance> {
-        if let Some(t) = token
+    pub async fn balance(&self, addr: &str, token: Option<String>) -> crate::Result<U256> {
+        let res = if let Some(t) = token
             && !t.is_empty()
         {
             self.provider.token_balance(addr, &t).await
         } else {
             self.provider.balance(addr).await
-        }
+        }?;
+
+        let res = res.total_balance;
+        Ok(U256::from(res))
+    }
+
+    pub async fn block_num(&self) -> crate::Result<u64> {
+        todo!()
+    }
+    pub async fn query_tx_res(&self, hash: &str) -> crate::Result<Option<QueryTransactionResult>> {
+        todo!()
+    }
+    pub async fn decimals(&self, token_addr: &str) -> crate::Result<u8> {
+        todo!()
+    }
+    pub async fn token_symbol(&self, token: &str) -> crate::Result<String> {
+        todo!()
+    }
+    pub async fn token_name(&self, token: &str) -> crate::Result<String> {
+        todo!()
     }
 
     pub async fn estimate_gas<T>(&self, params: T) -> crate::Result<u64>
@@ -60,7 +77,8 @@ impl SuiChain {
     pub async fn exec_transaction<T>(
         &self,
         params: T,
-        keypair: sui_types::crypto::AccountKeyPair,
+        private_key: ChainPrivateKey,
+        // keypair: sui_types::crypto::AccountKeyPair,
     ) -> crate::Result<sui_sdk::rpc_types::SuiTransactionBlockResponse>
     where
         T: crate::types::Transaction<sui_sdk::types::transaction::TransactionData>,
@@ -85,8 +103,6 @@ impl SuiChain {
         //     .await?;
 
         // 3. 使用 Envelope 进行签名
-        use sui_types::crypto::Signer;
-
         // let tx_data_bytes = wallet_utils::serde_func::bcs_to_bytes(&tx_data)?;
 
         // let intent_message = IntentMessage::new(
@@ -102,6 +118,13 @@ impl SuiChain {
 
         let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
         // 用 keypair 对 IntentMessage 进行签名
+
+        let pkey_bytes = private_key.to_bytes()?;
+        use sui_types::crypto::ToFromBytes;
+
+        let key = AccountPrivateKey::from_bytes(pkey_bytes.as_slice()).unwrap();
+
+        let keypair = AccountKeyPair::from(key);
         let signature = Signature::new_secure(&intent_msg, &keypair);
 
         let tx_data_base64 = wallet_utils::bytes_to_base64(&tx_bytes);
@@ -117,6 +140,16 @@ impl SuiChain {
             .send_transaction(tx_data_base64, vec![sig_b64])
             .await?;
         Ok(tx_hash)
+    }
+
+    pub fn extract_gas_used(resp: &sui_sdk::rpc_types::SuiTransactionBlockResponse) -> Option<f64> {
+        let effects = resp.effects.as_ref()?;
+        let gas_summary = match effects {
+            sui_sdk::rpc_types::SuiTransactionBlockEffects::V1(v1) => &v1.gas_used,
+        };
+        let mist = gas_summary.net_gas_usage();
+        let sui = wallet_utils::unit::mist_to_sui(mist);
+        Some(sui)
     }
 
     async fn fetch_sorted(&self, owner: &str, coin_type: &str) -> crate::Result<Vec<Coin>> {
@@ -183,7 +216,7 @@ mod tests {
     use crate::sui::{SuiChain, TransferOpt};
 
     use super::*;
-    use sui_types::crypto::{AccountKeyPair, AccountPrivateKey, ToFromBytes};
+    use sui_types::crypto::{AccountPrivateKey, ToFromBytes};
     use wallet_transport::client::RpcClient;
     use wallet_utils::init_test_log;
 
@@ -201,7 +234,7 @@ mod tests {
 
         let header = None;
         let client = RpcClient::new(&rpc, header, None).unwrap();
-        let provider = Provider::new(client).unwrap();
+        let provider = Provider::new(client);
         let chain_code = wallet_types::chain::chain::ChainCode::Sui;
         let network = wallet_types::chain::network::NetworkKind::Testnet;
         let sui = SuiChain::new(provider, network, chain_code).unwrap();
@@ -225,10 +258,10 @@ mod tests {
         let sui = get_chain();
 
         let pkey = "eae2c009537e02f1c1dff4859065dbaeefa098abe730a4fcb52c52704b781456";
-        let pkey_bytes = hex::decode(pkey).unwrap();
-        let key = AccountPrivateKey::from_bytes(pkey_bytes.as_slice()).unwrap();
+        // let pkey_bytes = hex::decode(pkey).unwrap();
+        // let key = AccountPrivateKey::from_bytes(pkey_bytes.as_slice()).unwrap();
 
-        let keypair = AccountKeyPair::from(key);
+        // let keypair = AccountKeyPair::from(key);
         let to = "0x807718c3c1f0cadc2c5715fb1d42fb4714e9a6b43c1df68b8b9c3773ccd93545";
 
         let amount = 1;
@@ -243,7 +276,7 @@ mod tests {
 
         let params =
             TransferOpt::new(TEST_ADDRESS, to, amount, transfer_coins, gas_coins, None).unwrap();
-        let gas = sui.exec_transaction(params, keypair).await.unwrap();
+        let gas = sui.exec_transaction(params, pkey.into()).await.unwrap();
         println!("gas: {}", gas);
     }
 
@@ -252,10 +285,10 @@ mod tests {
         let sui = get_chain();
 
         let pkey = "eae2c009537e02f1c1dff4859065dbaeefa098abe730a4fcb52c52704b781456";
-        let pkey_bytes = hex::decode(pkey).unwrap();
-        let key = AccountPrivateKey::from_bytes(pkey_bytes.as_slice()).unwrap();
+        // let pkey_bytes = hex::decode(pkey).unwrap();
+        // let key = AccountPrivateKey::from_bytes(pkey_bytes.as_slice()).unwrap();
 
-        let keypair = AccountKeyPair::from(key);
+        // let keypair = AccountKeyPair::from(key);
         let to = "0x807718c3c1f0cadc2c5715fb1d42fb4714e9a6b43c1df68b8b9c3773ccd93545";
 
         let amount = 1;
@@ -281,7 +314,7 @@ mod tests {
             Some(contract.to_string()),
         )
         .unwrap();
-        let gas = sui.exec_transaction(params, keypair).await;
+        let gas = sui.exec_transaction(params, pkey.into()).await;
         println!("gas: {:?}", gas);
     }
 }

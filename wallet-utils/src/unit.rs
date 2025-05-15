@@ -96,6 +96,16 @@ pub fn truncate_to_8_decimals(input: &str) -> String {
     }
 }
 
+/// Converts SUI to MIST (1 SUI = 1_000_000_000 MIST)
+pub fn sui_to_mist(sui: f64) -> i64 {
+    (sui * 1_000_000_000f64).round() as i64
+}
+
+/// Converts MIST to SUI
+pub fn mist_to_sui(mist: i64) -> f64 {
+    mist as f64 / 1_000_000_000f64
+}
+
 #[cfg(test)]
 mod test {
     use super::{str_to_num, string_to_f64};

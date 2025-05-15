@@ -15,8 +15,8 @@ use dog::DogcoinInstance;
 use eth::EthereumInstance;
 use ltc::LitecoinInstance;
 use sol::SolanaInstance;
-use ton::{TonInstance, TonKeyPair};
 use sui::SuiInstance;
+use ton::{TonInstance, TonKeyPair};
 use trx::TronInstance;
 use wallet_core::{
     derive::{Derive, GenDerivation, GenDerivationDog, GenDerivationLtc},
