@@ -56,7 +56,7 @@ impl TokenTransferOpt {
             destination: self.to.clone(),
             response_destination: self.from.clone(),
             custom_payload: None,
-            forward_ton_amount: BigUint::ZERO,
+            forward_ton_amount: BigUint::from(1u64),
             forward_payload: Arc::new(Cell::default()),
             forward_payload_layout: EitherCellLayout::Native,
         }
