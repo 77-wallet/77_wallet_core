@@ -22,6 +22,10 @@ use wallet_core::{
     derive::{Derive, GenDerivation, GenDerivationDog, GenDerivationLtc},
     KeyPair,
 };
+use wallet_core::{
+    derive::{Derive, GenDerivation, GenDerivationDog, GenDerivationLtc},
+    KeyPair,
+};
 use wallet_types::chain::{address::r#type::AddressType, chain, network};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
