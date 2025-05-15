@@ -16,16 +16,18 @@ pub struct TransferOpt {
     pub from: TonAddress,
     pub to: TonAddress,
     pub value: u64,
+    pub spend_all: bool,
 }
 
 impl TransferOpt {
-    pub fn new(from: &str, to: &str, value: &str) -> crate::Result<Self> {
+    pub fn new(from: &str, to: &str, value: &str, spend_all: bool) -> crate::Result<Self> {
         let value = wallet_utils::unit::convert_to_u256(value, TON_DECIMAL)?.to::<u64>();
 
         Ok(Self {
             from: parse_addr_from_bs64_url(from)?,
             to: parse_addr_from_bs64_url(to)?,
             value,
+            spend_all,
         })
     }
 
@@ -61,7 +63,7 @@ impl BuildInternalMsg for TransferOpt {
 
         let seqno = AddressInformation::seqno(self.from.clone(), provider).await?;
 
-        self.build_ext_msg(trans, address_type, now_time, seqno)
+        self.build_ext_msg(trans, address_type, now_time, seqno, self.spend_all)
     }
 
     fn get_src(&self) -> TonAddress {

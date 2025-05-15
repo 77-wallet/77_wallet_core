@@ -25,6 +25,7 @@ pub struct RunGetMethodResp {
     pub type_field: String,
     pub gas_used: u64,
     pub stack: Vec<StackItem>,
+    pub exit_code: i32,
     #[serde(rename = "@extra")]
     pub extra: String,
     pub block_id: BlockIdExt,

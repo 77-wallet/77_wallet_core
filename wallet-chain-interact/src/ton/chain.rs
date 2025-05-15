@@ -1,4 +1,5 @@
 use super::{
+    consts::DEFAULT_SIGN_KEY,
     errors::TonError,
     get_keypair,
     params::EstimateFeeParams,
@@ -11,8 +12,12 @@ use super::{
 use crate::{ton::protocol::jettons::JettonMeta, types::ChainPrivateKey, QueryTransactionResult};
 use alloy::primitives::U256;
 use tonlib_core::{
-    cell::{BagOfCells, Cell, CellBuilder},
-    wallet::{ton_wallet::TonWallet, wallet_version::WalletVersion},
+    cell::{BagOfCells, Cell},
+    tlb_types::traits::TLBObject,
+    wallet::{
+        ton_wallet::TonWallet, version_helper::VersionHelper, versioned::DEFAULT_WALLET_ID,
+        wallet_version::WalletVersion,
+    },
 };
 use wallet_types::chain::address::r#type::TonAddressType;
 
@@ -48,39 +53,34 @@ impl TonChain {
         address: &str,
         address_type: TonAddressType,
     ) -> crate::Result<EstimateFeeResp> {
-        // use default sign to estimate fee
-        let sign = vec![
-            63, 75, 245, 118, 99, 227, 251, 194, 161, 58, 74, 88, 143, 140, 10, 193, 197, 73, 16,
-            230, 118, 214, 181, 42, 174, 11, 55, 135, 195, 140, 0, 221, 3, 156, 4, 115, 152, 226,
-            75, 132, 53, 66, 19, 148, 98, 213, 124, 218, 182, 215, 97, 52, 71, 190, 141, 251, 157,
-            245, 109, 38, 197, 132, 11, 89,
-        ];
-        let version = match address_type {
-            TonAddressType::V4R2 => WalletVersion::V4R2,
-            TonAddressType::V5R1 => WalletVersion::V5R1,
-        };
-        let signed_cell = match version {
-            // different order
-            WalletVersion::V5R1 => {
-                let mut builder = CellBuilder::new();
-                builder.store_cell(&msg_cell).map_err(TonError::CellBuild)?;
-                builder.store_slice(&sign).map_err(TonError::CellBuild)?;
-                builder.build().map_err(TonError::CellBuild)?
-            }
-            _ => {
-                let mut builder = CellBuilder::new();
-                builder.store_slice(&sign).map_err(TonError::CellBuild)?;
-                builder.store_cell(&msg_cell).map_err(TonError::CellBuild)?;
-                builder.build().map_err(TonError::CellBuild)?
-            }
-        };
+        let version = address_type.to_version();
+        let key_pair = get_keypair(DEFAULT_SIGN_KEY.into())?;
 
-        let boc = BagOfCells::from_root(signed_cell)
+        let wallet = TonWallet::new(version, key_pair.clone()).map_err(TonError::CellBuild)?;
+
+        let signed_body = wallet
+            .sign_external_body(&msg_cell)
+            .map_err(TonError::CellBuild)?;
+
+        // 知道钱包的状态,决定是否部署钱包
+        let account_info = self.provider.address_information(&address).await?;
+
+        let boc = BagOfCells::from_root(signed_body)
             .serialize(false)
             .map_err(TonError::CellBuild)?;
         let body = wallet_utils::bytes_to_base64(&boc);
 
-        let params = EstimateFeeParams::new(&address, body, true);
+        let mut params = EstimateFeeParams::new(&address, body, true);
+        if !account_info.is_init() {
+            let code = VersionHelper::get_code(version)
+                .map_err(TonError::CellBuild)?
+                .clone();
+            let data = VersionHelper::get_data(version, &key_pair, DEFAULT_WALLET_ID)
+                .map_err(TonError::CellBuild)?;
+
+            params.init_code = Some(code.to_boc_b64(true).map_err(TonError::CellBuild)?);
+            params.init_data = Some(data.to_boc_b64(true).map_err(TonError::CellBuild)?);
+        }
 
         self.provider.estimate_fee(params).await
     }
@@ -100,11 +100,15 @@ impl TonChain {
         };
         let wallet = TonWallet::new(version, key_pair).map_err(TonError::CellBuild)?;
 
-        let signed = wallet
+        // 知道钱包的状态,决定是否部署钱包
+        let address = wallet.address.to_base64_url();
+        let account_info = self.provider.address_information(&address).await?;
+
+        let signed_body = wallet
             .sign_external_body(&msg_cell)
             .map_err(TonError::CellBuild)?;
         let wrapped = wallet
-            .wrap_signed_body(signed, false)
+            .wrap_signed_body(signed_body, !account_info.is_init())
             .map_err(TonError::TonMsg)?;
 
         let boc = BagOfCells::from_root(wrapped);
