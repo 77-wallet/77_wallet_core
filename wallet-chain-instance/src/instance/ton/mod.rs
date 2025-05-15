@@ -150,6 +150,7 @@ impl wallet_core::KeyPair for TonKeyPair {
 mod test {
     use super::TonInstance;
     use crate::instance::ton::TonKeyPair;
+    use tonlib_core::TonAddress;
     use wallet_core::{derive::GenDerivation, xpriv, KeyPair};
     use wallet_types::chain::chain::ChainCode;
 
@@ -199,9 +200,22 @@ mod test {
         )
         .unwrap();
 
+        println!("private key {}", keypair.private_key().unwrap());
         assert_eq!(
             keypair.address(),
             "UQBud2VI5S1IhaPm3OJ7wYUewhBSK7VhfPbnp_0tvvBpx7ze"
         );
+    }
+
+    #[test]
+    fn test_address_format() {
+        let address =
+            TonAddress::from_base64_url("UQBud2VI5S1IhaPm3OJ7wYUewhBSK7VhfPbnp_0tvvBpx7ze")
+                .unwrap();
+
+        println!("可回退地址   {}", address.to_base64_url_flags(false, false));
+        println!("不可回退地址 {} ", address.to_base64_url_flags(true, false));
+        println!("不可回退地址 {} ", address.to_base64_std());
+        println!("16进制地址 {:?} ", address.to_msg_address());
     }
 }

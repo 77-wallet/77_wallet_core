@@ -26,6 +26,11 @@ impl AddressInformation {
         let params = RunGetMethodParams::<()>::new(&address.to_base64_url(), "seqno", vec![]);
         let result = provider.run_get_method(params).await?;
 
+        // TODO 优化 退出码不存在默认给到0
+        if result.exit_code != 0 {
+            return Ok(0);
+        }
+
         match &result.stack[0] {
             super::common::StackItem::Num(_, r) => {
                 let value = u32::from_str_radix(r.trim_start_matches("0x"), 16).map_err(|_e| {
@@ -37,6 +42,10 @@ impl AddressInformation {
                 "seqno:not match response stack"
             )))?,
         }
+    }
+
+    pub fn is_init(&self) -> bool {
+        self.state == "active"
     }
 }
 
