@@ -62,12 +62,26 @@ impl Provider {
         Ok(unit::u256_from_str(&res.result)?)
     }
 
-    pub async fn account_info(&self, addr: &str) -> crate::Result<AddressInformation> {
+    pub async fn address_information(&self, addr: &str) -> crate::Result<AddressInformation> {
         let params = std::collections::HashMap::from([("address", addr)]);
 
         let res = self
             .client
             .get_with_params::<_, TonResponse<AddressInformation>>("getAddressInformation", params)
+            .await?;
+
+        Ok(res.result)
+    }
+
+    pub async fn address_ext_information(&self, addr: &str) -> crate::Result<AddressInformation> {
+        let params = std::collections::HashMap::from([("address", addr)]);
+
+        let res = self
+            .client
+            .get_with_params::<_, TonResponse<AddressInformation>>(
+                "getExtendedAddressInformation",
+                params,
+            )
             .await?;
 
         Ok(res.result)

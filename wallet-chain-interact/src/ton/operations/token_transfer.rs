@@ -24,10 +24,17 @@ pub struct TokenTransferOpt {
     pub to: TonAddress,
     pub token: String,
     pub value: BigUint,
+    pub spend_all: bool,
 }
 
 impl TokenTransferOpt {
-    pub fn new(from: &str, to: &str, token: &str, value: U256) -> crate::Result<Self> {
+    pub fn new(
+        from: &str,
+        to: &str,
+        token: &str,
+        value: U256,
+        spend_all: bool,
+    ) -> crate::Result<Self> {
         let value = value.to_string();
 
         let value = BigUint::from_str(&value)
@@ -38,18 +45,18 @@ impl TokenTransferOpt {
             to: parse_addr_from_bs64_url(to)?,
             token: token.to_string(),
             value,
+            spend_all,
         })
     }
 
     fn transfer_body(&self) -> Result<Cell, TonError> {
-        // TODO : forward to amount
         let jetton_transfer = JettonTransferMessage {
             query_id: wallet_utils::time::now().timestamp() as u64,
             amount: self.value.clone(),
             destination: self.to.clone(),
             response_destination: self.from.clone(),
             custom_payload: None,
-            forward_ton_amount: BigUint::from(1u32),
+            forward_ton_amount: BigUint::ZERO,
             forward_payload: Arc::new(Cell::default()),
             forward_payload_layout: EitherCellLayout::Native,
         }
@@ -65,6 +72,7 @@ impl TokenTransferOpt {
         src_jetton_address: TonAddress,
     ) -> InternalMessage {
         let ton_amount = BigUint::from(10000000u64);
+        // let ton_amount = BigUint::ZERO;
         InternalMessage {
             ihr_disabled: true,
             bounce,
@@ -103,7 +111,7 @@ impl BuildInternalMsg for TokenTransferOpt {
 
         let seqno = AddressInformation::seqno(self.from.clone(), provider).await?;
 
-        self.build_ext_msg(trans, address_type, now_time, seqno)
+        self.build_ext_msg(trans, address_type, now_time, seqno, self.spend_all)
     }
 
     fn get_src(&self) -> TonAddress {

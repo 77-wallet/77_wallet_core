@@ -1,6 +1,7 @@
 use super::category::{BtcAddressCategory, DogAddressCategory, LtcAddressCategory};
 use crate::constant::btc_address_type::*;
 use once_cell::sync::Lazy;
+use tonlib_core::wallet::wallet_version::WalletVersion;
 
 pub static BTC_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
     vec![
@@ -40,6 +41,15 @@ pub enum AddressType {
 pub enum TonAddressType {
     V5R1,
     V4R2,
+}
+
+impl TonAddressType {
+    pub fn to_version(&self) -> WalletVersion {
+        match self {
+            TonAddressType::V5R1 => WalletVersion::V5R1,
+            TonAddressType::V4R2 => WalletVersion::V4R2,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
