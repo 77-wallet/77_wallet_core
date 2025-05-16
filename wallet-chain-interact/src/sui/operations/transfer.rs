@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
 use crate::types;
-use move_core_types::language_storage::StructTag;
 use sui_sdk::types::transaction::TransactionData;
 use sui_types::{
     Identifier, TypeTag,
     base_types::ObjectRef,
     programmable_transaction_builder::ProgrammableTransactionBuilder,
+    sui_serde::SuiStructTag,
     transaction::{Command, ProgrammableMoveCall},
 };
 use wallet_utils::address;
@@ -15,7 +15,7 @@ use super::SuiBaseTransaction;
 
 pub struct TransferOpt {
     pub base: SuiBaseTransaction,
-    pub struct_tag: Option<StructTag>,
+    pub struct_tag: Option<TypeTag>,
 }
 
 impl TransferOpt {
@@ -40,7 +40,7 @@ impl TransferOpt {
 
         let struct_tag = struct_tag
             .as_ref()
-            .map(|struct_tag| address::parse_sui_struct_tag(struct_tag))
+            .map(|struct_tag| address::parse_sui_type_tag(struct_tag))
             .transpose()?;
 
         Ok(Self { base, struct_tag })
@@ -107,19 +107,33 @@ impl types::Transaction<TransactionData> for TransferOpt {
                 .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
             // struct_tag.
 
-            let coin_struct_tag = StructTag {
-                address: move_core_types::account_address::AccountAddress::from_str("0x2").unwrap(),
-                module: Identifier::new("coin").unwrap(),
-                name: Identifier::new("Coin").unwrap(),
-                type_params: vec![TypeTag::Struct(Box::new(struct_tag.clone()))],
-            };
+            // SuiStructTag
+            // TypeTag::
+
+            let coin_struct_tag_json = serde_json::json!(
+                {
+                    "address": sui_types::SUI_FRAMEWORK_ADDRESS,
+                    "module": Identifier::new("coin").unwrap(),
+                    "name": Identifier::new("Coin").unwrap(),
+                    // "type_args": vec![TypeTag::Struct(Box::new(struct_tag.clone()))],
+                    "type_args": vec![struct_tag.clone()],
+                }
+            );
+
+            let b = wallet_utils::serde_func::serde_from_value(coin_struct_tag_json)?;
+            // let coin_struct_tag = sui_sdk::StructTag {
+            //     address: ,
+            //     module: Identifier::new("coin").unwrap(),
+            //     name: Identifier::new("Coin").unwrap(),
+            //     type_params: vec![TypeTag::Struct(Box::new(struct_tag.clone()))],
+            // };
 
             builder.command(Command::move_call(
                 address::parse_object_id_from_hex("0x2")?,
                 module,
                 function,
                 // vec![TypeTag::Struct(Box::new(struct_tag.clone()))],
-                vec![TypeTag::Struct(Box::new(coin_struct_tag))],
+                vec![TypeTag::Struct(Box::new(b))],
                 vec![split_coin_arg, to_arg],
             ));
             // builder

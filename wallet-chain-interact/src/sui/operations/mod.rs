@@ -1,6 +1,6 @@
 pub mod transfer;
 use sui_sdk::types::base_types::SuiAddress;
-use sui_types::base_types::{ObjectID, ObjectRef};
+use sui_types::base_types::ObjectRef;
 pub use transfer::*;
 use wallet_utils::address;
 

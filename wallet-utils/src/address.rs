@@ -134,16 +134,16 @@ pub fn parse_sui_type_tag(s: &str) -> Result<sui_sdk::types::TypeTag, crate::Err
     })
 }
 
-pub fn parse_sui_struct_tag(
-    s: &str,
-) -> Result<move_core_types::language_storage::StructTag, crate::Error> {
-    sui_sdk::types::parse_sui_struct_tag(s).map_err(|e| {
-        crate::Error::Parse(ParseError::AddressConvertFailed(format!(
-            "to_sui_address err:{}:address = {}",
-            e, s
-        )))
-    })
-}
+// pub fn parse_sui_struct_tag(s: &str) -> Result<sui_sdk::types::TypeTag, crate::Error> {
+//     Ok(sui_sdk::types::parse_sui_struct_tag(s)
+//         .map_err(|e| {
+//             crate::Error::Parse(ParseError::AddressConvertFailed(format!(
+//                 "to_sui_address err:{}:address = {}",
+//                 e, s
+//             )))
+//         })?
+//         .into())
+// }
 
 pub fn parse_object_id_from_hex(
     hex_string: &str,
@@ -309,7 +309,7 @@ mod tests {
         AccountIndexMap, hex_to_bs58_addr, parse_sui_address, parse_sui_type_tag,
     };
 
-    use super::{parse_sui_struct_tag, to_checksum_address};
+    use super::to_checksum_address;
 
     #[test]
     fn test_from_input_index() {
@@ -374,12 +374,12 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_sui_struct_tag() {
+    fn test_parse_sui_type_tag() {
         let input =
             "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
         // let expected = "0x3bAc24b73c7A03C8715697cA1646a6f85B91023a";
 
-        let result = parse_sui_struct_tag(input);
+        let result = parse_sui_type_tag(input);
         println!("result = {result:#?}");
         let tag = result.unwrap();
     }

@@ -53,7 +53,7 @@ chrono = { workspace = true }
 sui-sdk = { workspace = true }
 sui-types = { workspace = true }
 shared-crypto = { workspace = true }
-move-core-types = { workspace = true }
+# move-core-types = { workspace = true }
 
 [dev-dependencies]
 libsecp256k1 = "0.6"
