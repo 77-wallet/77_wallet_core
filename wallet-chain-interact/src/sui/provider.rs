@@ -44,6 +44,13 @@ impl Provider {
         Ok(self.client.invoke_request(params).await?)
     }
 
+    pub async fn latest_block(&self) -> crate::Result<String> {
+        let params: JsonRpcParams<()> = JsonRpcParams::default()
+            .method("sui_getLatestCheckpointSequenceNumber")
+            .no_params();
+        Ok(self.client.invoke_request(params).await?)
+    }
+
     /// Gas 费估算（简化版）
     pub async fn get_reference_gas_price(&self) -> crate::Result<u64> {
         let params: JsonRpcParams<()> = JsonRpcParams::default()
@@ -247,6 +254,13 @@ mod tests {
         let sui = get_chain();
         let object = sui.provider.get_object_by_id(TEST_ADDRESS).await.unwrap();
         println!("object: {:#?}", object);
+    }
+
+    #[tokio::test]
+    async fn test_latest_block() {
+        let sui = get_chain();
+        let block = sui.provider.latest_block().await.unwrap();
+        println!("block: {:#?}", block);
     }
 
     #[tokio::test]
