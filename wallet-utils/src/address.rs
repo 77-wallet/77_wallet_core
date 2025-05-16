@@ -305,9 +305,7 @@ pub fn to_checksum_address(address: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::address::{
-        AccountIndexMap, hex_to_bs58_addr, parse_sui_address, parse_sui_type_tag,
-    };
+    use crate::address::{AccountIndexMap, hex_to_bs58_addr, parse_sui_type_tag};
 
     use super::to_checksum_address;
 
@@ -381,6 +379,5 @@ mod tests {
 
         let result = parse_sui_type_tag(input);
         println!("result = {result:#?}");
-        let tag = result.unwrap();
     }
 }

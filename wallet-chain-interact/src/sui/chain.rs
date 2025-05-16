@@ -216,7 +216,6 @@ mod tests {
     use crate::sui::{SuiChain, TransferOpt};
 
     use super::*;
-    use sui_types::crypto::{AccountPrivateKey, ToFromBytes};
     use wallet_transport::client::RpcClient;
     use wallet_utils::init_test_log;
 
