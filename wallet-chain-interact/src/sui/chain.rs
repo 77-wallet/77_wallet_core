@@ -46,7 +46,9 @@ impl SuiChain {
     }
 
     pub async fn block_num(&self) -> crate::Result<u64> {
-        todo!()
+        let latest_block = self.provider.latest_block().await?;
+
+        Ok(wallet_utils::parse_func::u64_from_str(&latest_block)?)
     }
     pub async fn query_tx_res(&self, hash: &str) -> crate::Result<Option<QueryTransactionResult>> {
         todo!()
