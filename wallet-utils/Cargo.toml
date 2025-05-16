@@ -1,3 +1,4 @@
+cargo-features = ["edition2024"]
 [package]
 name = "wallet-utils"
 version = "0.1.0"
