@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::{
+    KdfParams, KeyDerivationFunction,
     argon2id::Argon2idKdf,
     pbkdf2::Pbkdf2Kdf,
     scrypt_::{ScryptKdf, ScryptParams},
-    KdfParams, KeyDerivationFunction,
 };
 
 use super::json::KeystoreJson;

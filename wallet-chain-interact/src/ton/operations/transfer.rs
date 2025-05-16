@@ -6,9 +6,9 @@ use crate::ton::{
 use async_trait::async_trait;
 use num_bigint::BigUint;
 use tonlib_core::{
+    TonAddress,
     cell::Cell,
     message::{CommonMsgInfo, InternalMessage, TransferMessage},
-    TonAddress,
 };
 use wallet_types::chain::address::r#type::TonAddressType;
 

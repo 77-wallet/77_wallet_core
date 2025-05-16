@@ -1,7 +1,6 @@
 use crate::tron::{
-    consts,
+    Provider, consts,
     operations::{RawTransactionParams, TronTxOperation},
-    Provider,
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

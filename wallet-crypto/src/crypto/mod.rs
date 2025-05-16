@@ -10,7 +10,7 @@ use argon2id::Argon2idParams;
 use pbkdf2::Pbkdf2Params;
 use scrypt_::ScryptParams;
 
-use crate::{error::crypto::KeystoreError, KdfAlgorithm};
+use crate::{KdfAlgorithm, error::crypto::KeystoreError};
 
 pub trait KeyDerivationFunction {
     fn derive_key(&self, password: &[u8]) -> Result<Vec<u8>, KeystoreError>;
@@ -93,8 +93,8 @@ mod test {
     use crate::KdfAlgorithm;
 
     use super::{
-        argon2id::Argon2idKdf, pbkdf2::Pbkdf2Kdf, scrypt_::ScryptKdf, KdfParams,
-        KeyDerivationFunction,
+        KdfParams, KeyDerivationFunction, argon2id::Argon2idKdf, pbkdf2::Pbkdf2Kdf,
+        scrypt_::ScryptKdf,
     };
 
     fn encrypt_data<P, R, B, S>(

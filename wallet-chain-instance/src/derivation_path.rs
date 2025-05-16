@@ -89,7 +89,7 @@ mod tests {
     };
     use wallet_utils::init_test_log;
 
-    use crate::derivation_path::{get_account_hd_path_from_path, HDPath};
+    use crate::derivation_path::{HDPath, get_account_hd_path_from_path};
 
     // use coins_bip32::path::DerivationPath;
 

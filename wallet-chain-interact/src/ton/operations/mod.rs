@@ -2,14 +2,14 @@ use super::{errors::TonError, provider::Provider};
 use async_trait::async_trait;
 use std::sync::Arc;
 use tonlib_core::{
+    TonAddress,
     cell::{ArcCell, Cell, TonCellError},
     message::{TonMessage as _, TransferMessage},
     tlb_types::traits::TLBObject as _,
     wallet::{
-        versioned::{v4::WalletExtMsgBodyV4, v5::WalletExtMsgBodyV5, DEFAULT_WALLET_ID},
+        versioned::{DEFAULT_WALLET_ID, v4::WalletExtMsgBodyV4, v5::WalletExtMsgBodyV5},
         wallet_version::WalletVersion,
     },
-    TonAddress,
 };
 use wallet_types::chain::address::r#type::TonAddressType;
 pub mod token_transfer;

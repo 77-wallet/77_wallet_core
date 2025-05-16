@@ -1,6 +1,6 @@
 use bitcoin::{
-    hashes::{Hash as _, HashEngine as _},
     PrivateKey,
+    hashes::{Hash as _, HashEngine as _},
 };
 use ripemd160::Digest as _;
 use secp256k1::{Keypair, Secp256k1};

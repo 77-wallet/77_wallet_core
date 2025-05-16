@@ -120,10 +120,7 @@ impl Provider {
             let params = JsonRpcParams::default()
                 .method("suix_getCoins")
                 .params(json!([
-                    addr,
-                    coin_type,
-                    cursor,
-                    50  // 每页最多50个
+                    addr, coin_type, cursor, 50 // 每页最多50个
                 ]));
 
             let page: sui_sdk::rpc_types::CoinPage = self.client.invoke_request(params).await?;

@@ -1,11 +1,11 @@
-use crate::error::parse;
 use crate::error::Error;
+use crate::error::parse;
 use std::fmt::Display;
 use std::str::FromStr;
 
 use alloy::primitives::{
-    utils::{format_units, parse_units, ParseUnits},
     U256,
+    utils::{ParseUnits, format_units, parse_units},
 };
 
 pub fn convert_to_u256(value: &str, unit: u8) -> Result<U256, crate::Error> {

@@ -1,8 +1,7 @@
 use dogcoin::{
-    ecdsa,
+    ScriptBuf, ecdsa,
     opcodes::all::{OP_CHECKMULTISIG, OP_CHECKSIG, OP_CHECKSIGADD, OP_GREATERTHANOREQUAL},
     script::{Builder, PushBytes},
-    ScriptBuf,
 };
 use std::str::FromStr;
 use wallet_types::valueobject::AddressPubkey;

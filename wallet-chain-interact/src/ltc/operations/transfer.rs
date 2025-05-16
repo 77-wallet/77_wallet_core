@@ -1,11 +1,11 @@
 use crate::ltc::{
+    ParseLtcAddress,
     consts::{self, EXPEND_FEE_RATE},
     provider::Provider,
     signature::{self},
     utxos::UtxoList,
-    ParseLtcAddress,
 };
-use litecoin::{consensus, transaction::Version, Amount, TxIn};
+use litecoin::{Amount, TxIn, consensus, transaction::Version};
 use wallet_types::chain::{self, address::r#type::LtcAddressType};
 use wallet_utils::unit;
 

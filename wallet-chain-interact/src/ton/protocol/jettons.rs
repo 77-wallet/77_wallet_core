@@ -5,8 +5,8 @@ use crate::ton::{
 };
 use std::sync::Arc;
 use tonlib_core::{
-    cell::{BagOfCells, CellBuilder},
     TonAddress,
+    cell::{BagOfCells, CellBuilder},
 };
 
 #[derive(Debug, serde::Deserialize)]

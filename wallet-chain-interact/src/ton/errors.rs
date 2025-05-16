@@ -1,5 +1,5 @@
 use thiserror::Error;
-use tonlib_core::{cell::TonCellError, message::TonMessageError, TonAddressParseError};
+use tonlib_core::{TonAddressParseError, cell::TonCellError, message::TonMessageError};
 
 #[derive(Error, Debug)]
 pub enum TonError {

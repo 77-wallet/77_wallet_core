@@ -8,9 +8,9 @@ use super::{
     },
 };
 use crate::sol::protocol::{
+    Response,
     block::{Block, BlockHash},
     transaction::{SignatureStatus, TransactionResponse},
-    Response,
 };
 use serde_json::json;
 use solana_sdk::{

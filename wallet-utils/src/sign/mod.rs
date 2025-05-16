@@ -31,7 +31,7 @@ pub fn sign_tron(s: &str, private_key: &str, recover: Option<u8>) -> Result<Stri
 mod tests {
     use alloy::primitives::Keccak256;
     use hex::decode;
-    use libsecp256k1::{recover, Message, RecoveryId, Signature};
+    use libsecp256k1::{Message, RecoveryId, Signature, recover};
 
     use crate::error::sign_err::SignError;
 

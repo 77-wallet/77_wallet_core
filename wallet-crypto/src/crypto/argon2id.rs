@@ -1,4 +1,4 @@
-use crate::{error::crypto::KeystoreError, KdfAlgorithm};
+use crate::{KdfAlgorithm, error::crypto::KeystoreError};
 
 use super::{KdfParams, KeyDerivationFunction};
 

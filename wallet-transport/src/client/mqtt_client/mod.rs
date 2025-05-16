@@ -2,7 +2,7 @@ pub mod sync;
 pub mod test;
 use std::time::Duration;
 
-use rumqttc::v5::{mqttbytes::QoS, AsyncClient, EventLoop, MqttOptions};
+use rumqttc::v5::{AsyncClient, EventLoop, MqttOptions, mqttbytes::QoS};
 use tokio::time;
 
 // pub struct MqttConnection {

@@ -151,7 +151,7 @@ mod test {
     use super::TonInstance;
     use crate::instance::ton::TonKeyPair;
     use tonlib_core::TonAddress;
-    use wallet_core::{derive::GenDerivation, xpriv, KeyPair};
+    use wallet_core::{KeyPair, derive::GenDerivation, xpriv};
     use wallet_types::chain::chain::ChainCode;
 
     #[test]

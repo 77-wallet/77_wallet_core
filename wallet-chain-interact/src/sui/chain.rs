@@ -1,5 +1,5 @@
-use crate::types::{self, ChainPrivateKey};
 use crate::QueryTransactionResult;
+use crate::types::{self, ChainPrivateKey};
 
 use super::provider::Provider;
 use alloy::primitives::U256;

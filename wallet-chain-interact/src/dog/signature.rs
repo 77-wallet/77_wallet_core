@@ -1,13 +1,12 @@
 use super::{provider::Provider, utxos::Usedutxo};
 use crate::dog::script::DogScript;
 use dogcoin::{
-    ecdsa,
+    Amount, CompressedPublicKey, EcdsaSighashType, PrivateKey, ScriptBuf, TapSighashType,
+    Transaction, TxOut, Witness, ecdsa,
     key::{Keypair, Secp256k1, TapTweak, TweakedKeypair},
     script::{self, PushBytes},
     secp256k1::{self, All, Message},
     sighash::{Prevouts, SighashCache},
-    Amount, CompressedPublicKey, EcdsaSighashType, PrivateKey, ScriptBuf, TapSighashType,
-    Transaction, TxOut, Witness,
 };
 use wallet_types::chain::address::r#type::DogAddressType;
 
@@ -45,7 +44,7 @@ impl DogSignature {
             _ => {
                 return Err(crate::Error::SignError(format!(
                     "address type not support {address_type:?}",
-                )))
+                )));
             }
         }
         Ok(())

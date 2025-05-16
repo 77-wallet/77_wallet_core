@@ -1,8 +1,7 @@
 use super::ResourceType;
 use crate::tron::{
-    consts,
+    Provider, consts,
     operations::{RawTransactionParams, TronSimulateOperation, TronTxOperation},
-    Provider,
 };
 use anychain_core::Transaction;
 use anychain_tron::protocol::{balance_contract::UnDelegateResourceContract, common::ResourceCode};

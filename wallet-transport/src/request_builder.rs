@@ -1,6 +1,6 @@
-use crate::{errors::NodeResponseError, types::JsonRpcResult, TransportError};
+use crate::{TransportError, errors::NodeResponseError, types::JsonRpcResult};
 use reqwest::RequestBuilder;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use std::{fmt::Debug, str::FromStr};
 
 pub struct ReqBuilder(pub RequestBuilder);

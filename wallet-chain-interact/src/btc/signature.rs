@@ -1,15 +1,14 @@
 use super::{provider::Provider, utxos::Usedutxo};
-use crate::{script::BtcScript, Error};
+use crate::{Error, script::BtcScript};
 use bitcoin::{
-    ecdsa,
+    Amount, CompressedPublicKey, EcdsaSighashType, PrivateKey, ScriptBuf, TapSighashType,
+    Transaction, TxOut, Witness, ecdsa,
     key::{Keypair, Secp256k1, TapTweak, TweakedKeypair},
     opcodes::OP_0,
     script::{self, PushBytes},
     secp256k1::{self, All, Message},
     sighash::{Prevouts, ScriptPath, SighashCache},
     taproot::{LeafVersion, TaprootBuilder},
-    Amount, CompressedPublicKey, EcdsaSighashType, PrivateKey, ScriptBuf, TapSighashType,
-    Transaction, TxOut, Witness,
 };
 use std::str::FromStr as _;
 use wallet_types::chain::address::r#type::BtcAddressType;
@@ -49,7 +48,7 @@ impl BtcSignature {
             _ => {
                 return Err(crate::Error::SignError(format!(
                     "address type not support {address_type:?}",
-                )))
+                )));
             }
         }
         Ok(())

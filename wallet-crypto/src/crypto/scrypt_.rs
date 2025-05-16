@@ -1,4 +1,4 @@
-use crate::{error::crypto::KeystoreError, utils::HexBytes, KdfAlgorithm};
+use crate::{KdfAlgorithm, error::crypto::KeystoreError, utils::HexBytes};
 
 use super::{KdfParams, KeyDerivationFunction};
 

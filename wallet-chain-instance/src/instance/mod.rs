@@ -19,8 +19,8 @@ use sui::SuiInstance;
 use ton::{TonInstance, TonKeyPair};
 use trx::TronInstance;
 use wallet_core::{
-    derive::{Derive, GenDerivation, GenDerivationDog, GenDerivationLtc},
     KeyPair,
+    derive::{Derive, GenDerivation, GenDerivationDog, GenDerivationLtc},
 };
 
 use wallet_types::chain::{address::r#type::AddressType, chain, network};
@@ -240,9 +240,9 @@ impl ChainObject {
     ) -> Result<
         Box<
             dyn wallet_core::address::GenAddress<
-                Address = crate::instance::Address,
-                Error = crate::Error,
-            >,
+                    Address = crate::instance::Address,
+                    Error = crate::Error,
+                >,
         >,
         crate::Error,
     > {

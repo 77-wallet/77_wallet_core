@@ -1,15 +1,14 @@
 use super::{provider::Provider, utxos::Usedutxo};
 use crate::ltc::script::LtcScript;
 use litecoin::{
-    ecdsa,
+    Amount, CompressedPublicKey, EcdsaSighashType, PrivateKey, ScriptBuf, TapSighashType,
+    Transaction, TxOut, Witness, ecdsa,
     key::{Keypair, Secp256k1, TapTweak, TweakedKeypair},
     opcodes::OP_0,
     script::{self, PushBytes},
     secp256k1::{self, All, Message},
     sighash::{Prevouts, SighashCache},
     taproot::{LeafVersion, TaprootBuilder},
-    Amount, CompressedPublicKey, EcdsaSighashType, PrivateKey, ScriptBuf, TapSighashType,
-    Transaction, TxOut, Witness,
 };
 use std::str::FromStr as _;
 use wallet_types::chain::address::r#type::LtcAddressType;
@@ -82,7 +81,7 @@ impl LtcSignature {
             _ => {
                 return Err(crate::Error::SignError(format!(
                     "address type not support {address_type:?}",
-                )))
+                )));
             }
         }
         Ok(())

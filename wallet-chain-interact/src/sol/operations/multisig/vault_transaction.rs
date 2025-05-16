@@ -1,4 +1,4 @@
-use borsh::{to_vec, BorshDeserialize, BorshSerialize};
+use borsh::{BorshDeserialize, BorshSerialize, to_vec};
 use solana_sdk::{
     address_lookup_table::AddressLookupTableAccount,
     instruction::{AccountMeta, Instruction},

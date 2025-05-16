@@ -2,7 +2,7 @@ pub mod address;
 use anychain_core::{Address, PublicKey as _};
 use anychain_tron::{TronAddress, TronFormat};
 use coins_bip32::xkeys::XPriv;
-use wallet_core::{derive::Derive, KeyPair};
+use wallet_core::{KeyPair, derive::Derive};
 use wallet_types::chain::{address::r#type::BtcAddressType, chain::ChainCode};
 
 pub struct TronKeyPair {

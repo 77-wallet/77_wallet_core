@@ -1,10 +1,10 @@
 use super::{
-    protocol::contract::{isBlackListedCall, nameCall, symbolCall},
     EtherFee,
+    protocol::contract::{isBlackListedCall, nameCall, symbolCall},
 };
 use crate::eth::protocol::contract::{balanceOfCall, decimalsCall};
 use alloy::{
-    network::{eip2718::Encodable2718, TransactionBuilder},
+    network::{TransactionBuilder, eip2718::Encodable2718},
     primitives::U256,
     rpc::types::{Block, TransactionInput, TransactionReceipt, TransactionRequest},
     sol_types::SolCall,

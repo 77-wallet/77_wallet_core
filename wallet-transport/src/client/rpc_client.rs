@@ -4,7 +4,7 @@ use crate::{
     types::JsonRpcResult,
 };
 use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use std::{collections::HashMap, fmt::Debug, str::FromStr};
 
 pub struct RpcClient {

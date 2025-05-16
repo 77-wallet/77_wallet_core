@@ -1,6 +1,6 @@
 use aes::{
-    cipher::{InnerIvInit, KeyInit, StreamCipherCore},
     Aes128,
+    cipher::{InnerIvInit, KeyInit, StreamCipherCore},
 };
 
 use crate::error::crypto::KeystoreError;

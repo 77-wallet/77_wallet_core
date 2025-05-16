@@ -220,11 +220,7 @@ pub fn account_id_to_index(account_id: u32) -> u32 {
 }
 
 pub fn index_to_account_id(index: u32) -> u32 {
-    if index == u32::MAX {
-        0
-    } else {
-        index + 1
-    }
+    if index == u32::MAX { 0 } else { index + 1 }
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -310,7 +306,7 @@ pub fn to_checksum_address(address: &str) -> String {
 #[cfg(test)]
 mod tests {
     use crate::address::{
-        hex_to_bs58_addr, parse_sui_address, parse_sui_type_tag, AccountIndexMap,
+        AccountIndexMap, hex_to_bs58_addr, parse_sui_address, parse_sui_type_tag,
     };
 
     use super::{parse_sui_struct_tag, to_checksum_address};

@@ -4,8 +4,8 @@ use super::signature::LtcSignature;
 use super::{operations, protocol};
 use crate::types::ChainPrivateKey;
 use crate::{BillResourceConsume, QueryTransactionResult};
-use alloy::primitives::map::HashMap;
 use alloy::primitives::U256;
+use alloy::primitives::map::HashMap;
 use litecoin::Amount;
 
 pub struct LtcChain {

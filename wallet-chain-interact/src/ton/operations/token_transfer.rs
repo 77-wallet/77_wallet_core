@@ -9,11 +9,11 @@ use async_trait::async_trait;
 use num_bigint::BigUint;
 use std::{str::FromStr, sync::Arc};
 use tonlib_core::{
+    TonAddress,
     cell::{Cell, EitherCellLayout},
     message::{
         CommonMsgInfo, InternalMessage, JettonTransferMessage, TonMessage as _, TransferMessage,
     },
-    TonAddress,
 };
 use wallet_types::chain::address::r#type::TonAddressType;
 

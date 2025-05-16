@@ -17,7 +17,9 @@ mod tests {
         // solana_sdk::signature::
         // solana_sdk::signature::
 
-        let key = solana_sdk::signature::Keypair::from_base58_string("4JsE64VDotmqJMJRQz53XDAxVCwhmm7bdhybNVMA4fu12WB2etB3QgPwfA3FUFGf2M8RzN9NLF9cJX1sV5ygpQvP");
+        let key = solana_sdk::signature::Keypair::from_base58_string(
+            "4JsE64VDotmqJMJRQz53XDAxVCwhmm7bdhybNVMA4fu12WB2etB3QgPwfA3FUFGf2M8RzN9NLF9cJX1sV5ygpQvP",
+        );
 
         let secret = key.to_base58_string();
         println!("Solana secret: {:?}", secret);

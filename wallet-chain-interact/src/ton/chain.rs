@@ -9,7 +9,7 @@ use super::{
     },
     provider::Provider,
 };
-use crate::{ton::protocol::jettons::JettonMeta, types::ChainPrivateKey, QueryTransactionResult};
+use crate::{QueryTransactionResult, ton::protocol::jettons::JettonMeta, types::ChainPrivateKey};
 use alloy::primitives::U256;
 use tonlib_core::{
     cell::{BagOfCells, Cell},
