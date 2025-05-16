@@ -320,7 +320,7 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
             }
             ChainCode::Dogcoin => {
                 let AddressType::Dog(doge) = typ else {
-                    return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
+                    return Err(crate::Error::Types(wallet_types::Error::DogNeedAddressType));
                 };
 
                 ChainObject::Dog(crate::instance::dog::DogcoinInstance {
