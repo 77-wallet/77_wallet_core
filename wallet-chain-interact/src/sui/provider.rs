@@ -1,5 +1,9 @@
 use serde_json::json;
-use sui_sdk::rpc_types::{SuiMoveNormalizedModule, SuiTransactionBlockResponse};
+use sui_json_rpc_types::{
+    Balance, Coin, CoinPage, DryRunTransactionBlockResponse, ObjectsPage, SuiMoveNormalizedModule,
+    SuiObjectResponse, SuiTransactionBlockResponse,
+};
+use sui_types::transaction::TransactionData;
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
 
 pub struct Provider {
@@ -12,7 +16,7 @@ impl Provider {
         Self { client: rpc_client }
     }
 
-    pub async fn balance(&self, addr: &str) -> crate::Result<sui_sdk::rpc_types::Balance> {
+    pub async fn balance(&self, addr: &str) -> crate::Result<Balance> {
         // 将字符串地址转换为 SuiAddress 类型
         let parsed_addr = wallet_utils::address::parse_sui_address(addr)?;
         // self._client
@@ -28,11 +32,7 @@ impl Provider {
     }
 
     /// 查询任意代币余额
-    pub async fn token_balance(
-        &self,
-        addr: &str,
-        coin_type: &str,
-    ) -> crate::Result<sui_sdk::rpc_types::Balance> {
+    pub async fn token_balance(&self, addr: &str, coin_type: &str) -> crate::Result<Balance> {
         let parsed_addr = wallet_utils::address::parse_sui_address(addr)?;
         // self._client.coin_read_api()
         // .get_balance(owner, coin_type)
@@ -98,7 +98,7 @@ impl Provider {
         filter: Option<serde_json::Value>,
         cursor: Option<String>,
         limit: Option<u64>,
-    ) -> crate::Result<sui_sdk::rpc_types::ObjectsPage> {
+    ) -> crate::Result<ObjectsPage> {
         let params = JsonRpcParams::default()
             .method("suix_getOwnedObjects")
             .params(json!([
@@ -117,10 +117,7 @@ impl Provider {
         Ok(res)
     }
 
-    pub async fn get_object_by_id(
-        &self,
-        id: &str,
-    ) -> crate::Result<sui_sdk::rpc_types::SuiObjectResponse> {
+    pub async fn get_object_by_id(&self, id: &str) -> crate::Result<SuiObjectResponse> {
         let params = JsonRpcParams::default()
             .method("sui_getObject")
             .params(json!([id]));
@@ -140,7 +137,7 @@ impl Provider {
         &self,
         addr: &str,
         coin_type: &str,
-    ) -> crate::Result<Vec<sui_sdk::rpc_types::Coin>> {
+    ) -> crate::Result<Vec<Coin>> {
         let mut cursor: Option<String> = None;
         let mut all_coins = Vec::new();
         loop {
@@ -150,7 +147,7 @@ impl Provider {
                     addr, coin_type, cursor, 50 // 每页最多50个
                 ]));
 
-            let page: sui_sdk::rpc_types::CoinPage = self.client.invoke_request(params).await?;
+            let page: CoinPage = self.client.invoke_request(params).await?;
             all_coins.extend(page.data);
 
             if page.has_next_page {
@@ -165,8 +162,8 @@ impl Provider {
 
     pub async fn dry_run_transaction(
         &self,
-        tx_data: &sui_sdk::types::transaction::TransactionData,
-    ) -> crate::Result<sui_sdk::rpc_types::DryRunTransactionBlockResponse> {
+        tx_data: &TransactionData,
+    ) -> crate::Result<DryRunTransactionBlockResponse> {
         tracing::info!("dry_run_transaction: {:?}", tx_data);
         let tx_data = wallet_utils::serde_func::bcs_to_bytes(tx_data)?;
         let tx_data = wallet_utils::bytes_to_base64(&tx_data);
@@ -181,7 +178,7 @@ impl Provider {
         &self,
         tx_bytes_b64: String,
         signatures_b64: Vec<String>,
-    ) -> crate::Result<sui_sdk::rpc_types::SuiTransactionBlockResponse> {
+    ) -> crate::Result<SuiTransactionBlockResponse> {
         let params = JsonRpcParams::default()
             .method("sui_executeTransactionBlock")
             .params(json!([

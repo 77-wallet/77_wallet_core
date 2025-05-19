@@ -4,10 +4,13 @@ use crate::types::{self, ChainPrivateKey};
 use super::provider::Provider;
 use alloy::primitives::U256;
 use shared_crypto::intent::{Intent, IntentMessage};
-use sui_sdk::rpc_types::{Coin, SuiTransactionBlockEffectsAPI};
 
+use sui_json_rpc_types::{
+    Coin, SuiTransactionBlockEffects, SuiTransactionBlockEffectsAPI as _,
+    SuiTransactionBlockResponse,
+};
 use sui_types::crypto::{AccountKeyPair, AccountPrivateKey, Signature};
-use sui_types::transaction::TransactionDataAPI;
+use sui_types::transaction::{TransactionData, TransactionDataAPI};
 use wallet_types::chain::chain::ChainCode;
 use wallet_types::chain::network;
 
@@ -81,9 +84,9 @@ impl SuiChain {
         params: T,
         private_key: ChainPrivateKey,
         // keypair: sui_types::crypto::AccountKeyPair,
-    ) -> crate::Result<sui_sdk::rpc_types::SuiTransactionBlockResponse>
+    ) -> crate::Result<SuiTransactionBlockResponse>
     where
-        T: crate::types::Transaction<sui_sdk::types::transaction::TransactionData>,
+        T: crate::types::Transaction<TransactionData>,
     {
         // 1. 构建原始 TransactionData
         let mut tx_data: sui_types::transaction::TransactionData = params.build_transaction()?;
@@ -144,10 +147,10 @@ impl SuiChain {
         Ok(tx_hash)
     }
 
-    pub fn extract_gas_used(resp: &sui_sdk::rpc_types::SuiTransactionBlockResponse) -> Option<f64> {
+    pub fn extract_gas_used(resp: &SuiTransactionBlockResponse) -> Option<f64> {
         let effects = resp.effects.as_ref()?;
         let gas_summary = match effects {
-            sui_sdk::rpc_types::SuiTransactionBlockEffects::V1(v1) => &v1.gas_used,
+            SuiTransactionBlockEffects::V1(v1) => &v1.gas_used,
         };
         let mist = gas_summary.net_gas_usage();
         let sui = wallet_utils::unit::mist_to_sui(mist);
