@@ -1,5 +1,5 @@
 /target/
-Cargo.lock
+# Cargo.lock
 .vscode/
 /wallet-chain-interact/tests
 wallet_data
