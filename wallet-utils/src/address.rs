@@ -114,10 +114,8 @@ pub fn tron_addr_to_eth_addr(tron_addr: &str) -> Result<String, String> {
     Ok(format!("0x{}", hex::encode(eth_bytes)))
 }
 
-pub fn parse_sui_address(
-    address: &str,
-) -> Result<sui_sdk::types::base_types::SuiAddress, crate::Error> {
-    sui_sdk::types::base_types::SuiAddress::from_str(address.trim()).map_err(|e| {
+pub fn parse_sui_address(address: &str) -> Result<sui_types::base_types::SuiAddress, crate::Error> {
+    sui_types::base_types::SuiAddress::from_str(address.trim()).map_err(|e| {
         crate::Error::Parse(ParseError::AddressConvertFailed(format!(
             "to_sui_address err:{}:address = {}",
             e, address
@@ -125,8 +123,8 @@ pub fn parse_sui_address(
     })
 }
 
-pub fn parse_sui_type_tag(s: &str) -> Result<sui_sdk::types::TypeTag, crate::Error> {
-    sui_sdk::types::parse_sui_type_tag(s).map_err(|e| {
+pub fn parse_sui_type_tag(s: &str) -> Result<sui_types::TypeTag, crate::Error> {
+    sui_types::parse_sui_type_tag(s).map_err(|e| {
         crate::Error::Parse(ParseError::AddressConvertFailed(format!(
             "to_sui_address err:{}:address = {}",
             e, s
@@ -147,8 +145,8 @@ pub fn parse_sui_type_tag(s: &str) -> Result<sui_sdk::types::TypeTag, crate::Err
 
 pub fn parse_object_id_from_hex(
     hex_string: &str,
-) -> Result<sui_sdk::types::base_types::ObjectID, crate::Error> {
-    sui_sdk::types::base_types::ObjectID::from_hex_literal(hex_string).map_err(|e| {
+) -> Result<sui_types::base_types::ObjectID, crate::Error> {
+    sui_types::base_types::ObjectID::from_hex_literal(hex_string).map_err(|e| {
         crate::Error::Parse(ParseError::AddressConvertFailed(format!(
             "to_sui_address err:{}:address = {}",
             e, hex_string

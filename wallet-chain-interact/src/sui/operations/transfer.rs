@@ -1,10 +1,11 @@
 use std::str::FromStr;
 
 use crate::types;
-use sui_sdk::types::transaction::TransactionData;
 use sui_types::{
-    Identifier, TypeTag, base_types::ObjectRef,
-    programmable_transaction_builder::ProgrammableTransactionBuilder, transaction::Command,
+    Identifier, TypeTag,
+    base_types::ObjectRef,
+    programmable_transaction_builder::ProgrammableTransactionBuilder,
+    transaction::{Command, TransactionData},
 };
 use wallet_utils::address;
 
