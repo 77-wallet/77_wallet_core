@@ -255,6 +255,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_token_balance() {
+        let sui = get_chain();
+
+        let contract =
+        "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
+
+        let balance = sui
+            .balance(TEST_ADDRESS, Some(contract.to_string()))
+            .await
+            .unwrap();
+        println!("{:?}", balance);
+    }
+
+    #[tokio::test]
     async fn test_execute_transaction() {
         let sui = get_chain();
 
@@ -291,8 +305,11 @@ mod tests {
 
         // let keypair = AccountKeyPair::from(key);
         let to = "0x807718c3c1f0cadc2c5715fb1d42fb4714e9a6b43c1df68b8b9c3773ccd93545";
+        let to = "0xa042c3ba8208964374cc050922ec94e85fdffe9fc0cd656fb623642ae2fdb4c0";
 
-        let amount = 1;
+        
+
+        let amount = 20;
         let contract =
             "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
         let (transfer_coins, gas_coins) = sui

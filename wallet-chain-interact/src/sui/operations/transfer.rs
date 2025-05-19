@@ -71,6 +71,7 @@ impl types::Transaction<TransactionData> for TransferOpt {
             //     wallet_utils::serde_func::bcs_to_bytes(&self.base.amount)?,
             // );
             // builder.split_coin(self.base.to, primary_ref, vec![self.base.amount]);
+            tracing::info!("amount: {}", self.base.amount);
             let split_amount = builder
                 .pure(self.base.amount /* u64 */)
                 .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;

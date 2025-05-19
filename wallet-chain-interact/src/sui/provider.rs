@@ -1,5 +1,5 @@
 use serde_json::json;
-use sui_sdk::rpc_types::SuiMoveNormalizedModule;
+use sui_sdk::rpc_types::{SuiMoveNormalizedModule, SuiTransactionBlockResponse};
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
 
 pub struct Provider {
@@ -48,6 +48,26 @@ impl Provider {
         let params: JsonRpcParams<()> = JsonRpcParams::default()
             .method("sui_getLatestCheckpointSequenceNumber")
             .no_params();
+        Ok(self.client.invoke_request(params).await?)
+    }
+
+    pub async fn query_tx_info(&self, digest: &str) -> crate::Result<SuiTransactionBlockResponse> {
+        let params = JsonRpcParams::default()
+            .method("sui_getTransactionBlock")
+            .params(json!(
+                [
+                    digest,
+                    {
+                        "showInput": true,
+                        "showRawInput": false,
+                        "showEffects": true,
+                        "showEvents": true,
+                        "showObjectChanges": false,
+                        "showBalanceChanges": false,
+                        "showRawEffects": false
+                    }
+                ]
+            ));
         Ok(self.client.invoke_request(params).await?)
     }
 
@@ -288,5 +308,16 @@ mod tests {
             // }
             // println!("module: {:#?}", module);
         }
+    }
+
+    #[tokio::test]
+    async fn test_query_tx_info() {
+        let sui = get_chain();
+        let tx_info = sui
+            .provider
+            .query_tx_info("GdyEZutEWFwJuNj2N9aXB5K2L5L3WsvwDSkxBsCb7y2n")
+            .await
+            .unwrap();
+        println!("tx_info: {:#?}", tx_info);
     }
 }
