@@ -1,7 +1,7 @@
 use serde_json::json;
 use sui_json_rpc_types::{
-    Balance, Coin, CoinPage, DryRunTransactionBlockResponse, ObjectsPage, SuiMoveNormalizedModule,
-    SuiObjectResponse, SuiTransactionBlockResponse,
+    Balance, Coin, CoinPage, DryRunTransactionBlockResponse, ObjectsPage, SuiCoinMetadata,
+    SuiMoveNormalizedModule, SuiObjectResponse, SuiTransactionBlockResponse,
 };
 use sui_types::transaction::TransactionData;
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
@@ -68,6 +68,13 @@ impl Provider {
                     }
                 ]
             ));
+        Ok(self.client.invoke_request(params).await?)
+    }
+
+    pub async fn get_coin_metadata(&self, coin_type: &str) -> crate::Result<SuiCoinMetadata> {
+        let params = JsonRpcParams::default()
+            .method("suix_getCoinMetadata")
+            .params(json!([coin_type]));
         Ok(self.client.invoke_request(params).await?)
     }
 

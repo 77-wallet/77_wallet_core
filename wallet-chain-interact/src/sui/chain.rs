@@ -53,17 +53,38 @@ impl SuiChain {
 
         Ok(wallet_utils::parse_func::u64_from_str(&latest_block)?)
     }
-    pub async fn query_tx_res(&self, hash: &str) -> crate::Result<Option<QueryTransactionResult>> {
+    pub async fn query_tx_res(
+        &self,
+        digest: &str,
+    ) -> crate::Result<Option<QueryTransactionResult>> {
+        let tx = self.provider.query_tx_info(digest).await?;
+
+        let transaction_time = tx.timestamp_ms.map(|c| c as u128).unwrap_or_default();
+        let transaction_fee = Self::extract_gas_used(&tx).unwrap_or_default();
+        let status = Self::extract_status(&tx);
+        let block_height = tx.checkpoint.map(|c| c as u128).unwrap_or_default();
+        QueryTransactionResult::new(
+            digest.to_string(),
+            transaction_fee,
+            "gas".to_owned(),
+            transaction_time,
+            status,
+            block_height,
+        );
         todo!()
     }
     pub async fn decimals(&self, token_addr: &str) -> crate::Result<u8> {
-        todo!()
+        let meta_data = self.provider.get_coin_metadata(token_addr).await?;
+
+        Ok(meta_data.decimals)
     }
     pub async fn token_symbol(&self, token: &str) -> crate::Result<String> {
-        todo!()
+        let meta_data = self.provider.get_coin_metadata(token).await?;
+        Ok(meta_data.symbol)
     }
     pub async fn token_name(&self, token: &str) -> crate::Result<String> {
-        todo!()
+        let meta_data = self.provider.get_coin_metadata(token).await?;
+        Ok(meta_data.name)
     }
 
     pub async fn estimate_gas<T>(&self, params: T) -> crate::Result<u64>
@@ -155,6 +176,19 @@ impl SuiChain {
         let mist = gas_summary.net_gas_usage();
         let sui = wallet_utils::unit::mist_to_sui(mist);
         Some(sui)
+    }
+
+    pub fn extract_status(resp: &SuiTransactionBlockResponse) -> i8 {
+        let Some(effects) = resp.effects.as_ref() else {
+            return 3;
+        };
+        let status = match effects {
+            SuiTransactionBlockEffects::V1(v1) => &v1.status,
+        };
+        match status {
+            sui_json_rpc_types::SuiExecutionStatus::Success => 2,
+            sui_json_rpc_types::SuiExecutionStatus::Failure { error: _ } => 3,
+        }
     }
 
     async fn fetch_sorted(&self, owner: &str, coin_type: &str) -> crate::Result<Vec<Coin>> {
@@ -262,7 +296,7 @@ mod tests {
         let sui = get_chain();
 
         let contract =
-        "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
+            "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
 
         let balance = sui
             .balance(TEST_ADDRESS, Some(contract.to_string()))
@@ -309,8 +343,6 @@ mod tests {
         // let keypair = AccountKeyPair::from(key);
         let to = "0x807718c3c1f0cadc2c5715fb1d42fb4714e9a6b43c1df68b8b9c3773ccd93545";
         let to = "0xa042c3ba8208964374cc050922ec94e85fdffe9fc0cd656fb623642ae2fdb4c0";
-
-        
 
         let amount = 20;
         let contract =
