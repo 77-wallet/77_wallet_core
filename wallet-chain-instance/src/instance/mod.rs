@@ -348,3 +348,32 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
         Ok(res)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::ChainObject;
+    use wallet_core::xpriv;
+    use wallet_types::chain::{address::r#type::DOG_ADDRESS_TYPES, chain::ChainCode, network};
+
+    #[test]
+    fn test_gen() {
+        let phrase = "";
+        let password = "";
+
+        let xpriv = xpriv::generate_master_key(1, phrase, password).unwrap();
+        let seed = xpriv.1;
+
+        let code = ChainCode::Dogcoin;
+        let address_types = DOG_ADDRESS_TYPES.to_vec();
+        let network = network::NetworkKind::Testnet;
+
+        for address_type in address_types {
+            let instance: ChainObject = (&code, &address_type, network.into()).try_into().unwrap();
+            let keypair = instance
+                .gen_keypair_with_index_address_type(&seed, 0)
+                .unwrap();
+
+            println!("address {}", keypair.address())
+        }
+    }
+}
