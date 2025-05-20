@@ -8,7 +8,6 @@ use wallet_transport::{client::RpcClient, types::JsonRpcParams};
 
 pub struct Provider {
     client: RpcClient,
-    // _client: sui_sdk::SuiClient,
 }
 
 impl Provider {
@@ -16,30 +15,12 @@ impl Provider {
         Self { client: rpc_client }
     }
 
-    pub async fn balance(&self, addr: &str) -> crate::Result<Balance> {
+    pub async fn balance(&self, addr: &str, coin_type: &str) -> crate::Result<Balance> {
         // 将字符串地址转换为 SuiAddress 类型
         let parsed_addr = wallet_utils::address::parse_sui_address(addr)?;
-        // self._client
-        // .transaction_builder()
-        // .
-        // self._client
-        // .transaction_builder()
         let params = JsonRpcParams::default()
             .method("suix_getBalance")
-            .params(json!([parsed_addr.to_string(), "0x2::sui::SUI"])); // 明确指定 SUI 类型
-
-        Ok(self.client.invoke_request(params).await?)
-    }
-
-    /// 查询任意代币余额
-    pub async fn token_balance(&self, addr: &str, coin_type: &str) -> crate::Result<Balance> {
-        let parsed_addr = wallet_utils::address::parse_sui_address(addr)?;
-        // self._client.coin_read_api()
-        // .get_balance(owner, coin_type)
-
-        let params = JsonRpcParams::default()
-            .method("suix_getBalance")
-            .params(json!([parsed_addr.to_string(), coin_type]));
+            .params(json!([parsed_addr.to_string(), coin_type])); // 明确指定 SUI 类型
 
         Ok(self.client.invoke_request(params).await?)
     }

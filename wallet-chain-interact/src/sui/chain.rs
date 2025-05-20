@@ -1,18 +1,20 @@
-use crate::QueryTransactionResult;
 use crate::types::{self, ChainPrivateKey};
+use crate::{BillResourceConsume, QueryTransactionResult};
 
+use super::consts::{self, SUI_VALUE};
 use super::provider::Provider;
 use alloy::primitives::U256;
 use shared_crypto::intent::{Intent, IntentMessage};
 
 use sui_json_rpc_types::{
-    Coin, SuiTransactionBlockEffects, SuiTransactionBlockEffectsAPI as _,
-    SuiTransactionBlockResponse,
+    Coin, SuiTransactionBlockDataAPI, SuiTransactionBlockEffects,
+    SuiTransactionBlockEffectsAPI as _, SuiTransactionBlockResponse,
 };
 use sui_types::crypto::{AccountKeyPair, AccountPrivateKey, Signature};
 use sui_types::transaction::{TransactionData, TransactionDataAPI};
 use wallet_types::chain::chain::ChainCode;
 use wallet_types::chain::network;
+use wallet_types::constant::chain_code::SUI;
 
 pub struct SuiChain {
     pub provider: Provider,
@@ -36,16 +38,14 @@ impl SuiChain {
 
 impl SuiChain {
     pub async fn balance(&self, addr: &str, token: Option<String>) -> crate::Result<U256> {
-        let res = if let Some(t) = token
-            && !t.is_empty()
-        {
-            self.provider.token_balance(addr, &t).await
+        let coin_type = if let Some(t) = &token {
+            t
         } else {
-            self.provider.balance(addr).await
-        }?;
+            consts::SUI_NATIVE_COIN
+        };
+        let res = self.provider.balance(addr, &coin_type).await?;
 
-        let res = res.total_balance;
-        Ok(U256::from(res))
+        Ok(U256::from(res.total_balance))
     }
 
     pub async fn block_num(&self) -> crate::Result<u64> {
@@ -63,15 +63,20 @@ impl SuiChain {
         let transaction_fee = Self::extract_gas_used(&tx).unwrap_or_default();
         let status = Self::extract_status(&tx);
         let block_height = tx.checkpoint.map(|c| c as u128).unwrap_or_default();
-        QueryTransactionResult::new(
+
+        let resource_consume =
+            BillResourceConsume::one_resource(transaction_fee.1 as u64).to_json_str()?;
+
+        let result = QueryTransactionResult::new(
             digest.to_string(),
-            transaction_fee,
-            "gas".to_owned(),
+            transaction_fee.0,
+            resource_consume,
             transaction_time,
             status,
             block_height,
         );
-        todo!()
+
+        Ok(Some(result))
     }
     pub async fn decimals(&self, token_addr: &str) -> crate::Result<u8> {
         let meta_data = self.provider.get_coin_metadata(token_addr).await?;
@@ -168,14 +173,22 @@ impl SuiChain {
         Ok(tx_hash)
     }
 
-    pub fn extract_gas_used(resp: &SuiTransactionBlockResponse) -> Option<f64> {
+    pub fn extract_gas_used(resp: &SuiTransactionBlockResponse) -> Option<(f64, i64)> {
         let effects = resp.effects.as_ref()?;
+
+        let gas_price = resp
+            .transaction
+            .as_ref()
+            .map(|t| t.data.gas_data().price)
+            .unwrap_or_default();
         let gas_summary = match effects {
             SuiTransactionBlockEffects::V1(v1) => &v1.gas_used,
         };
-        let mist = gas_summary.net_gas_usage();
-        let sui = wallet_utils::unit::mist_to_sui(mist);
-        Some(sui)
+        let fee = gas_summary.net_gas_usage();
+
+        let gas_used = fee / gas_price as i64;
+
+        Some((fee as f64 / SUI_VALUE, gas_used))
     }
 
     pub fn extract_status(resp: &SuiTransactionBlockResponse) -> i8 {

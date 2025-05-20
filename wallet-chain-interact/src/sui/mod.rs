@@ -4,4 +4,5 @@ mod chain;
 pub use chain::*;
 mod operations;
 pub use operations::*;
+pub mod consts;
 pub mod error;
