@@ -1,7 +1,7 @@
 use serde_json::json;
 use sui_json_rpc_types::{
-    Balance, Coin, CoinPage, DryRunTransactionBlockResponse, ObjectsPage, SuiMoveNormalizedModule,
-    SuiObjectResponse, SuiTransactionBlockResponse,
+    Balance, Coin, CoinPage, DryRunTransactionBlockResponse, ObjectsPage, SuiCoinMetadata,
+    SuiMoveNormalizedModule, SuiObjectResponse, SuiTransactionBlockResponse,
 };
 use sui_types::transaction::TransactionData;
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
@@ -41,6 +41,40 @@ impl Provider {
             .method("suix_getBalance")
             .params(json!([parsed_addr.to_string(), coin_type]));
 
+        Ok(self.client.invoke_request(params).await?)
+    }
+
+    pub async fn latest_block(&self) -> crate::Result<String> {
+        let params: JsonRpcParams<()> = JsonRpcParams::default()
+            .method("sui_getLatestCheckpointSequenceNumber")
+            .no_params();
+        Ok(self.client.invoke_request(params).await?)
+    }
+
+    pub async fn query_tx_info(&self, digest: &str) -> crate::Result<SuiTransactionBlockResponse> {
+        let params = JsonRpcParams::default()
+            .method("sui_getTransactionBlock")
+            .params(json!(
+                [
+                    digest,
+                    {
+                        "showInput": true,
+                        "showRawInput": false,
+                        "showEffects": true,
+                        "showEvents": true,
+                        "showObjectChanges": false,
+                        "showBalanceChanges": false,
+                        "showRawEffects": false
+                    }
+                ]
+            ));
+        Ok(self.client.invoke_request(params).await?)
+    }
+
+    pub async fn get_coin_metadata(&self, coin_type: &str) -> crate::Result<SuiCoinMetadata> {
+        let params = JsonRpcParams::default()
+            .method("suix_getCoinMetadata")
+            .params(json!([coin_type]));
         Ok(self.client.invoke_request(params).await?)
     }
 
@@ -247,6 +281,13 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_latest_block() {
+        let sui = get_chain();
+        let block = sui.provider.latest_block().await.unwrap();
+        println!("block: {:#?}", block);
+    }
+
+    #[tokio::test]
     async fn test_get_normalized_move_modules_by_package_id() {
         let sui = get_chain();
         // let package = ""
@@ -271,5 +312,16 @@ mod tests {
             // }
             // println!("module: {:#?}", module);
         }
+    }
+
+    #[tokio::test]
+    async fn test_query_tx_info() {
+        let sui = get_chain();
+        let tx_info = sui
+            .provider
+            .query_tx_info("GdyEZutEWFwJuNj2N9aXB5K2L5L3WsvwDSkxBsCb7y2n")
+            .await
+            .unwrap();
+        println!("tx_info: {:#?}", tx_info);
     }
 }
