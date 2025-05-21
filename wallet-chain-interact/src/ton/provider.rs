@@ -1,6 +1,5 @@
 use crate::ton::protocol::block::BlockTransactionExt;
 use alloy::primitives::U256;
-use serde_json::json;
 use wallet_transport::client::HttpClient;
 use wallet_utils::unit;
 
@@ -227,11 +226,11 @@ impl Provider {
         shard: &str,
         seqno: u32,
     ) -> Result<BlockTransactionExt<AddressId>, wallet_transport::TransportError> {
-        let payload = json!({
-            "workchain":workchain,
-            "shard":shard,
-            "seqno":seqno,
-        });
+        let payload = std::collections::HashMap::from([
+            ("workchain", workchain.to_string()),
+            ("shard", shard.to_string()),
+            ("seqno", seqno.to_string()),
+        ]);
 
         let res = self
             .client
