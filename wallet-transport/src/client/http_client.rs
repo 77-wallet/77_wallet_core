@@ -8,7 +8,7 @@ use std::{collections::HashMap, str::FromStr};
 
 #[derive(Debug, Clone)]
 pub struct HttpClient {
-    base_url: String,
+    pub base_url: String,
     pub client: reqwest::Client,
 }
 

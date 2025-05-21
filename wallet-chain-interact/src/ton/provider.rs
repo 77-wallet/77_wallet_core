@@ -1,6 +1,6 @@
 use crate::ton::protocol::block::BlockTransactionExt;
 use alloy::primitives::U256;
-use wallet_transport::client::HttpClient;
+use wallet_transport::{client::HttpClient, types::JsonRpcParams};
 use wallet_utils::unit;
 
 use super::{
@@ -49,6 +49,20 @@ impl Provider {
     //         Ok(res.result)
     //     }
     // }
+
+    pub async fn json_rpc<T, R>(&self, method: &str, params: T) -> crate::Result<R>
+    where
+        T: serde::Serialize + std::fmt::Debug,
+        R: serde::de::DeserializeOwned,
+    {
+        let params = JsonRpcParams::default().method(method).params(params);
+
+        // let url =format!("{}/{}", self.client.base_url, "") ;
+
+        // self.client.post(&url)
+
+        Ok(self.client.invoke_request(params).await?)
+    }
 
     pub async fn balance(&self, addr: &str) -> crate::Result<U256> {
         let params = std::collections::HashMap::from([("address", addr)]);
@@ -225,7 +239,7 @@ impl Provider {
         workchain: u64,
         shard: &str,
         seqno: u32,
-    ) -> Result<BlockTransactionExt<AddressId>, wallet_transport::TransportError> {
+    ) -> crate::Result<BlockTransactionExt<AddressId>> {
         let payload = std::collections::HashMap::from([
             ("workchain", workchain.to_string()),
             ("shard", shard.to_string()),
@@ -239,6 +253,13 @@ impl Provider {
                 payload,
             )
             .await?;
+
+        // let res = self
+        //     .json_rpc::<_, TonResponse<BlockTransactionExt<AddressId>>>(
+        //         "getBlockTransactionsExt",
+        //         payload,
+        //     )
+        //     .await?;
 
         Ok(res.result)
     }

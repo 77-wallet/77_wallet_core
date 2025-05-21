@@ -57,7 +57,6 @@ impl ReqBuilder {
                     }
                 }
                 Err(e) => {
-                    tracing::warn!("e {}", e);
                     return Err(TransportError::NodeResponseError(NodeResponseError::new(
                         status.as_u16() as i64,
                         Some(e.to_string()),
@@ -71,7 +70,7 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        tracing::info!("response = {}", response);
+        // tracing::info!("response = {}", response);
         Ok(response)
     }
 

@@ -1,22 +1,29 @@
 use crate::ton::{consts::TON_VALUE, errors::TonError};
 use serde::Deserialize;
 use tonlib_core::{
+    TonAddress,
     cell::BagOfCells,
     message::{JettonTransferMessage, TonMessage},
     tlb_types::traits::TLBObject,
 };
 pub trait GetAddress {
-    fn get_address(&self) -> String;
+    fn get_address(&self, bounce: bool) -> String;
 }
 impl GetAddress for String {
-    fn get_address(&self) -> String {
-        self.clone()
+    fn get_address(&self, bounce: bool) -> String {
+        match TonAddress::from_base64_url(&self) {
+            Ok(a) => a.to_base64_url_flags(bounce, false),
+            Err(_) => self.clone(),
+        }
     }
 }
 
 impl GetAddress for AddressId {
-    fn get_address(&self) -> String {
-        self.account_address.clone()
+    fn get_address(&self, bounce: bool) -> String {
+        match TonAddress::from_base64_url(&self.account_address) {
+            Ok(a) => a.to_base64_url_flags(bounce, false),
+            Err(_) => self.account_address.clone(),
+        }
     }
 }
 
@@ -68,9 +75,19 @@ pub struct RawMessage<T: std::fmt::Debug> {
     pub message: Option<String>,
 }
 
+// 识别 rawMessage 是什么交易类型
+pub enum TxTypes {
+    // 代币交易
+    JettonTrans,
+    // 普通交易
+    Trans,
+    // other 交易 目前未识别的交易类型
+    Other,
+}
+
 impl<T: std::fmt::Debug> RawMessage<T> {
     // 简单验证是否是token交易:目前根据操作码进行判断的,后续估计需要加入地址类型
-    pub fn is_token(&self) -> crate::Result<Option<bool>> {
+    pub fn is_token(&self) -> crate::Result<TxTypes> {
         match &self.msg_data {
             MsgData::Raw {
                 body,
@@ -84,16 +101,30 @@ impl<T: std::fmt::Debug> RawMessage<T> {
                     .map_err(TonError::CellBuild)?;
 
                 if cell.data().is_empty() {
-                    Ok(Some(false))
+                    // 没有body 数据 目前也认定为普通交易
+                    Ok(TxTypes::Trans)
                 } else {
                     let mut parse = cell.parser();
-
                     let op_code = parse.load_u32(32).map_err(TonError::CellBuild)?;
 
-                    Ok(Some(op_code == 0x0f8a7ea5))
+                    match op_code {
+                        // Jetton Transfer
+                        0x0f8a7ea5 => Ok(TxTypes::JettonTrans),
+                        // Jetton Internal Transfer
+                        0x178d4519 => Ok(TxTypes::Other),
+                        // Jetton Transfer Notification
+                        0x7362d09c => Ok(TxTypes::Other),
+                        // Excesses
+                        0xd53276db => Ok(TxTypes::Other),
+                        // 默认为转账
+                        _ => Ok(TxTypes::Trans),
+                    }
                 }
             }
-            MsgData::Text { text: _ } => Ok(Some(false)),
+            MsgData::Text { text: _ } => {
+                // 具有评论的信息，认定为普通交易
+                Ok(TxTypes::Trans)
+            }
         }
     }
 
@@ -124,11 +155,11 @@ impl<T: std::fmt::Debug> RawMessage<T> {
 }
 
 impl<T: GetAddress + std::fmt::Debug> RawMessage<T> {
-    pub fn get_from(&self) -> String {
-        self.source.get_address()
+    pub fn get_from(&self, bounce: bool) -> String {
+        self.source.get_address(bounce)
     }
-    pub fn get_to(&self) -> String {
-        self.destination.get_address()
+    pub fn get_to(&self, bounce: bool) -> String {
+        self.destination.get_address(bounce)
     }
 }
 
