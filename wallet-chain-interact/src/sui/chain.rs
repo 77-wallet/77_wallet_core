@@ -1,8 +1,8 @@
-use crate::types::{self, ChainPrivateKey};
-use crate::{BillResourceConsume, QueryTransactionResult};
-
+use super::TransRespOpt;
 use super::consts::{self, SUI_VALUE};
 use super::provider::Provider;
+use crate::types::{self, ChainPrivateKey};
+use crate::{BillResourceConsume, QueryTransactionResult};
 use alloy::primitives::U256;
 use shared_crypto::intent::{Intent, IntentMessage};
 
@@ -14,7 +14,6 @@ use sui_types::crypto::{AccountKeyPair, AccountPrivateKey, Signature};
 use sui_types::transaction::{TransactionData, TransactionDataAPI};
 use wallet_types::chain::chain::ChainCode;
 use wallet_types::chain::network;
-use wallet_types::constant::chain_code::SUI;
 
 pub struct SuiChain {
     pub provider: Provider,
@@ -57,7 +56,8 @@ impl SuiChain {
         &self,
         digest: &str,
     ) -> crate::Result<Option<QueryTransactionResult>> {
-        let tx = self.provider.query_tx_info(digest).await?;
+        let opt = TransRespOpt::default();
+        let tx = self.provider.query_tx_info(digest, opt).await?;
 
         let transaction_time = tx.timestamp_ms.map(|c| c as u128).unwrap_or_default();
         let transaction_fee = Self::extract_gas_used(&tx).unwrap_or_default();

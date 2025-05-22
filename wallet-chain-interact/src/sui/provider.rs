@@ -1,3 +1,4 @@
+use super::{TransRespOpt, protocol::CheckpointResult};
 use serde_json::json;
 use sui_json_rpc_types::{
     Balance, Coin, CoinPage, DryRunTransactionBlockResponse, ObjectsPage, SuiCoinMetadata,
@@ -32,23 +33,14 @@ impl Provider {
         Ok(self.client.invoke_request(params).await?)
     }
 
-    pub async fn query_tx_info(&self, digest: &str) -> crate::Result<SuiTransactionBlockResponse> {
+    pub async fn query_tx_info(
+        &self,
+        digest: &str,
+        opt: TransRespOpt,
+    ) -> crate::Result<SuiTransactionBlockResponse> {
         let params = JsonRpcParams::default()
             .method("sui_getTransactionBlock")
-            .params(json!(
-                [
-                    digest,
-                    {
-                        "showInput": true,
-                        "showRawInput": false,
-                        "showEffects": true,
-                        "showEvents": true,
-                        "showObjectChanges": false,
-                        "showBalanceChanges": false,
-                        "showRawEffects": false
-                    }
-                ]
-            ));
+            .params(json!([digest, opt]));
         Ok(self.client.invoke_request(params).await?)
     }
 
@@ -113,14 +105,6 @@ impl Provider {
         Ok(res)
     }
 
-    pub(crate) fn sui_coin_filter() -> serde_json::Value {
-        json!({
-            "MatchAll": [
-                { "StructType": "0x2::coin::Coin<0x2::sui::SUI>" }
-            ]
-        })
-    }
-
     pub async fn get_all_coins_by_owner(
         &self,
         addr: &str,
@@ -162,6 +146,26 @@ impl Provider {
         Ok(res)
     }
 
+    pub async fn get_check_point(&self, check_point: &str) -> crate::Result<CheckpointResult> {
+        let params = JsonRpcParams::default()
+            .method("sui_getCheckpoint")
+            .params(json!([check_point]));
+
+        Ok(self.client.invoke_request(params).await?)
+    }
+
+    pub async fn get_multi_trans(
+        &self,
+        digests: &[String],
+        opt: TransRespOpt,
+    ) -> crate::Result<Vec<SuiTransactionBlockResponse>> {
+        let params = JsonRpcParams::default()
+            .method("sui_multiGetTransactionBlocks")
+            .params(json!([digests, opt]));
+
+        Ok(self.client.invoke_request(params).await?)
+    }
+
     pub async fn send_transaction(
         &self,
         tx_bytes_b64: String,
@@ -201,7 +205,7 @@ mod tests {
     use wallet_utils::init_test_log;
 
     // Sui DevNet 节点地址
-    const DEVNET_URL: &str = "https://fullnode.devnet.sui.io:443";
+    // const DEVNET_URL: &str = "https://fullnode.devnet.sui.io:443";
     const TESTNET_URL: &str = "https://fullnode.testnet.sui.io:443";
     // 测试用地址（Sui DevNet 水龙头示例地址）
     const TEST_ADDRESS: &str = "0x885f29a4f1b4d63822728a1b1811d0278c4e25f27d3754ddd387cd34f9482d0f";
@@ -240,18 +244,6 @@ mod tests {
         let gas = sui.provider.get_reference_gas_price().await.unwrap();
         println!("gas: {}", gas);
         assert!(gas > 0);
-    }
-
-    #[tokio::test]
-    async fn test_get_owned_objects() {
-        let sui = get_chain();
-        let filter = Provider::sui_coin_filter();
-        let objects = sui
-            .provider
-            .get_owned_objects(TEST_ADDRESS, Some(filter), None, None)
-            .await
-            .unwrap();
-        println!("objects: {:#?}", objects);
     }
 
     #[tokio::test]
@@ -298,9 +290,12 @@ mod tests {
     #[tokio::test]
     async fn test_query_tx_info() {
         let sui = get_chain();
+
+        let opt = TransRespOpt::default();
+
         let tx_info = sui
             .provider
-            .query_tx_info("GdyEZutEWFwJuNj2N9aXB5K2L5L3WsvwDSkxBsCb7y2n")
+            .query_tx_info("GdyEZutEWFwJuNj2N9aXB5K2L5L3WsvwDSkxBsCb7y2n", opt)
             .await
             .unwrap();
         println!("tx_info: {:#?}", tx_info);
