@@ -30,6 +30,7 @@ impl Provider {
         let params: JsonRpcParams<()> = JsonRpcParams::default()
             .method("sui_getLatestCheckpointSequenceNumber")
             .no_params();
+
         Ok(self.client.invoke_request(params).await?)
     }
 
@@ -41,6 +42,7 @@ impl Provider {
         let params = JsonRpcParams::default()
             .method("sui_getTransactionBlock")
             .params(json!([digest, opt]));
+
         Ok(self.client.invoke_request(params).await?)
     }
 
@@ -48,10 +50,10 @@ impl Provider {
         let params = JsonRpcParams::default()
             .method("suix_getCoinMetadata")
             .params(json!([coin_type]));
+
         Ok(self.client.invoke_request(params).await?)
     }
 
-    /// Gas 费估算（简化版）
     pub async fn get_reference_gas_price(&self) -> crate::Result<u64> {
         let params: JsonRpcParams<()> = JsonRpcParams::default()
             .method("suix_getReferenceGasPrice")
@@ -60,16 +62,6 @@ impl Provider {
         let gas: String = self.client.invoke_request(params).await?;
         let gas_price = wallet_utils::parse_func::u64_from_str(&gas)?;
         Ok(gas_price)
-    }
-
-    pub async fn calculate_gas_budget(
-        &self,
-        gas_price: u64,
-        gas_budget: u64,
-    ) -> crate::Result<u64> {
-        // TODO:
-        let gas_budget = gas_price * gas_budget;
-        Ok(gas_budget)
     }
 
     pub async fn get_owned_objects(
@@ -146,22 +138,21 @@ impl Provider {
         let params = JsonRpcParams::default()
             .method("sui_devInspectTransactionBlock")
             .params(json!([sender, boc_str, gas_price.to_string()]));
-        let res = self.client.invoke_request(params).await?;
-        Ok(res)
+
+        Ok(self.client.invoke_request(params).await?)
     }
 
     pub async fn dry_run_transaction(
         &self,
         tx_data: &TransactionData,
     ) -> crate::Result<DryRunTransactionBlockResponse> {
-        tracing::info!("dry_run_transaction: {:?}", tx_data);
         let tx_data = wallet_utils::serde_func::bcs_to_bytes(tx_data)?;
         let tx_data = wallet_utils::bytes_to_base64(&tx_data);
         let params = JsonRpcParams::default()
             .method("sui_dryRunTransactionBlock")
             .params(json!([tx_data]));
-        let res = self.client.invoke_request(params).await?;
-        Ok(res)
+
+        Ok(self.client.invoke_request(params).await?)
     }
 
     pub async fn get_check_point(&self, check_point: &str) -> crate::Result<CheckpointResult> {
@@ -199,8 +190,8 @@ impl Provider {
                     "showEvents": true
                 }
             ]));
-        let res = self.client.invoke_request(params).await?;
-        Ok(res)
+
+        Ok(self.client.invoke_request(params).await?)
     }
 
     pub async fn get_normalized_move_modules_by_package_id(
@@ -210,16 +201,15 @@ impl Provider {
         let params = JsonRpcParams::default()
             .method("sui_getNormalizedMoveModulesByPackage")
             .params(json!([package_id]));
-        let res = self.client.invoke_request(params).await?;
-        Ok(res)
+
+        Ok(self.client.invoke_request(params).await?)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::sui::SuiChain;
-
     use super::*;
+    use crate::sui::SuiChain;
     use wallet_utils::init_test_log;
 
     // Sui DevNet 节点地址
@@ -238,7 +228,6 @@ mod tests {
         let client = RpcClient::new(&rpc, header, None).unwrap();
         let provider = Provider::new(client);
         let sui = SuiChain::new(provider).unwrap();
-
         sui
     }
 
@@ -255,7 +244,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_estimate_gas() {
+    async fn test_estimate_gas_price() {
         let sui = get_chain();
         let gas = sui.provider.get_reference_gas_price().await.unwrap();
         println!("gas: {}", gas);
@@ -291,15 +280,9 @@ mod tests {
 
         for (module_name, module) in modules {
             println!("module_name: {}", module_name);
-            // println!("module name: {}", module.name);
             println!("module_address: {}", module.address);
             println!("module_structs: {:#?}", module.structs);
             println!("module enums: {:#?}", module.enums);
-
-            // if module_name.eq("coin") {
-            // println!("module exposed functions: {:#?}", module.exposed_functions);
-            // }
-            // println!("module: {:#?}", module);
         }
     }
 
