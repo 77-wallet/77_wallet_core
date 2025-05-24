@@ -1,5 +1,6 @@
 pub mod address;
 pub mod test;
+use test::{generate_sui_address_from_bytes, get_pub_key};
 use wallet_core::{KeyPair, derive::Derive};
 use wallet_types::chain::{address::r#type::BtcAddressType, chain::ChainCode};
 
@@ -98,4 +99,17 @@ impl KeyPair for SuiKeyPair {
     fn private_key_bytes(&self) -> Result<Vec<u8>, Self::Error> {
         Ok(wallet_utils::hex_func::hex_decode(&self.private_key)?)
     }
+}
+
+pub fn secret_key_to_address(key: &str) -> Result<String, crate::Error> {
+    let key = wallet_utils::hex_func::hex_decode(key)?;
+
+    let mut bytes = [0 as u8; 32];
+    bytes.copy_from_slice(&key[..32]);
+
+    let pub_key = get_pub_key(bytes)?;
+
+    println!("pub_key: {}", hex::encode(pub_key.as_bytes()));
+    // 4. 生成地址
+    Ok(generate_sui_address_from_bytes(pub_key.as_bytes()))
 }

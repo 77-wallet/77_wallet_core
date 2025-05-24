@@ -1,9 +1,9 @@
+use crate::ton::errors::TonError;
 use chrono::TimeZone;
 use regex::Regex;
 use serde::de;
 use thiserror::Error;
 
-use crate::{sui::error::SuiError, ton::errors::TonError};
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Error, Debug)]

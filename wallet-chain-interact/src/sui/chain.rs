@@ -304,7 +304,7 @@ impl SuiChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sui::{SuiChain, TransferOpt};
+    use crate::sui::{SuiChain, TransferOpt2};
     use wallet_transport::client::RpcClient;
     use wallet_utils::init_test_log;
 
@@ -375,7 +375,7 @@ mod tests {
         // let contract = None;
 
         let params =
-            TransferOpt::new(TEST_ADDRESS, to, amount, transfer_coins, gas_coins, None).unwrap();
+            TransferOpt2::new(TEST_ADDRESS, to, amount, transfer_coins, gas_coins, None).unwrap();
         let gas = sui.exec_transaction(params, pkey.into()).await.unwrap();
         println!("gas: {}", gas);
     }
@@ -406,7 +406,7 @@ mod tests {
         // let gas_price = sui.provider.get_reference_gas_price().await.unwrap();
         // let contract = None;
 
-        let params = TransferOpt::new(
+        let params = TransferOpt2::new(
             TEST_ADDRESS,
             to,
             amount,

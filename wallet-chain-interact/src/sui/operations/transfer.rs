@@ -18,14 +18,14 @@ use sui_types::{
 };
 use wallet_utils::address;
 
-pub struct TransferOpt1 {
+pub struct TransferOpt {
     pub from: SuiAddress,
     pub to: SuiAddress,
     pub amount: u64,
     pub token: Option<String>,
 }
 
-impl TransferOpt1 {
+impl TransferOpt {
     pub fn new(from: &str, to: &str, amount: U256, token: Option<String>) -> crate::Result<Self> {
         Ok(Self {
             from: address::parse_sui_address(from)?,
@@ -190,12 +190,12 @@ impl TransferOpt1 {
     }
 }
 
-pub struct TransferOpt {
+pub struct TransferOpt2 {
     pub base: SuiBaseTransaction,
     pub struct_tag: Option<TypeTag>,
 }
 
-impl TransferOpt {
+impl TransferOpt2 {
     pub fn new(
         from: &str,
         to: &str,
@@ -221,7 +221,7 @@ impl TransferOpt {
     }
 }
 
-impl types::Transaction<TransactionData> for TransferOpt {
+impl types::Transaction<TransactionData> for TransferOpt2 {
     fn build_transaction(&self) -> Result<TransactionData, crate::Error> {
         let mut builder = ProgrammableTransactionBuilder::new();
 
