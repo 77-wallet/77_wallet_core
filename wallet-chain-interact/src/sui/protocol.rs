@@ -1,3 +1,7 @@
+use sui_json_rpc_types::Coin;
+
+use super::consts::SUI_VALUE;
+
 /// Checkpoint 详情
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -22,4 +26,33 @@ pub struct GasCostSummary {
     pub storage_cost: String,
     pub storage_rebate: String,
     pub non_refundable_storage_fee: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct EstimateFeeResp {
+    pub gas_fee: u64,
+    pub gas_price: u64,
+}
+
+impl EstimateFeeResp {
+    pub fn new(gas_fee: u64, gas_price: u64) -> Self {
+        Self { gas_fee, gas_price }
+    }
+
+    pub fn get_fee(&self) -> u64 {
+        self.gas_fee + (self.gas_fee as f64 * 0.5) as u64
+    }
+
+    pub fn get_fee_f64(&self) -> f64 {
+        self.get_fee() as f64 / SUI_VALUE
+    }
+}
+
+pub struct GasObject {
+    pub coin: Vec<Coin>,
+}
+impl GasObject {
+    pub fn new(coin: Vec<Coin>) -> Self {
+        Self { coin }
+    }
 }

@@ -111,7 +111,6 @@ impl RpcClient {
         R: DeserializeOwned,
     {
         let response = self.set_params(params).do_request().await?;
-        tracing::info!("response: {:?}", response);
         let rpc_result = wallet_utils::serde_func::serde_from_str::<JsonRpcResult<R>>(&response)?;
 
         if let Some(err) = rpc_result.error {

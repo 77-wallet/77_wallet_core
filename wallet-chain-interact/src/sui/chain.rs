@@ -1,37 +1,26 @@
 use super::TransRespOpt;
 use super::consts::{self, SUI_VALUE};
+use super::error::SuiError;
+use super::protocol::EstimateFeeResp;
 use super::provider::Provider;
 use crate::types::{self, ChainPrivateKey};
 use crate::{BillResourceConsume, QueryTransactionResult};
 use alloy::primitives::U256;
 use shared_crypto::intent::{Intent, IntentMessage};
-
 use sui_json_rpc_types::{
     Coin, SuiTransactionBlockDataAPI, SuiTransactionBlockEffects,
     SuiTransactionBlockEffectsAPI as _, SuiTransactionBlockResponse,
 };
 use sui_types::crypto::{AccountKeyPair, AccountPrivateKey, Signature};
-use sui_types::transaction::{TransactionData, TransactionDataAPI};
-use wallet_types::chain::chain::ChainCode;
-use wallet_types::chain::network;
+use sui_types::transaction::{ProgrammableTransaction, TransactionData, TransactionDataAPI};
 
 pub struct SuiChain {
     pub provider: Provider,
-    chain_code: ChainCode,
-    network: network::NetworkKind,
 }
 
 impl SuiChain {
-    pub fn new(
-        provider: Provider,
-        network: network::NetworkKind,
-        chain_code: ChainCode,
-    ) -> crate::Result<Self> {
-        Ok(Self {
-            provider,
-            chain_code,
-            network,
-        })
+    pub fn new(provider: Provider) -> crate::Result<Self> {
+        Ok(Self { provider })
     }
 }
 
@@ -92,7 +81,27 @@ impl SuiChain {
         Ok(meta_data.name)
     }
 
-    pub async fn estimate_gas<T>(&self, params: T) -> crate::Result<u64>
+    pub async fn estimate_fee(
+        &self,
+        sender: &str,
+        tx: ProgrammableTransaction,
+    ) -> crate::Result<EstimateFeeResp> {
+        let gas_price = self.provider.get_reference_gas_price().await?;
+
+        let result = self
+            .provider
+            .dev_inspect_transaction(sender, tx, gas_price)
+            .await?;
+        if result.effects.status().is_err() {
+            return Err(SuiError::GasError(result.effects.status().to_string()))?;
+        }
+
+        let gas_used = result.effects.gas_cost_summary().net_gas_usage() as u64;
+
+        Ok(EstimateFeeResp::new(gas_used, gas_price))
+    }
+
+    pub async fn estimate_gas<T>(&self, params: T) -> crate::Result<i64>
     where
         T: types::Transaction<sui_types::transaction::TransactionData>,
     {
@@ -100,7 +109,36 @@ impl SuiChain {
         self.provider
             .dry_run_transaction(&tx_data)
             .await
-            .map(|res| res.effects.gas_cost_summary().gas_used())
+            .map(|res| res.effects.gas_cost_summary().net_gas_usage())
+    }
+
+    pub async fn exec(
+        &self,
+        tx_data: TransactionData,
+        private_key: ChainPrivateKey,
+    ) -> crate::Result<String> {
+        let tx_bytes = wallet_utils::serde_func::bcs_to_bytes(&tx_data)?;
+
+        let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
+        // 用 keypair 对 IntentMessage 进行签名
+
+        let pubkey_bytes = private_key.to_bytes()?;
+        use sui_types::crypto::ToFromBytes;
+
+        let key = AccountPrivateKey::from_bytes(pubkey_bytes.as_slice()).unwrap();
+
+        let keypair = AccountKeyPair::from(key);
+        let signature = Signature::new_secure(&intent_msg, &keypair);
+
+        let tx_data_base64 = wallet_utils::bytes_to_base64(&tx_bytes);
+        let sig_b64 = wallet_utils::bytes_to_base64(signature.as_ref());
+
+        // 5. 提交
+        let tx_hash = self
+            .provider
+            .send_transaction(tx_data_base64, vec![sig_b64])
+            .await?;
+        Ok(tx_hash.digest.to_string())
     }
 }
 
@@ -265,14 +303,13 @@ impl SuiChain {
 
 #[cfg(test)]
 mod tests {
-    use crate::sui::{SuiChain, TransferOpt};
-
     use super::*;
+    use crate::sui::{SuiChain, TransferOpt};
     use wallet_transport::client::RpcClient;
     use wallet_utils::init_test_log;
 
     // Sui DevNet 节点地址
-    const DEVNET_URL: &str = "https://fullnode.devnet.sui.io:443";
+    // const DEVNET_URL: &str = "https://fullnode.devnet.sui.io:443";
     const TESTNET_URL: &str = "https://fullnode.testnet.sui.io:443";
     // 测试用地址（Sui DevNet 水龙头示例地址）
     const TEST_ADDRESS: &str = "0x885f29a4f1b4d63822728a1b1811d0278c4e25f27d3754ddd387cd34f9482d0f";
@@ -286,10 +323,8 @@ mod tests {
         let header = None;
         let client = RpcClient::new(&rpc, header, None).unwrap();
         let provider = Provider::new(client);
-        let chain_code = wallet_types::chain::chain::ChainCode::Sui;
-        let network = wallet_types::chain::network::NetworkKind::Testnet;
-        let sui = SuiChain::new(provider, network, chain_code).unwrap();
 
+        let sui = SuiChain::new(provider).unwrap();
         sui
     }
 
@@ -354,10 +389,10 @@ mod tests {
         // let key = AccountPrivateKey::from_bytes(pkey_bytes.as_slice()).unwrap();
 
         // let keypair = AccountKeyPair::from(key);
-        let to = "0x807718c3c1f0cadc2c5715fb1d42fb4714e9a6b43c1df68b8b9c3773ccd93545";
+        // let to = "0x807718c3c1f0cadc2c5715fb1d42fb4714e9a6b43c1df68b8b9c3773ccd93545";
         let to = "0xa042c3ba8208964374cc050922ec94e85fdffe9fc0cd656fb623642ae2fdb4c0";
 
-        let amount = 20;
+        let amount = 2000000;
         let contract =
             "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
         let (transfer_coins, gas_coins) = sui

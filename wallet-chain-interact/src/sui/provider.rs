@@ -1,10 +1,10 @@
 use super::{TransRespOpt, protocol::CheckpointResult};
 use serde_json::json;
 use sui_json_rpc_types::{
-    Balance, Coin, CoinPage, DryRunTransactionBlockResponse, ObjectsPage, SuiCoinMetadata,
-    SuiMoveNormalizedModule, SuiObjectResponse, SuiTransactionBlockResponse,
+    Balance, Coin, CoinPage, DevInspectResults, DryRunTransactionBlockResponse, ObjectsPage,
+    SuiCoinMetadata, SuiMoveNormalizedModule, SuiObjectResponse, SuiTransactionBlockResponse,
 };
-use sui_types::transaction::TransactionData;
+use sui_types::transaction::{ProgrammableTransaction, TransactionData, TransactionKind};
 use wallet_transport::{client::RpcClient, types::JsonRpcParams};
 
 pub struct Provider {
@@ -132,6 +132,24 @@ impl Provider {
         Ok(all_coins)
     }
 
+    pub async fn dev_inspect_transaction(
+        &self,
+        sender: &str,
+        tx: ProgrammableTransaction,
+        gas_price: u64,
+    ) -> crate::Result<DevInspectResults> {
+        let tx = TransactionKind::programmable(tx);
+
+        let boc_str = wallet_utils::serde_func::bcs_to_bytes(&tx)?;
+        let boc_str = wallet_utils::bytes_to_base64(&boc_str);
+
+        let params = JsonRpcParams::default()
+            .method("sui_devInspectTransactionBlock")
+            .params(json!([sender, boc_str, gas_price.to_string()]));
+        let res = self.client.invoke_request(params).await?;
+        Ok(res)
+    }
+
     pub async fn dry_run_transaction(
         &self,
         tx_data: &TransactionData,
@@ -219,9 +237,7 @@ mod tests {
         let header = None;
         let client = RpcClient::new(&rpc, header, None).unwrap();
         let provider = Provider::new(client);
-        let chain_code = wallet_types::chain::chain::ChainCode::Sui;
-        let network = wallet_types::chain::network::NetworkKind::Testnet;
-        let sui = SuiChain::new(provider, network, chain_code).unwrap();
+        let sui = SuiChain::new(provider).unwrap();
 
         sui
     }

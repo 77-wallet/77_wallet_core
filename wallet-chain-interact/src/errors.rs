@@ -3,7 +3,7 @@ use regex::Regex;
 use serde::de;
 use thiserror::Error;
 
-use crate::ton::errors::TonError;
+use crate::{sui::error::SuiError, ton::errors::TonError};
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Error, Debug)]
@@ -113,6 +113,9 @@ pub enum Error {
     Types(#[from] wallet_types::Error),
     #[error("Ton error {0}")]
     TonError(#[from] TonError),
+    #[error("sui error {0}")]
+    SuiError(#[from] crate::sui::error::SuiError),
+
     // flow to optimize
     #[error("hex error {0}")]
     HexError(String),
@@ -138,8 +141,6 @@ pub enum Error {
     AnyChainError(#[from] anychain_core::error::Error),
     #[error("any chain transaction")]
     AnyTransaction(#[from] anychain_core::TransactionError),
-    #[error("sui error {0}")]
-    SuiError(#[from] crate::sui::error::SuiError),
 }
 
 impl Error {

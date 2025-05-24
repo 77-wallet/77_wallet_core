@@ -4,6 +4,7 @@ mod chain;
 pub use chain::*;
 mod operations;
 pub use operations::*;
+pub mod builder;
 pub mod consts;
 pub mod error;
 pub mod protocol;

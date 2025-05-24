@@ -1,15 +1,194 @@
+use super::SuiBaseTransaction;
+use crate::{
+    sui::{
+        Provider,
+        builder::SelectCoinHelper,
+        consts::SUI_NATIVE_COIN,
+        protocol::{EstimateFeeResp, GasObject},
+    },
+    types,
+};
+use alloy::primitives::U256;
 use std::str::FromStr;
-
-use crate::types;
 use sui_types::{
     Identifier, TypeTag,
-    base_types::ObjectRef,
+    base_types::{ObjectRef, SuiAddress},
     programmable_transaction_builder::ProgrammableTransactionBuilder,
-    transaction::{Command, TransactionData},
+    transaction::{Argument, Command, ObjectArg, ProgrammableTransaction, TransactionData},
 };
 use wallet_utils::address;
 
-use super::SuiBaseTransaction;
+pub struct TransferOpt1 {
+    pub from: SuiAddress,
+    pub to: SuiAddress,
+    pub amount: u64,
+    pub token: Option<String>,
+}
+
+impl TransferOpt1 {
+    pub fn new(from: &str, to: &str, amount: U256, token: Option<String>) -> crate::Result<Self> {
+        Ok(Self {
+            from: address::parse_sui_address(from)?,
+            to: address::parse_sui_address(to)?,
+            amount: amount.to::<u64>(),
+            token,
+        })
+    }
+
+    pub fn get_coin_type(&self) -> String {
+        self.token.clone().unwrap_or(SUI_NATIVE_COIN.to_string())
+    }
+
+    pub async fn build_pt(
+        &self,
+        provider: &Provider,
+    ) -> crate::Result<(ProgrammableTransaction, SelectCoinHelper)> {
+        let mut builder = ProgrammableTransactionBuilder::new();
+
+        let from = self.from.to_string();
+
+        let coin_type = self.get_coin_type();
+        let select_helper =
+            SelectCoinHelper::select_coins(self.amount, provider, &coin_type, &from).await?;
+
+        let amount_arg = select_helper.base_trans(&mut builder, self.amount)?;
+
+        // command
+        let receipt = builder
+            .pure(self.to)
+            .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+        builder.command(Command::TransferObjects(amount_arg, receipt));
+
+        Ok((builder.finish(), select_helper))
+    }
+
+    pub async fn build_data(
+        &self,
+        provider: &Provider,
+        helper: SelectCoinHelper,
+        gas: EstimateFeeResp,
+    ) -> crate::Result<TransactionData> {
+        let mut builder = ProgrammableTransactionBuilder::new();
+
+        let coin_type = self.get_coin_type();
+        let from = self.from.to_string();
+
+        let gas_fee = gas.get_fee();
+
+        tracing::warn!("select coins: {:#?}", helper.select_coins);
+
+        //  是否需要一额外引入一个对象做gas 费用
+        let (amount_arg, gas_obj) =
+            if helper.need_extra_coin_pay_gas(&coin_type, gas_fee, self.amount) {
+                tracing::warn!("need extra gas coin");
+                let amount = helper.base_trans(&mut builder, self.amount)?;
+                let gas_coin = helper.select_gas_coin(gas_fee, provider, &from).await?;
+
+                (amount, GasObject::new(gas_coin))
+            } else {
+                // 第一个是最大的coin 拿出来支付gas
+                let gas_coin = helper.select_coins[0].clone();
+                let gas_obj = GasObject::new(vec![gas_coin.clone()]);
+
+                // 只选择了一个,一个币既要用来支付gas 也需要支付业务转账
+                // 选择了两个,第一个币既要用来支付gas 也要支付业务转账 ,剩余的币合并在gas_coin 里面
+                let amount_arg = if helper.select_coins.len() == 1 {
+                    tracing::warn!("only one coin");
+
+                    // 第一个币拆分出转账的金额
+                    let amount = builder
+                        .pure(self.amount)
+                        .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+                    let amount_arg =
+                        builder.command(Command::SplitCoins(Argument::GasCoin, vec![amount]));
+
+                    vec![amount_arg]
+                } else {
+                    // 第一个币拆分出来 gas_fee 后剩余的金额
+                    tracing::warn!("选择的币数量{:?}", helper.select_coins);
+                    tracing::warn!("转账金额{}", self.amount);
+
+                    // 第一个币拆分出 gas_fee 剩余的部分作为转账的金额
+                    let remain = helper.select_coins[0].balance - gas_fee;
+                    let mut remain_amount = self.amount - remain;
+
+                    tracing::warn!(
+                        "拆出来的金额{} 第一个币的余额{}",
+                        remain,
+                        helper.select_coins[0].balance
+                    );
+                    tracing::warn!("手续费{}", gas_fee);
+                    let remain_arg = builder
+                        .pure(remain)
+                        .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+                    let remain_arg =
+                        builder.command(Command::SplitCoins(Argument::GasCoin, vec![remain_arg]));
+
+                    let mut amount_org = vec![remain_arg];
+
+                    for coin in helper.select_coins.iter().skip(1) {
+                        if remain_amount == 0 {
+                            break;
+                        }
+
+                        let coin_arg = builder
+                            .obj(ObjectArg::ImmOrOwnedObject(coin.object_ref()))
+                            .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+
+                        // 判断当前币是否 需要拆分
+                        if coin.balance > remain_amount {
+                            tracing::warn!("need split coin");
+
+                            tracing::warn!(
+                                "当前币的余额{},拆分金额{}",
+                                coin.balance,
+                                remain_amount
+                            );
+
+                            let pure_amount = builder.pure(remain_amount).map_err(|e| {
+                                crate::sui::error::SuiError::MoveError(e.to_string())
+                            })?;
+                            let arg =
+                                builder.command(Command::SplitCoins(coin_arg, vec![pure_amount]));
+                            remain_amount = 0;
+
+                            amount_org.push(arg);
+                        } else {
+                            amount_org.push(coin_arg);
+                            remain_amount -= coin.balance;
+                        }
+                    }
+
+                    amount_org
+                };
+
+                (amount_arg, gas_obj)
+            };
+
+        //  转账的command
+        let receipt = builder
+            .pure(self.to)
+            .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
+        builder.command(Command::TransferObjects(amount_arg, receipt));
+
+        // 选择gas对象
+        let gas_payment = gas_obj
+            .coin
+            .iter()
+            .map(|f| f.object_ref())
+            .collect::<Vec<_>>();
+
+        let tx_data = TransactionData::new_programmable(
+            self.from,
+            gas_payment,
+            builder.finish(),
+            gas_fee,
+            gas.gas_price,
+        );
+
+        Ok(tx_data)
+    }
+}
 
 pub struct TransferOpt {
     pub base: SuiBaseTransaction,
@@ -19,13 +198,10 @@ pub struct TransferOpt {
 impl TransferOpt {
     pub fn new(
         from: &str,
-        // recipients: Vec<&str>,
         to: &str,
         amount: u64,
         transfer_coins: Vec<ObjectRef>,
         gas_coins: Vec<ObjectRef>,
-        // gas_budget: u64,
-        // gas_price: u64,
         struct_tag: Option<String>,
     ) -> crate::Result<Self> {
         let base = SuiBaseTransaction::new(
