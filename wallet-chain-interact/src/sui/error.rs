@@ -8,4 +8,6 @@ pub enum SuiError {
     InsufficientBalance(u64, u64),
     #[error("estimate gas error: {0}")]
     GasError(String),
+    #[error("Insufficient fee: only {0} available, but {1} needed")]
+    InsufficientFee(u64, u64),
 }

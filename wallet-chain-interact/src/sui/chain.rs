@@ -1,5 +1,5 @@
 use super::TransRespOpt;
-use super::consts::{self, SUI_VALUE};
+use super::consts::{self, DEFAULT_GAS_BUDGET, SUI_VALUE};
 use super::error::SuiError;
 use super::protocol::EstimateFeeResp;
 use super::provider::Provider;
@@ -93,11 +93,17 @@ impl SuiChain {
             .provider
             .dev_inspect_transaction(sender, tx, gas_price)
             .await?;
+
         if result.effects.status().is_err() {
             return Err(SuiError::GasError(result.effects.status().to_string()))?;
         }
 
-        let gas_used = result.effects.gas_cost_summary().net_gas_usage() as u64;
+        let gas_used = result.effects.gas_cost_summary().net_gas_usage();
+        let gas_used = if gas_used <= 0 {
+            DEFAULT_GAS_BUDGET
+        } else {
+            gas_used as u64
+        };
 
         Ok(EstimateFeeResp::new(gas_used, gas_price))
     }
@@ -163,75 +169,6 @@ impl SuiChain {
             sui_json_rpc_types::SuiExecutionStatus::Failure { error: _ } => 3,
         }
     }
-
-    // pub async fn estimate_gas<T>(&self, params: T) -> crate::Result<i64>
-    // where
-    //     T: types::Transaction<sui_types::transaction::TransactionData>,
-    // {
-    //     let tx_data = params.build_transaction()?;
-    //     self.provider
-    //         .dry_run_transaction(&tx_data)
-    //         .await
-    //         .map(|res| res.effects.gas_cost_summary().net_gas_usage())
-    // }
-
-    // async fn fetch_sorted(&self, owner: &str, coin_type: &str) -> crate::Result<Vec<Coin>> {
-    //     let mut coins = self
-    //         .provider
-    //         .get_all_coins_by_owner(owner, coin_type)
-    //         .await?;
-    //     coins.sort_by_key(|c| std::cmp::Reverse(c.balance));
-    //     Ok(coins)
-    // }
-
-    // pub async fn select_sufficient_coins(
-    //     &self,
-    //     owner: &str,
-    //     coin_type: Option<&str>,
-    //     amount_needed: u64,
-    // ) -> crate::Result<(
-    //     Vec<sui_types::base_types::ObjectRef>,
-    //     Vec<sui_types::base_types::ObjectRef>,
-    // )> {
-    //     // 1. Select transfer coins (custom token or SUI)
-    //     let transfer_type = coin_type.unwrap_or("0x2::sui::SUI");
-    //     let coins = self.fetch_sorted(owner, transfer_type).await?;
-
-    //     let mut transfer_coins = Vec::new();
-    //     let mut sum = 0u128;
-    //     for coin in &coins {
-    //         let obj = (coin.coin_object_id, coin.version, coin.digest);
-    //         if sum < amount_needed as u128 {
-    //             transfer_coins.push(obj);
-    //             sum += coin.balance as u128;
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    //     if sum < amount_needed as u128 {
-    //         return Err(crate::Error::SuiError(
-    //             crate::sui::error::SuiError::InsufficientBalance(sum as u64, amount_needed),
-    //         ));
-    //     }
-
-    //     // 2. Select gas coins
-    //     let gas_coins = if coin_type.is_none() {
-    //         // For SUI transfers, remaining coins from the same list
-    //         coins
-    //             .into_iter()
-    //             .skip(transfer_coins.len())
-    //             .map(|c| (c.coin_object_id, c.version, c.digest))
-    //             .collect()
-    //     } else {
-    //         // For custom token transfer, fetch SUI coins for gas
-    //         let sui_coins = self.fetch_sorted(owner, "0x2::sui::SUI").await?;
-    //         sui_coins
-    //             .into_iter()
-    //             .map(|c| (c.coin_object_id, c.version, c.digest))
-    //             .collect()
-    //     };
-    //     Ok((transfer_coins, gas_coins))
-    // }
 }
 
 #[cfg(test)]
@@ -289,15 +226,22 @@ mod tests {
 
         let pubkey = "eae2c009537e02f1c1dff4859065dbaeefa098abe730a4fcb52c52704b781456";
 
-        let to = "0xfba1550112b16f3608669c8ab4268366c7bacb3a2cb844594ad67c21af85a1dd";
-        let value = wallet_utils::unit::convert_to_u256("1", 9).unwrap();
+        let to = "0xa042c3ba8208964374cc050922ec94e85fdffe9fc0cd656fb623642ae2fdb4c0";
+        let value = wallet_utils::unit::convert_to_u256("0.2", 9).unwrap();
         let token = None;
 
         let params = TransferOpt::new(TEST_ADDRESS, to, value, token).unwrap();
 
+        let mut helper = params.select_coin(&sui.provider).await.unwrap();
+
         // 预估手续费
-        let (pt, helper) = params.build_pt(&sui.provider).await.unwrap();
+        let pt = params
+            .build_pt(&sui.provider, &mut helper, None)
+            .await
+            .unwrap();
         let gas_fee = sui.estimate_fee(TEST_ADDRESS, pt).await.unwrap();
+
+        tracing::info!("fee {}", gas_fee.get_fee_f64());
 
         let trans = params
             .build_data(&sui.provider, helper, gas_fee)
@@ -309,7 +253,7 @@ mod tests {
             .await
             .unwrap();
 
-        println!("hash: {}", hash);
+        tracing::info!("hash: {}", hash);
     }
 
     #[tokio::test]
@@ -318,17 +262,21 @@ mod tests {
 
         let pubkey = "eae2c009537e02f1c1dff4859065dbaeefa098abe730a4fcb52c52704b781456";
 
-        let to = "0xfba1550112b16f3608669c8ab4268366c7bacb3a2cb844594ad67c21af85a1dd";
-        let value = wallet_utils::unit::convert_to_u256("1", 9).unwrap();
+        let to = "0x4c1cd48f7f203870be350d7a18c5a827131cecc7322b1571b9a69aeae7dda5f2";
+        let value = wallet_utils::unit::convert_to_u256("0.1", 6).unwrap();
         let token = Some(
             "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN"
                 .to_string(),
         );
 
         let params = TransferOpt::new(TEST_ADDRESS, to, value, token).unwrap();
+        let mut helper = params.select_coin(&sui.provider).await.unwrap();
 
         // 预估手续费
-        let (pt, helper) = params.build_pt(&sui.provider).await.unwrap();
+        let pt = params
+            .build_pt(&sui.provider, &mut helper, None)
+            .await
+            .unwrap();
         let gas_fee = sui.estimate_fee(TEST_ADDRESS, pt).await.unwrap();
 
         let trans = params
@@ -341,74 +289,6 @@ mod tests {
             .await
             .unwrap();
 
-        println!("hash: {}", hash);
+        tracing::info!("hash: {}", hash);
     }
 }
-
-// pub async fn exec_transaction<T>(
-//     &self,
-//     params: T,
-//     private_key: ChainPrivateKey,
-//     // keypair: sui_types::crypto::AccountKeyPair,
-// ) -> crate::Result<SuiTransactionBlockResponse>
-// where
-//     T: crate::types::Transaction<TransactionData>,
-// {
-//     // 1. 构建原始 TransactionData
-//     let mut tx_data: sui_types::transaction::TransactionData = params.build_transaction()?;
-//     let gas_price = self.provider.get_reference_gas_price().await?;
-//     tracing::info!("gas_price: {}", gas_price);
-//     // 2. 干跑获得实际 gas_used 并调整 gas_budget
-//     let dry_run_result = self.provider.dry_run_transaction(&tx_data).await?;
-//     let gas_used = dry_run_result.effects.gas_cost_summary().gas_used();
-//     let buffer = (gas_used as f64 * 0.2).ceil() as u64;
-
-//     // 根据 buffer 更新 tx_data 中的 gas_budget 字段
-//     let gas_data = tx_data.gas_data_mut();
-//     gas_data.budget = gas_used + buffer;
-//     gas_data.price = gas_price;
-//     tracing::info!("gas_budget: {}", gas_data.budget);
-//     tracing::info!("gas_price: {}", gas_data.price);
-//     // let coins = self
-//     //     .select_sufficient_coins(&tx_data.sender().to_string(), "0x2::sui::SUI")
-//     //     .await?;
-
-//     // 3. 使用 Envelope 进行签名
-//     // let tx_data_bytes = wallet_utils::serde_func::bcs_to_bytes(&tx_data)?;
-
-//     // let intent_message = IntentMessage::new(
-//     //     Intent::sui_transaction(),
-//     //     tx_data.clone(),
-//     // );
-//     // let signature = keypair.sign(&tx_data_bytes);
-//     // 构造 Signed Transaction
-
-//     // let sender = SenderSignedData::new_from_sender_signature(tx_data, signature);
-//     // let signed_tx = sui_types::transaction::Transaction::new(sender);
-//     let tx_bytes = wallet_utils::serde_func::bcs_to_bytes(&tx_data)?;
-
-//     let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
-//     // 用 keypair 对 IntentMessage 进行签名
-
-//     let pkey_bytes = private_key.to_bytes()?;
-//     use sui_types::crypto::ToFromBytes;
-
-//     let key = AccountPrivateKey::from_bytes(pkey_bytes.as_slice()).unwrap();
-
-//     let keypair = AccountKeyPair::from(key);
-//     let signature = Signature::new_secure(&intent_msg, &keypair);
-
-//     let tx_data_base64 = wallet_utils::bytes_to_base64(&tx_bytes);
-//     let sig_b64 = wallet_utils::bytes_to_base64(signature.as_ref());
-//     // todo!();
-//     // 4. 序列化已签名信封并编码
-//     // let signed_bytes: Vec<u8> = wallet_utils::serde_func::bcs_to_bytes(&signed_tx)?;
-//     // let signed_b64 = wallet_utils::bytes_to_base64(&signed_bytes);
-
-//     // 5. 提交
-//     let tx_hash = self
-//         .provider
-//         .send_transaction(tx_data_base64, vec![sig_b64])
-//         .await?;
-//     Ok(tx_hash)
-// }
