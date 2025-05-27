@@ -23,6 +23,12 @@ pub fn decimal_from_str(balance: &str) -> Result<rust_decimal::Decimal, crate::E
         .map_err(|e| crate::Error::Parse(e.into()))
 }
 
+pub fn u64_from_str(balance: &str) -> Result<u64, crate::Error> {
+    balance
+        .parse::<u64>()
+        .map_err(|e| crate::Error::Parse(e.into()))
+}
+
 pub fn f64_from_str(balance: &str) -> Result<f64, crate::Error> {
     balance
         .parse::<f64>()
@@ -55,4 +61,14 @@ pub fn derivation_path_percent_encode(
 
 pub fn parse_bech32_hrp(hrp: &str) -> Result<bech32::Hrp, crate::Error> {
     bech32::Hrp::parse(hrp).map_err(|e| crate::Error::Parse(e.into()))
+}
+
+type HmacSha512 = hmac::Hmac<sha2::Sha512>;
+use hmac::Mac;
+
+pub fn hmac_sha512(key: &[u8], data: &[u8]) -> Result<[u8; 64], crate::Error> {
+    let mut hmac = HmacSha512::new_from_slice(key).map_err(|e| crate::Error::Parse(e.into()))?;
+    hmac.update(data);
+    let result = hmac.finalize();
+    Ok(result.into_bytes().into())
 }

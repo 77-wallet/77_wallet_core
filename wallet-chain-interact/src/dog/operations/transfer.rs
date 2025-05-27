@@ -1,11 +1,11 @@
 use crate::dog::{
+    ParseDogAddress,
     consts::{self, EXPEND_FEE_RATE},
     provider::Provider,
     signature::{self},
     utxos::UtxoList,
-    ParseDogAddress,
 };
-use dogcoin::{consensus, transaction::Version, Amount, TxIn};
+use dogcoin::{Amount, TxIn, consensus, transaction::Version};
 use wallet_types::chain::{self, address::r#type::DogAddressType};
 use wallet_utils::unit;
 

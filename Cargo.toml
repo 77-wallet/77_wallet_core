@@ -1,4 +1,6 @@
 [workspace]
+resolver = "3"
+
 members = [
     "wallet-chain-instance",
     "wallet-chain-interact",
@@ -60,7 +62,15 @@ dogcoin = { git = "https://git.nexus58.com/pub/rust-litecoin.git", package = "bi
 # ] }
 
 
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# dogcoin = { git = "http://git.ai.com/pub/rust-litecoin.git", package = "bitcoin", branch = "dog", features = [
+#     "enable_dog",
+# ] }
+
+slip10 = "0.4.3"
+tonlib-core = "0.24.5"
+ed25519-dalek-bip32 = "0.2.0"
+
+tokio = { version = "1.44.2", features = ["macros", "rt-multi-thread"] }
 # time
 chrono = { version = "0.4", features = ["serde"] }
 
@@ -84,6 +94,7 @@ sha3 = "0.10.0"
 bs58 = "0.4"
 base64 = "0.22.1"
 hmac = "0.12.0"
+bcs = "0.1" 
 
 # http
 reqwest = { version = "0.12.4", default-features = false, features = [
@@ -104,6 +115,14 @@ alloy = { git = "https://github.com/alloy-rs/alloy", default-features = false, f
     "signers",
     "signer-keystore",
 ], rev = "ea5eb7d504a1f4eb6c9937af7913577f78fee121" }
+
+# sui-sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
+sui-types =  { git = "https://github.com/mystenlabs/sui", package = "sui-types" }
+sui-json-rpc-types =  { git = "https://github.com/mystenlabs/sui", package = "sui-json-rpc-types" }
+shared-crypto =  { git = "https://github.com/mystenlabs/sui", package = "shared-crypto" }
+# move-core-types =  { git = "https://github.com/mystenlabs/sui", package = "move-core-types"}
+# move-core-types = "0.0.3"
+sui-crypto = "0.0.4"
 
 bitcoin = { version = "0.32.2", features = [
     "rand-std",
@@ -136,6 +155,11 @@ coins-bip39 = "0.8.7"
 coins-bip32 = "0.8.7"
 # coins-bip32 = { path = "../coins/crates/bip32" }
 
+ed25519-dalek = { version = "2.1.1", features = ["serde"] }
+blake2 = "0.10.6"
+generic-array = "0.14"
+typenum = "1.16"
+fastcrypto = "0.1.9"
 
 rand = "0.8.5"
 

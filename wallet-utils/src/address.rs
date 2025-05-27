@@ -114,6 +114,46 @@ pub fn tron_addr_to_eth_addr(tron_addr: &str) -> Result<String, String> {
     Ok(format!("0x{}", hex::encode(eth_bytes)))
 }
 
+pub fn parse_sui_address(address: &str) -> Result<sui_types::base_types::SuiAddress, crate::Error> {
+    sui_types::base_types::SuiAddress::from_str(address.trim()).map_err(|e| {
+        crate::Error::Parse(ParseError::AddressConvertFailed(format!(
+            "to_sui_address err:{}:address = {}",
+            e, address
+        )))
+    })
+}
+
+pub fn parse_sui_type_tag(s: &str) -> Result<sui_types::TypeTag, crate::Error> {
+    sui_types::parse_sui_type_tag(s).map_err(|e| {
+        crate::Error::Parse(ParseError::AddressConvertFailed(format!(
+            "to_sui_address err:{}:address = {}",
+            e, s
+        )))
+    })
+}
+
+// pub fn parse_sui_struct_tag(s: &str) -> Result<sui_sdk::types::TypeTag, crate::Error> {
+//     Ok(sui_sdk::types::parse_sui_struct_tag(s)
+//         .map_err(|e| {
+//             crate::Error::Parse(ParseError::AddressConvertFailed(format!(
+//                 "to_sui_address err:{}:address = {}",
+//                 e, s
+//             )))
+//         })?
+//         .into())
+// }
+
+pub fn parse_object_id_from_hex(
+    hex_string: &str,
+) -> Result<sui_types::base_types::ObjectID, crate::Error> {
+    sui_types::base_types::ObjectID::from_hex_literal(hex_string).map_err(|e| {
+        crate::Error::Parse(ParseError::AddressConvertFailed(format!(
+            "to_sui_address err:{}:address = {}",
+            e, hex_string
+        )))
+    })
+}
+
 // pub const BIP32_HARDEN: u32 = 2147483648 (0x80000000)
 // pub const MAX: Self = 2147483647 (0x7FFFFFFF)
 pub fn i32_index_to_hardened_u32(index: i32) -> Result<u32, crate::Error> {
@@ -160,9 +200,7 @@ pub fn u32_hardened_index_to_i32(hardend_index: u32) -> Result<i32, crate::Error
                 .checked_sub_unsigned(i32::MAX as u32 + 1)
                 .ok_or(crate::Error::AddressIndexOverflowOccured)?
         };
-        // let negative_index = unmarked_index
-        //     .checked_sub(0x80000000) // 0x80000000 = i32::MAX + 1
-        //     .ok_or(crate::Error::AddressIndexOverflowOccured)? as i32;
+
         tracing::debug!("negative_index = {}", negative_index);
         Ok(negative_index)
     } else {
@@ -170,23 +208,6 @@ pub fn u32_hardened_index_to_i32(hardend_index: u32) -> Result<i32, crate::Error
         Ok(hardend_index as i32)
     }
 }
-
-// pub fn u32_index_to_i32(index: u32) -> Result<i32, crate::Error> {
-//     // if index > i32::MAX as u32 {
-
-//     tracing::warn!("index = {}", index);
-//     if index & 0x80000000 != 0 {
-//         let unmarked_index = index & 0x7FFFFFFF;
-//         // let negative_index = index
-//         let negative_index = unmarked_index.checked_sub(i32::MAX as u32 + 1);
-//         tracing::warn!("unmarked_index = {}", unmarked_index);
-//         tracing::warn!("negative_index = {:?}", negative_index);
-//         let negative_index = negative_index.ok_or(crate::Error::AddressIndexOverflowOccured)?;
-//         Ok(negative_index as i32)
-//     } else {
-//         Ok(index as i32)
-//     }
-// }
 
 pub fn account_id_to_index(account_id: u32) -> u32 {
     if account_id == 0 {
@@ -197,11 +218,7 @@ pub fn account_id_to_index(account_id: u32) -> u32 {
 }
 
 pub fn index_to_account_id(index: u32) -> u32 {
-    if index == u32::MAX {
-        0
-    } else {
-        index + 1
-    }
+    if index == u32::MAX { 0 } else { index + 1 }
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -214,14 +231,6 @@ pub struct AccountIndexMap {
 }
 
 impl AccountIndexMap {
-    // pub fn new(account_id: u32, index: u32, input_index: i32) -> Self {
-    //     Self {
-    //         account_id,
-    //         hardened_index: index,
-    //         input_index,
-    //     }
-    // }
-
     pub fn from_input_index(input_index: i32) -> Result<Self, crate::Error> {
         let hardened_index = i32_index_to_hardened_u32(input_index)?;
         let unhardend_index = i32_index_to_unhardened_u32(input_index)?;
@@ -294,9 +303,19 @@ pub fn to_checksum_address(address: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::address::hex_to_bs58_addr;
+    use crate::address::{AccountIndexMap, hex_to_bs58_addr, parse_sui_type_tag};
 
     use super::to_checksum_address;
+
+    #[test]
+    fn test_from_input_index() {
+        let input_index = -3;
+        let account_index_map = AccountIndexMap::from_input_index(input_index).unwrap();
+        println!("account_index_map: {account_index_map:?}");
+        assert_eq!(account_index_map.account_id, 0);
+        assert_eq!(account_index_map.hardened_index, 0);
+        assert_eq!(account_index_map.unhardend_index, 0);
+    }
 
     #[test]
     fn test_to_checksum_address() {
@@ -332,5 +351,31 @@ mod tests {
                 panic!("函数调用失败: {:?}", e);
             }
         }
+    }
+
+    #[test]
+    fn test_parse_sui_address() {
+        let input =
+            "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
+        // let expected = "0x3bAc24b73c7A03C8715697cA1646a6f85B91023a";
+
+        let result = parse_sui_type_tag(input);
+        println!("result = {result:#?}");
+        let tag = result.unwrap();
+        let res = tag.to_canonical_string(true);
+        println!("res = {res}");
+        let res = tag.to_canonical_string(false);
+        println!("res = {res}");
+        // assert_eq!(to_checksum_address(input), expected);
+    }
+
+    #[test]
+    fn test_parse_sui_type_tag() {
+        let input =
+            "0x1b9e65276fbeab5569a0afb074bb090b9eb867082417b0470a1a04f4be6d2f3a::qtoken::QTOKEN";
+        // let expected = "0x3bAc24b73c7A03C8715697cA1646a6f85B91023a";
+
+        let result = parse_sui_type_tag(input);
+        println!("result = {result:#?}");
     }
 }

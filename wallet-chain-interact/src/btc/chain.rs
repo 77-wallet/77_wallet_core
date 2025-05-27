@@ -7,11 +7,11 @@ use super::{network_convert, operations, protocol};
 use crate::btc::signature::predict_transaction_size;
 use crate::types::{ChainPrivateKey, FetchMultisigAddressResp, MultisigSignResp, MultisigTxResp};
 use crate::{BillResourceConsume, QueryTransactionResult};
-use alloy::primitives::map::HashMap;
 use alloy::primitives::U256;
-use bitcoin::key::{rand, Keypair, Secp256k1};
+use alloy::primitives::map::HashMap;
+use bitcoin::key::{Keypair, Secp256k1, rand};
 use bitcoin::taproot::TaprootBuilder;
-use bitcoin::{consensus, Address, Amount, ScriptBuf, Transaction};
+use bitcoin::{Address, Amount, ScriptBuf, Transaction, consensus};
 use wallet_types::chain::address::r#type::BtcAddressType;
 use wallet_utils::hex_func;
 
@@ -314,7 +314,7 @@ impl BtcChain {
                 return Err(crate::Error::Other(format!(
                     "exec transaction not support multisig address type = {}",
                     params.address_type,
-                )))
+                )));
             }
         };
 

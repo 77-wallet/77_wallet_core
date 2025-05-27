@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rumqttc::v5::{mqttbytes::QoS, Client, Connection, MqttOptions};
+use rumqttc::v5::{Client, Connection, MqttOptions, mqttbytes::QoS};
 use tokio::time;
 
 pub struct MqttClient {

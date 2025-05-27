@@ -15,8 +15,8 @@ pub fn init_log(_path: &str, level: Option<&str>) -> Result<(), crate::Error> {
 
 fn _init_log(level: &str, path: &str) -> WorkerGuard {
     use tracing_subscriber::{
-        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
-        Registry,
+        EnvFilter, Registry, fmt, prelude::__tracing_subscriber_SubscriberExt,
+        util::SubscriberInitExt,
     };
     let file_appender = tracing_appender::rolling::never(path, format!("{level}.txt"));
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
@@ -50,7 +50,7 @@ struct FileCheckLayer {
 }
 use tracing::{Event, Subscriber};
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::{fmt::format, layer::Context, Layer};
+use tracing_subscriber::{Layer, fmt::format, layer::Context};
 
 use crate::log::CustomEventFormat;
 

@@ -1,7 +1,8 @@
+# cargo-features = ["edition2024"]
 [package]
 name = "wallet-utils"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 
 [dependencies]
@@ -35,11 +36,15 @@ bs58 = { workspace = true }
 aes = { workspace = true }
 ecb = { workspace = true }
 cbc = { workspace = true }
+bcs = { workspace = true }
 
 libsecp256k1 = "0.6"
 
 alloy = { workspace = true }
 solana-sdk = { workspace = true }
+# sui-sdk = { workspace = true }
+sui-types = { workspace = true }
+# move-core-types = { workspace = true }
 
 rust_decimal = { workspace = true }
 percent-encoding = { workspace = true }

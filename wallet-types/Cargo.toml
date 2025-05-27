@@ -1,7 +1,8 @@
+# cargo-features = ["edition2024"]
 [package]
 name = "wallet-types"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [features]
 test = []
@@ -17,5 +18,6 @@ serde_json.workspace = true
 thiserror.workspace = true
 bitcoin = { workspace = true }
 litecoin = { workspace = true }
-dogcoin = {workspace = true}
+dogcoin = { workspace = true }
+tonlib-core = { workspace = true }
 once_cell = { workspace = true }

@@ -1,8 +1,7 @@
-use crate::constant::btc_address_type::*;
-
 use super::category::{BtcAddressCategory, DogAddressCategory, LtcAddressCategory};
-
+use crate::constant::btc_address_type::*;
 use once_cell::sync::Lazy;
+use tonlib_core::wallet::wallet_version::WalletVersion;
 
 pub static BTC_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
     vec![
@@ -22,12 +21,11 @@ pub static LTC_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
     ]
 });
 
-pub static DOG_ADDRESS_TYPES: Lazy<Vec<AddressType>> = Lazy::new(|| {
-    vec![
-        // AddressType::Dog(DogAddressType::P2tr),
-        AddressType::Dog(DogAddressType::P2pkh),
-    ]
-});
+pub static DOG_ADDRESS_TYPES: Lazy<Vec<AddressType>> =
+    Lazy::new(|| vec![AddressType::Dog(DogAddressType::P2pkh)]);
+
+pub static TON_ADDRESS_TYPES: Lazy<Vec<AddressType>> =
+    Lazy::new(|| vec![AddressType::Ton(TonAddressType::V4R2)]);
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(untagged)]
@@ -35,14 +33,35 @@ pub enum AddressType {
     Btc(BtcAddressType),
     Ltc(LtcAddressType),
     Dog(DogAddressType),
+    Ton(TonAddressType),
     Other,
 }
 
-// impl AddressType {
-//     pub fn get_btc_address_types() -> Vec<AddressType> {
-//         BTC_ADDRESS_TYPES.to_vec()
-//     }
-// }
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
+pub enum TonAddressType {
+    V5R1,
+    V4R2,
+}
+
+impl TonAddressType {
+    pub fn to_version(&self) -> WalletVersion {
+        match self {
+            TonAddressType::V5R1 => WalletVersion::V5R1,
+            TonAddressType::V4R2 => WalletVersion::V4R2,
+        }
+    }
+}
+
+impl TryFrom<&str> for TonAddressType {
+    type Error = crate::Error;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value {
+            "v5r1" => TonAddressType::V5R1,
+            "v4r2" => TonAddressType::V4R2,
+            _ => return Err(crate::Error::TonAddressTypeInvalid(value.to_string())),
+        })
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 pub enum BtcAddressType {
@@ -146,6 +165,15 @@ impl AsRef<str> for DogAddressType {
     }
 }
 
+impl AsRef<str> for TonAddressType {
+    fn as_ref(&self) -> &str {
+        match self {
+            TonAddressType::V4R2 => "v4r2",
+            TonAddressType::V5R1 => "v5r1",
+        }
+    }
+}
+
 impl From<BtcAddressCategory> for BtcAddressType {
     fn from(addr_scheme: BtcAddressCategory) -> Self {
         match addr_scheme {
@@ -197,12 +225,19 @@ impl std::fmt::Display for BtcAddressType {
     }
 }
 
+impl std::fmt::Display for TonAddressType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_ref())
+    }
+}
+
 impl std::fmt::Display for AddressType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AddressType::Btc(btc_address_type) => write!(f, "{}", btc_address_type),
             AddressType::Ltc(ltc_address_type) => write!(f, "{}", ltc_address_type),
             AddressType::Dog(dog_address_type) => write!(f, "{}", dog_address_type),
+            AddressType::Ton(ton) => write!(f, "{}", ton),
             AddressType::Other => write!(f, ""),
         }
     }
@@ -224,6 +259,7 @@ impl AsRef<str> for AddressType {
             AddressType::Btc(btc_address_type) => btc_address_type.as_ref(),
             AddressType::Ltc(ltc_address_type) => ltc_address_type.as_ref(),
             AddressType::Dog(dog_address_type) => dog_address_type.as_ref(),
+            AddressType::Ton(ton) => ton.as_ref(),
             AddressType::Other => "",
         }
     }
@@ -312,9 +348,3 @@ impl TryFrom<&str> for DogAddressType {
         })
     }
 }
-
-// impl AddressType {
-//     pub fn get_btc_address_types() -> Vec<AddressType> {
-//         BTC_ADDRESS_TYPES.to_vec()
-//     }
-// }

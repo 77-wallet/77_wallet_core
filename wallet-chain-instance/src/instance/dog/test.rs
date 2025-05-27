@@ -1,7 +1,7 @@
 #![allow(unused)]
 use bitcoin::{
-    bip32::{DerivationPath, Xpriv},
     Network,
+    bip32::{DerivationPath, Xpriv},
 };
 use dogcoin::{
     hashes::Hash as _,
@@ -19,7 +19,7 @@ fn private_key() -> Xpriv {
         coins_bip39::Mnemonic::<coins_bip39::English>::new_from_phrase(mnemonic).unwrap();
     // 生成种子
     // let seed = mnemonic.to_seed(Some("12345678")).unwrap();
-    let seed = mnemonic.to_seed(Some("")).unwrap();
+    let seed = mnemonic.to_seed(Some("testtron0516")).unwrap();
     let xpriv = Xpriv::new_master(Network::Bitcoin, &seed).unwrap();
     let pkey = xpriv.private_key.secret_bytes();
     tracing::warn!("pkey: {pkey:?}");
@@ -124,7 +124,7 @@ fn sha256(raw: &[u8]) -> Vec<u8> {
 mod tests {
     use std::str::FromStr;
 
-    use dogcoin::{key::Secp256k1, script::Builder, Address, PubkeyHash, ScriptBuf};
+    use dogcoin::{Address, PubkeyHash, ScriptBuf, key::Secp256k1, script::Builder};
     use serde::Serialize;
     use solana_sdk::pubkey;
     use wallet_utils::init_test_log;

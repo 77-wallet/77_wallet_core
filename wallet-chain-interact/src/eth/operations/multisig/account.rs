@@ -35,7 +35,7 @@ impl MultisigAccountOpt {
         use bitcoin::key::rand::Rng;
         let mut rand = bitcoin::key::rand::thread_rng();
 
-        self.nonce = Some(primitives::U256::from(rand.gen::<u64>()));
+        self.nonce = Some(primitives::U256::from(rand.r#gen::<u64>()));
         self
     }
 

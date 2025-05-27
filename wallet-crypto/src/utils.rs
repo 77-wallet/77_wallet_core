@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 // src/serde_utils/mod.rs
 use hex::{FromHex, ToHex};
-use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HexBytes(pub Vec<u8>);

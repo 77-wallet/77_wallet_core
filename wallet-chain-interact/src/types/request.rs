@@ -148,6 +148,12 @@ impl SignTransactionArgs {
 #[derive(Debug, Clone)]
 pub struct ChainPrivateKey(String);
 
+impl ChainPrivateKey {
+    pub fn to_bytes(&self) -> crate::Result<Vec<u8>> {
+        Ok(wallet_utils::hex_func::hex_decode(&self.0)?)
+    }
+}
+
 impl std::ops::Deref for ChainPrivateKey {
     type Target = str;
 

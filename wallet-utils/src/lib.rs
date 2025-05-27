@@ -12,7 +12,7 @@ pub mod system_info;
 pub mod time;
 pub use crypto::*;
 pub mod address;
-pub use error::{http::HttpError, parse::ParseError, serde::SerdeError, Error};
+pub use error::{Error, http::HttpError, parse::ParseError, serde::SerdeError};
 pub use log::{init_log, init_test_log};
 pub mod sign;
 pub mod unit;

@@ -131,28 +131,3 @@ fn test_utxo() {
     let res = serde_json::from_str::<Vec<Utxo>>(str).unwrap();
     println!("{:?}", res);
 }
-
-// struct U64OrStringVisitor;
-// impl<'de> Visitor<'de> for U64OrStringVisitor {
-//     type Value = u64;
-
-//     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-//         formatter.write_str("a u64 or a string containing a u64")
-//     }
-
-//     fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-//     where
-//         E: de::Error,
-//     {
-//         Ok(value)
-//     }
-
-//     fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-//     where
-//         E: de::Error,
-//     {
-//         value
-//             .parse::<u64>()
-//             .map_err(|e| de::Error::custom(format!("Failed to parse string as u64: {}", e)))
-//     }
-// }

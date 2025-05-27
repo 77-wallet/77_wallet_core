@@ -1,10 +1,11 @@
-use crate::error::parse;
 use crate::error::Error;
+use crate::error::parse;
+use std::fmt::Display;
 use std::str::FromStr;
 
 use alloy::primitives::{
-    utils::{format_units, parse_units, ParseUnits},
     U256,
+    utils::{ParseUnits, format_units, parse_units},
 };
 
 pub fn convert_to_u256(value: &str, unit: u8) -> Result<U256, crate::Error> {
@@ -58,6 +59,16 @@ pub fn string_to_f64(value: &str) -> Result<f64, crate::Error> {
     Ok(res)
 }
 
+pub fn str_to_num<T>(value: &str) -> Result<T, crate::Error>
+where
+    T: Sized + std::str::FromStr,
+    T::Err: Display,
+{
+    Ok(value
+        .parse::<T>()
+        .map_err(|e| crate::Error::Other(format!("str to num error :{}", e)))?)
+}
+
 pub fn truncate_to_8_decimals(input: &str) -> String {
     let input = input.trim();
     if input.is_empty() {
@@ -85,9 +96,19 @@ pub fn truncate_to_8_decimals(input: &str) -> String {
     }
 }
 
+/// Converts SUI to MIST (1 SUI = 1_000_000_000 MIST)
+pub fn sui_to_mist(sui: f64) -> i64 {
+    (sui * 1_000_000_000f64).round() as i64
+}
+
+/// Converts MIST to SUI
+pub fn mist_to_sui(mist: i64) -> f64 {
+    mist as f64 / 1_000_000_000f64
+}
+
 #[cfg(test)]
 mod test {
-    use super::string_to_f64;
+    use super::{str_to_num, string_to_f64};
 
     #[test]
     fn test_string_to_f64() {
@@ -98,5 +119,11 @@ mod test {
         let a = "0.0003".to_string();
         let a = string_to_f64(&a).unwrap();
         println!("{}", a);
+    }
+
+    #[test]
+    fn test_str_to_f64() {
+        let res = str_to_num::<f64>("1").unwrap();
+        println!("{res}")
     }
 }

@@ -4,7 +4,7 @@ use crate::{
     types::JsonRpcResult,
 };
 use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use std::{collections::HashMap, fmt::Debug, str::FromStr};
 
 pub struct RpcClient {
@@ -90,8 +90,8 @@ impl RpcClient {
     }
 
     pub fn set_params<T: Serialize + Debug>(&self, p: T) -> ReqBuilder {
-        // tracing::info!("[req url] = {:?}", self.base_url);
-        tracing::debug!("[req params] = {:?}", p);
+        tracing::info!("[req url] = {:?}", self.base_url);
+        tracing::info!("[req params] = {:?}", p);
 
         let build = if let Some(auth) = &self.base_auth {
             self.client
@@ -111,7 +111,6 @@ impl RpcClient {
         R: DeserializeOwned,
     {
         let response = self.set_params(params).do_request().await?;
-
         let rpc_result = wallet_utils::serde_func::serde_from_str::<JsonRpcResult<R>>(&response)?;
 
         if let Some(err) = rpc_result.error {

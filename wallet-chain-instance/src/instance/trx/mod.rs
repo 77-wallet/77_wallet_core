@@ -2,7 +2,7 @@ pub mod address;
 use anychain_core::{Address, PublicKey as _};
 use anychain_tron::{TronAddress, TronFormat};
 use coins_bip32::xkeys::XPriv;
-use wallet_core::{derive::Derive, KeyPair};
+use wallet_core::{KeyPair, derive::Derive};
 use wallet_types::chain::{address::r#type::BtcAddressType, chain::ChainCode};
 
 pub struct TronKeyPair {
@@ -41,10 +41,6 @@ impl Derive for TronInstance {
     type Error = crate::Error;
     type Item = TronKeyPair;
 
-    // fn derive(&self, seed: Vec<u8>, index: u32) -> Result<Self::Item, Self::Error> {
-    //     TronKeyPair::generate(seed, index, &self.chain_code)
-    // }
-
     fn derive_with_derivation_path(
         &self,
         seed: Vec<u8>,
@@ -56,33 +52,7 @@ impl Derive for TronInstance {
 
 impl wallet_core::KeyPair for TronKeyPair {
     type Error = crate::Error;
-    // type Raw = coins_bip32::xkeys::XPriv;
-    // type Address = TronAddress;
-    // type PrivateKey = libsecp256k1::SecretKey;
 
-    // fn generate(seed: Vec<u8>, index: u32, chain_code: &ChainCode) -> Result<Self, Self::Error>
-    // where
-    //     Self: Sized,
-    // {
-    //     let pri_key = XPriv::root_from_seed(seed.as_slice(), None).unwrap();
-    //     let path =
-    //         wallet_core::constant::add_index(wallet_core::constant::TRON_DERIVATION_PATH, index);
-    //     let derive = pri_key.derive_path(path.as_str()).unwrap();
-
-    //     let signingkey: &coins_bip32::ecdsa::SigningKey = derive.as_ref();
-    //     let private_key = signingkey.to_bytes();
-
-    //     let private_key = libsecp256k1::SecretKey::parse_slice(&private_key)
-    //         .map_err(|e| crate::Error::Keypair(e.into()))?;
-    //     let address = TronAddress::from_secret_key(&private_key, &TronFormat::Standard).unwrap();
-    //     // let address = alloy::signers::utils::secret_key_to_address(signingkey);
-    //     Ok(Self {
-    //         tron_family: chain_code.to_owned(),
-    //         private_key,
-    //         address,
-    //         derivation: path,
-    //     })
-    // }
     fn network(&self) -> wallet_types::chain::network::NetworkKind {
         self.network
     }
@@ -157,65 +127,17 @@ pub fn secret_key_to_address(
     Ok(address)
 }
 
-// impl KeyPair for TronKeyPair {
-//     type Error = crate::Error;
-
-//     type Address;
-
-//     fn generate(private_key: coins_bip32::xkeys::XPriv) -> Result<Self, Self::Error>
-//     where
-//         Self: Sized {
-//         todo!()
-//     }
-
-//     // fn generate(seeXPrivu8>) -> Result<Self, Self::Error>
-//     // where
-//     //     Self: Sized,
-//     // {
-//     //     let pri_key = XPriv::root_from_seed(seed.as_slice(), None).unwrap();
-//     //     Ok(Self {
-//     //         private_key: pri_key,
-//     //     })
-//     // }
-
-// fn private_key(&self) -> String {
-//     let derive_key = self.private_key.derive_path(wallet_core::constant::TRON_DERIVATION_PATH).unwrap();
-//     let signingkey: &coins_bip32::ecdsa::SigningKey = derive_key.as_ref();
-//     let private_key = signingkey.to_bytes();
-//     let key = alloy::hex::encode(private_key);
-//     key
-// }
-
-// fn address(&self) -> Self::Address {
-//     // TronPublicKey::
-
-//     libsecp256k1::SecretKey::parse(self.private_key.)
-//     TronPublicKey::from_secret_key(s)
-//     let addr = TronAddress::from_secret_key(self.private_key(), &TronFormat::Standard).unwrap();
-//     // let addr = TronAddress::from_public_key(&public, &TronFormat::Standard).unwrap();
-//     assert_eq!(addr.to_string(), "TMKDrK4i9ZJta5ui2XdfGJxTuqW42Pki6b");
-// }
-
-// }
-
 #[cfg(test)]
 mod test {
     use coins_bip32::xkeys::XPriv;
     use hex::encode;
     use secp256k1::PublicKey;
     use sha3::{Digest, Keccak256};
-    // use wallet_core::KeyPair;
-
-    // use super::TronKeyPair;
 
     #[test]
     fn test_trx() {
         let seed = "5b56c417303faa3fcba7e57400e120a0ca83ec5a4fc9ffba757fbe63fbd77a89a1a3be4c67196f57c39a88b76373733891bfaba16ed27a813ceed498804c0570";
         let _seed = hex::decode(seed).unwrap();
-
-        // let pri_key = XPriv::root_from_seed(seed.as_slice(), None).unwrap();
-        // // let keypair = TronKeyPair::generate(pri_key).unwrap();
-        // let keypair = TronKeyPair::generate(seed, 1).unwrap();
     }
 
     #[test]

@@ -3,7 +3,7 @@ pub mod derivation_path;
 pub mod error;
 pub mod instance;
 
-pub use error::{keypair::KeypairError, Error};
+pub use error::{Error, keypair::KeypairError};
 pub use instance::btc::address::generate_address_with_xpriv;
 
 pub fn add(left: usize, right: usize) -> usize {

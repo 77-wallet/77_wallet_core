@@ -1,6 +1,6 @@
 use rust_decimal::{
-    prelude::{FromPrimitive, ToPrimitive as _},
     Decimal,
+    prelude::{FromPrimitive, ToPrimitive as _},
 };
 
 pub fn str_to_vec(raw: &str) -> Vec<u8> {

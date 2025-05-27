@@ -24,4 +24,8 @@ pub enum Error {
     LtcAddressCategoryInvalid(String),
     #[error("Invalid DogAddressCategory: {0}")]
     DogAddressCategoryInvalid(String),
+    #[error("Miss address type")]
+    MissAddressType,
+    #[error("ton address type  invalid: {0}")]
+    TonAddressTypeInvalid(String),
 }

@@ -1,9 +1,9 @@
 #![allow(unused)]
 use bitcoin::{
+    Network,
     bip32::{DerivationPath, Xpriv},
     hashes::Hash as _,
     key::{Keypair, Secp256k1},
-    Network,
 };
 use ripemd160::Digest as _;
 use secp256k1::hashes::HashEngine as _;
@@ -122,7 +122,7 @@ fn sha256(raw: &[u8]) -> Vec<u8> {
 mod tests {
     use std::str::FromStr;
 
-    use bitcoin::{key::Secp256k1, script::Builder, Address, PrivateKey, PubkeyHash, ScriptBuf};
+    use bitcoin::{Address, PrivateKey, PubkeyHash, ScriptBuf, key::Secp256k1, script::Builder};
     use secp256k1::{Keypair, SecretKey};
     use serde::Serialize;
     use solana_sdk::pubkey;

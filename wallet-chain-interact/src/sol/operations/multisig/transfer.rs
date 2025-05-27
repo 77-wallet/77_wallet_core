@@ -1,14 +1,14 @@
 use super::{
+    MULTISIG_PROGRAM_ID,
     args::{ProposalCreateArgs, ProposalVoteArgs, VaultTransactionCreateArgs},
     pda,
     program::MultisigSigRawData,
     vault_transaction::{TransactionMessage, VaultTransactionMessageExt},
-    MULTISIG_PROGRAM_ID,
 };
 use crate::{
     sol::{
-        operations::{transfer::TransferOpt, SolInstructionOperation, SolTransferOperation},
         SolFeeSetting,
+        operations::{SolInstructionOperation, SolTransferOperation, transfer::TransferOpt},
     },
     types::MultisigTxResp,
 };

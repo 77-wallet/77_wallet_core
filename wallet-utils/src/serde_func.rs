@@ -102,3 +102,7 @@ pub fn serde_yaml_from_value<'de, T: serde::de::DeserializeOwned>(
 ) -> Result<T, crate::Error> {
     serde_yaml::from_value(value).map_err(|e| crate::Error::Serde(e.into()))
 }
+
+pub fn bcs_to_bytes<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, crate::Error> {
+    bcs::to_bytes(value).map_err(|e| crate::Error::Serde(e.into()))
+}

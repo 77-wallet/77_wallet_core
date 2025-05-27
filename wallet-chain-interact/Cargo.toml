@@ -1,7 +1,8 @@
+# cargo-features = ["edition2024"]
 [package]
 name = "wallet-chain-interact"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 tokio = { workspace = true }
@@ -34,6 +35,11 @@ solana-sdk = { workspace = true }
 anychain-tron = "0.2.3"
 anychain-core = "0.1.6"
 
+# ton
+tonlib-core = { workspace = true }
+num-bigint = "0.4.6"
+ed25519-dalek-bip32 = "0.2.0"
+
 # 链
 protobuf = { version = "3.3.0" }
 spl-associated-token-account = "4"
@@ -43,6 +49,12 @@ borsh = "1.5.1"
 
 regex = { workspace = true }
 chrono = { workspace = true }
+
+# sui-sdk = { workspace = true }
+sui-types = { workspace = true }
+sui-json-rpc-types = { workspace = true }
+shared-crypto = { workspace = true }
+# move-core-types = { workspace = true }
 
 [dev-dependencies]
 libsecp256k1 = "0.6"

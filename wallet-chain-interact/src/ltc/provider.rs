@@ -1,9 +1,9 @@
 use super::{
     consts::{EXPEND_FEE_RATE, MAX_FEE_RATE},
     protocol::{
+        BlockHeader, OutInfo,
         other::FeeRate,
         transaction::{ApiBlock, ApiTransaction, JsonRpcTx, TransactionUtxo, ValidateAddress},
-        BlockHeader, OutInfo,
     },
     utxos::{Utxo, UtxoList},
 };

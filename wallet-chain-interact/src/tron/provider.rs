@@ -1,9 +1,9 @@
 use super::{
     operations::{
+        TronTransactionResponse,
         contract::{ConstantContract, TriggerContractParameter, TriggerContractResult},
         stake::{self, CanDelegatedMaxSize},
         transfer::{ContractTransferResp, TronTransferResp},
-        TronTransactionResponse,
     },
     params::ResourceConsumer,
     protocol::{

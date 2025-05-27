@@ -1,8 +1,7 @@
 use super::ResourceType;
 use crate::tron::{
-    consts,
+    Provider, consts,
     operations::{RawTransactionParams, TronTxOperation},
-    Provider,
 };
 
 #[derive(serde::Serialize, Debug)]

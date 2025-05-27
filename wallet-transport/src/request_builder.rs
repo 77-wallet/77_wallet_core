@@ -1,19 +1,19 @@
-use crate::{errors::NodeResponseError, types::JsonRpcResult, TransportError};
+use crate::{TransportError, errors::NodeResponseError, types::JsonRpcResult};
 use reqwest::RequestBuilder;
-use serde::{de::DeserializeOwned, Serialize};
-use std::fmt::Debug;
+use serde::{Serialize, de::DeserializeOwned};
+use std::{fmt::Debug, str::FromStr};
 
 pub struct ReqBuilder(pub RequestBuilder);
 
 impl ReqBuilder {
     pub fn json(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::debug!("request params: {}", serde_json::to_string(&v).unwrap());
+        tracing::info!("request params: {}", serde_json::to_string(&v).unwrap());
         self.0 = self.0.json(&v);
         self
     }
 
     pub fn query(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::debug!("request params: {:?}", v);
+        tracing::info!("request params: {:?}", v);
         self.0 = self.0.query(&v);
         self
     }
@@ -33,7 +33,7 @@ impl ReqBuilder {
 
         let status = res.status();
         if !status.is_success() {
-            // 尝试解析出 json respose:: btc now node 返回的不标准。
+            // 尝试解析出 json response:: btc now node 返回的不标准。
             match res.text().await {
                 Ok(response) => {
                     if let Ok(rs) = Self::try_to_paras_json(&response) {
@@ -42,9 +42,17 @@ impl ReqBuilder {
                             Some(rs.1),
                         )));
                     } else {
+                        // 尝试提出error
+                        let message = match serde_json::Value::from_str(&response) {
+                            Ok(value) => {
+                                let e = value.get("error");
+                                e.map(|e| e.to_string())
+                            }
+                            Err(_) => None,
+                        };
                         return Err(TransportError::NodeResponseError(NodeResponseError::new(
                             status.as_u16() as i64,
-                            None,
+                            message,
                         )));
                     }
                 }
@@ -62,7 +70,7 @@ impl ReqBuilder {
             .await
             .map_err(|e| crate::TransportError::Utils(wallet_utils::Error::Http(e.into())))?;
 
-        tracing::debug!("response = {}", response);
+        // tracing::info!("response = {}", response);
         Ok(response)
     }
 

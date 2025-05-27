@@ -1,6 +1,6 @@
 use super::{
-    contract::{ConstantContract, TriggerContractParameter},
     RawTransactionParams, TronConstantOperation, TronSimulateOperation, TronTxOperation,
+    contract::{ConstantContract, TriggerContractParameter},
 };
 use crate::{
     abi_encode_address, abi_encode_u256,

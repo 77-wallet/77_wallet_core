@@ -1,11 +1,15 @@
-use crate::{errors::TransportError, request_builder::ReqBuilder};
+use crate::{
+    errors::{NodeResponseError, TransportError},
+    request_builder::ReqBuilder,
+    types::JsonRpcResult,
+};
 use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
 use std::{collections::HashMap, str::FromStr};
 
 #[derive(Debug, Clone)]
 pub struct HttpClient {
-    base_url: String,
-    client: reqwest::Client,
+    pub base_url: String,
+    pub client: reqwest::Client,
 }
 
 impl HttpClient {
@@ -62,7 +66,7 @@ impl HttpClient {
 
     pub fn get(&self, endpoint: &str) -> ReqBuilder {
         let url = format!("{}/{}", self.base_url, endpoint);
-        tracing::debug!("request url = {}", url);
+        tracing::info!("request url = {}", url);
         let build = self.client.get(url);
         ReqBuilder(build)
     }
@@ -74,11 +78,50 @@ impl HttpClient {
         self.get(endpoint).send::<R>().await
     }
 
+    pub async fn get_with_params<T, R>(
+        &self,
+        endpoint: &str,
+        payload: T,
+    ) -> Result<R, TransportError>
+    where
+        R: serde::de::DeserializeOwned,
+        T: serde::Serialize + std::fmt::Debug,
+    {
+        self.get(endpoint).query(payload).send::<R>().await
+    }
+
     pub async fn post_request<T, U>(&self, endpoint: &str, payload: T) -> Result<U, TransportError>
     where
         T: serde::Serialize + std::fmt::Debug,
         U: serde::de::DeserializeOwned,
     {
         self.post(endpoint).json(payload).send::<U>().await
+    }
+
+    // json rpc invoke_request
+    pub async fn invoke_request<T, R>(&self, params: T) -> Result<R, TransportError>
+    where
+        T: serde::Serialize + std::fmt::Debug,
+        R: serde::de::DeserializeOwned,
+    {
+        tracing::info!("[req url] = {:?}", self.base_url);
+        tracing::info!("[req params] = {:?}", params);
+
+        let build = self.client.post(&self.base_url).json(&params);
+        let response = ReqBuilder(build).do_request().await?;
+
+        let rpc_result = wallet_utils::serde_func::serde_from_str::<JsonRpcResult<R>>(&response)?;
+
+        if let Some(err) = rpc_result.error {
+            return Err(TransportError::NodeResponseError(NodeResponseError::new(
+                err.code,
+                Some(err.message),
+            )));
+        }
+
+        match rpc_result.result {
+            Some(res) => Ok(res),
+            None => Err(TransportError::EmptyResult),
+        }
     }
 }

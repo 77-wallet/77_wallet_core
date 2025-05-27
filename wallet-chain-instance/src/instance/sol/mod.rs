@@ -1,6 +1,6 @@
 pub mod address;
 use solana_sdk::signer::Signer;
-use wallet_core::{derive::Derive, KeyPair};
+use wallet_core::{KeyPair, derive::Derive};
 use wallet_types::chain::{address::r#type::BtcAddressType, chain::ChainCode};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]

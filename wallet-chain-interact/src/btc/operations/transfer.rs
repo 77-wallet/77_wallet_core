@@ -1,11 +1,11 @@
 use crate::btc::{
+    ParseBtcAddress,
     consts::{self, EXPEND_FEE_RATE},
     provider::Provider,
     signature::{self, MultisigSignParams},
     utxos::UtxoList,
-    ParseBtcAddress,
 };
-use bitcoin::{consensus, transaction::Version, Amount, TxIn};
+use bitcoin::{Amount, TxIn, consensus, transaction::Version};
 use wallet_types::chain::{self, address::r#type::BtcAddressType};
 use wallet_utils::unit;
 
@@ -68,7 +68,6 @@ impl TransferArg {
 }
 
 impl TransferArg {
-    #[deprecated]
     pub fn build_transaction(&self, mut utxo: UtxoList) -> crate::Result<TransferBuilder> {
         let (input, output) = if self.spend_all {
             (utxo.selected_all()?, vec![])
@@ -205,146 +204,146 @@ impl TransferBuilder {
     }
 
     // 校验结果是否正确
-    fn check_transaction(
-        &self,
-        fee: Amount,
-        change_address: bitcoin::Address,
-        change_amount: Amount,
-    ) -> CheckTransactionRes {
-        let total_input = self.utxo.total_input_amount();
+    // fn check_transaction(
+    //     &self,
+    //     fee: Amount,
+    //     change_address: bitcoin::Address,
+    //     change_amount: Amount,
+    // ) -> CheckTransactionRes {
+    //     let total_input = self.utxo.total_input_amount();
 
-        // 不去包含找零的
-        let total_output = self
-            .transaction
-            .output
-            .iter()
-            .filter(|item| item.script_pubkey != change_address.script_pubkey())
-            .map(|item| item.value)
-            .sum::<Amount>();
+    //     // 不去包含找零的
+    //     let total_output = self
+    //         .transaction
+    //         .output
+    //         .iter()
+    //         .filter(|item| item.script_pubkey != change_address.script_pubkey())
+    //         .map(|item| item.value)
+    //         .sum::<Amount>();
 
-        let required_amount = fee + total_output + change_amount;
+    //     let required_amount = fee + total_output + change_amount;
 
-        let res = match total_input.cmp(&required_amount) {
-            std::cmp::Ordering::Greater => {
-                CheckTransactionRes::Greater(total_input - required_amount)
-            }
-            std::cmp::Ordering::Less => CheckTransactionRes::Less(required_amount - total_input),
-            std::cmp::Ordering::Equal => CheckTransactionRes::Equal,
-        };
-        println!("验证的交易{:#?}", self.transaction);
-        println!("total input = {}", total_input);
-        println!("fee  = {}", fee);
-        println!("out   = {}", total_output);
-        println!("找零的钱{:#?}", change_amount);
-        println!("加手续费总结果  = {}", required_amount);
-        println!("匹配结果{:?}", res);
+    //     let res = match total_input.cmp(&required_amount) {
+    //         std::cmp::Ordering::Greater => {
+    //             CheckTransactionRes::Greater(total_input - required_amount)
+    //         }
+    //         std::cmp::Ordering::Less => CheckTransactionRes::Less(required_amount - total_input),
+    //         std::cmp::Ordering::Equal => CheckTransactionRes::Equal,
+    //     };
+    //     println!("验证的交易{:#?}", self.transaction);
+    //     println!("total input = {}", total_input);
+    //     println!("fee  = {}", fee);
+    //     println!("out   = {}", total_output);
+    //     println!("找零的钱{:#?}", change_amount);
+    //     println!("加手续费总结果  = {}", required_amount);
+    //     println!("匹配结果{:?}", res);
 
-        res
-    }
+    //     res
+    // }
 
     // 设置找零以及手续费
-    pub fn set_change_and_fee(
-        &mut self,
-        fee_rate: Amount,
-        address_type: BtcAddressType,
-        change_address: bitcoin::Address,
-    ) -> crate::Result<usize> {
-        let mut change_amount1 = Amount::default();
-        for _i in 0..3 {
-            // 预估交易的大小
-            let size = signature::predict_transaction_size_v1(
-                self.transaction.clone(),
-                address_type,
-                &self.multisig_sign_params,
-            )?;
-            println!();
+    // pub fn set_change_and_fee(
+    //     &mut self,
+    //     fee_rate: Amount,
+    //     address_type: BtcAddressType,
+    //     change_address: bitcoin::Address,
+    // ) -> crate::Result<usize> {
+    //     let mut change_amount1 = Amount::default();
+    //     for _i in 0..3 {
+    //         // 预估交易的大小
+    //         let size = signature::predict_transaction_size_v1(
+    //             self.transaction.clone(),
+    //             address_type,
+    //             &self.multisig_sign_params,
+    //         )?;
+    //         println!();
 
-            println!("size = {}", size);
-            let fee = fee_rate * size as u64;
+    //         println!("size = {}", size);
+    //         let fee = fee_rate * size as u64;
 
-            match self.check_transaction(fee, change_address.clone(), change_amount1) {
-                // 大于进行找零
-                CheckTransactionRes::Greater(change_amount) => {
-                    println!("进行找零 = {}", change_amount);
+    //         match self.check_transaction(fee, change_address.clone(), change_amount1) {
+    //             // 大于进行找零
+    //             CheckTransactionRes::Greater(change_amount) => {
+    //                 println!("进行找零 = {}", change_amount);
 
-                    change_amount1 = change_amount;
-                    self.change_amount(change_address.clone(), change_amount)?
-                }
-                // 小于加入新的utxo
-                CheckTransactionRes::Less(additional_required) => {
-                    println!("加入新的 = {}", additional_required);
-                    self.add_utxo(additional_required, change_address.clone())?
-                }
-                // 相同构建交易完成
-                CheckTransactionRes::Equal => return Ok(size),
-            };
-        }
-        Ok(12)
-    }
+    //                 change_amount1 = change_amount;
+    //                 self.change_amount(change_address.clone(), change_amount)?
+    //             }
+    //             // 小于加入新的utxo
+    //             CheckTransactionRes::Less(additional_required) => {
+    //                 println!("加入新的 = {}", additional_required);
+    //                 self.add_utxo(additional_required, change_address.clone())?
+    //             }
+    //             // 相同构建交易完成
+    //             CheckTransactionRes::Equal => return Ok(size),
+    //         };
+    //     }
+    //     Ok(12)
+    // }
 
-    fn change_amount(
-        &mut self,
-        change_address: bitcoin::Address,
-        change_amount: Amount,
-    ) -> crate::Result<()> {
-        // 检查是否已经存在找零地址并更新金额
-        if let Some(item) = self
-            .transaction
-            .output
-            .iter_mut()
-            .find(|item| item.script_pubkey == change_address.script_pubkey())
-        {
-            item.value = change_amount;
-        } else {
-            self.transaction.output.push(bitcoin::TxOut {
-                value: change_amount,
-                script_pubkey: change_address.script_pubkey(),
-            });
-        }
+    // fn change_amount(
+    //     &mut self,
+    //     change_address: bitcoin::Address,
+    //     change_amount: Amount,
+    // ) -> crate::Result<()> {
+    //     // 检查是否已经存在找零地址并更新金额
+    //     if let Some(item) = self
+    //         .transaction
+    //         .output
+    //         .iter_mut()
+    //         .find(|item| item.script_pubkey == change_address.script_pubkey())
+    //     {
+    //         item.value = change_amount;
+    //     } else {
+    //         self.transaction.output.push(bitcoin::TxOut {
+    //             value: change_amount,
+    //             script_pubkey: change_address.script_pubkey(),
+    //         });
+    //     }
 
-        println!("找零后的交易 {:#?}", self.transaction);
-        Ok(())
-    }
+    //     println!("找零后的交易 {:#?}", self.transaction);
+    //     Ok(())
+    // }
 
     // additional_required :需要的input  = total_input - outinput - free
-    fn add_utxo(
-        &mut self,
-        additional_required: Amount,
-        change_address: bitcoin::Address,
-    ) -> crate::Result<()> {
-        // The total additional input
-        let mut additional_input = bitcoin::Amount::from_sat(0);
+    // fn add_utxo(
+    //     &mut self,
+    //     additional_required: Amount,
+    //     change_address: bitcoin::Address,
+    // ) -> crate::Result<()> {
+    //     // The total additional input
+    //     let mut additional_input = bitcoin::Amount::from_sat(0);
 
-        // UTXOs that have not been selected
-        let available = self.utxo.available_utxo();
-        for utxo in available {
-            additional_input += bitcoin::Amount::from_sat(utxo.value);
+    //     // UTXOs that have not been selected
+    //     let available = self.utxo.available_utxo();
+    //     for utxo in available {
+    //         additional_input += bitcoin::Amount::from_sat(utxo.value);
 
-            self.transaction.input.push(TxIn::from(utxo.clone()));
+    //         self.transaction.input.push(TxIn::from(utxo.clone()));
 
-            // Mark this UTXO as used
-            self.utxo.tag_select(&utxo.txid, utxo.vout);
+    //         // Mark this UTXO as used
+    //         self.utxo.tag_select(&utxo.txid, utxo.vout);
 
-            // If the additional input is sufficient
-            if additional_input >= additional_required {
-                break;
-            }
-        }
+    //         // If the additional input is sufficient
+    //         if additional_input >= additional_required {
+    //             break;
+    //         }
+    //     }
 
-        // If all UTXOs have been iterated and there is still not enough money
-        if additional_input < additional_required {
-            return Err(crate::UtxoError::InsufficientFee(additional_required.to_btc()).into());
-        }
+    //     // If all UTXOs have been iterated and there is still not enough money
+    //     if additional_input < additional_required {
+    //         return Err(crate::UtxoError::InsufficientFee(additional_required.to_btc()).into());
+    //     }
 
-        // 如果有找零的地址那么进行清空
-        // self.transaction
-        //     .output
-        //     .retain(|item| item.script_pubkey != change_address.script_pubkey());
+    //     // 如果有找零的地址那么进行清空
+    //     // self.transaction
+    //     //     .output
+    //     //     .retain(|item| item.script_pubkey != change_address.script_pubkey());
 
-        println!("加入utxo后的交易 {:#?}", self.transaction);
+    //     println!("加入utxo后的交易 {:#?}", self.transaction);
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn change_and_fee(
         &mut self,
@@ -603,22 +602,22 @@ mod tests {
         utxo_list
     }
 
-    #[test]
-    pub fn test_v1_condition_1() {
-        // 选择了两个utxo 并且所选择的utxo满足了手续费的要求
-        let from = "n2xfjp4NfSMWao3V119b5JEU3CKZ7jDZAK";
-        let to = "bcrt1qjx3d2sfu5v0jykpzs3a668nf26cgh9awsh7ek9";
-        let value = "0.0051";
+    // #[test]
+    // pub fn test_v1_condition_1() {
+    //     // 选择了两个utxo 并且所选择的utxo满足了手续费的要求
+    //     let from = "n2xfjp4NfSMWao3V119b5JEU3CKZ7jDZAK";
+    //     let to = "bcrt1qjx3d2sfu5v0jykpzs3a668nf26cgh9awsh7ek9";
+    //     let value = "0.0051";
 
-        let network = wallet_types::chain::network::NetworkKind::Regtest;
-        let params = TransferArg::new(from, to, value, Some("p2pkh".to_string()), network).unwrap();
+    //     let network = wallet_types::chain::network::NetworkKind::Regtest;
+    //     let params = TransferArg::new(from, to, value, Some("p2pkh".to_string()), network).unwrap();
 
-        let mut build = params.build_transaction_v1(utxos()).unwrap();
+    //     let mut build = params.build_transaction_v1(utxos()).unwrap();
 
-        let fee_rate = bitcoin::Amount::from_sat(20);
-        let size = build
-            .set_change_and_fee(fee_rate, params.address_type, params.change_address)
-            .unwrap();
-        println!("size = {}", size);
-    }
+    //     let fee_rate = bitcoin::Amount::from_sat(20);
+    //     let size = build
+    //         .set_change_and_fee(fee_rate, params.address_type, params.change_address)
+    //         .unwrap();
+    //     println!("size = {}", size);
+    // }
 }

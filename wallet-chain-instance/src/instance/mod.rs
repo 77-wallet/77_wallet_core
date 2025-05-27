@@ -3,6 +3,8 @@ pub mod dog;
 pub mod eth;
 pub mod ltc;
 pub mod sol;
+pub mod sui;
+pub mod ton;
 pub mod trx;
 
 use std::fmt::Display;
@@ -13,8 +15,14 @@ use dog::DogcoinInstance;
 use eth::EthereumInstance;
 use ltc::LitecoinInstance;
 use sol::SolanaInstance;
+use sui::SuiInstance;
+use ton::{TonInstance, TonKeyPair};
 use trx::TronInstance;
-use wallet_core::derive::{Derive, GenDerivation, GenDerivationDog, GenDerivationLtc};
+use wallet_core::{
+    KeyPair,
+    derive::{Derive, GenDerivation, GenDerivationDog, GenDerivationLtc},
+};
+
 use wallet_types::chain::{address::r#type::AddressType, chain, network};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
@@ -26,6 +34,7 @@ pub enum Address {
     SolAddress(solana_sdk::pubkey::Pubkey),
     TrxAddress(anychain_tron::TronAddress),
     BnbAddress(alloy::primitives::Address),
+    SuiAddress(String),
 }
 
 impl Display for Address {
@@ -38,6 +47,7 @@ impl Display for Address {
             Address::SolAddress(address) => write!(f, "{}", address),
             Address::TrxAddress(address) => write!(f, "{}", address.to_base58()),
             Address::BnbAddress(address) => write!(f, "{}", address),
+            Address::SuiAddress(address) => write!(f, "{}", address),
         }
     }
 }
@@ -51,6 +61,8 @@ pub enum ChainObject {
     Btc(crate::instance::btc::BitcoinInstance),
     Ltc(crate::instance::ltc::LitecoinInstance),
     Dog(crate::instance::dog::DogcoinInstance),
+    Ton(crate::instance::ton::TonInstance),
+    Sui(crate::instance::sui::SuiInstance),
 }
 
 impl ChainObject {
@@ -60,7 +72,6 @@ impl ChainObject {
         network: network::NetworkKind,
     ) -> Result<Self, crate::Error> {
         let chain_code: ChainCode = chain_code.try_into()?;
-        // let address_type =
         let btc_address_type: AddressType = address_type.try_into()?;
         (&chain_code, &btc_address_type, network).try_into()
     }
@@ -74,6 +85,8 @@ impl ChainObject {
             ChainObject::Btc(i) => &i.chain_code,
             ChainObject::Ltc(i) => &i.chain_code,
             ChainObject::Dog(i) => &i.chain_code,
+            ChainObject::Ton(i) => &i.chain_code,
+            ChainObject::Sui(i) => &i.chain_code,
         }
     }
 
@@ -82,10 +95,12 @@ impl ChainObject {
             ChainObject::Eth(_)
             | ChainObject::Trx(_)
             | ChainObject::Sol(_)
-            | ChainObject::Bnb(_) => AddressType::Other,
+            | ChainObject::Bnb(_)
+            | ChainObject::Sui(_) => AddressType::Other,
             ChainObject::Btc(i) => AddressType::Btc(i.address_type),
             ChainObject::Ltc(i) => AddressType::Ltc(i.address_type),
             ChainObject::Dog(i) => AddressType::Dog(i.address_type),
+            ChainObject::Ton(i) => AddressType::Ton(i.address_type),
         }
     }
 
@@ -140,6 +155,24 @@ impl ChainObject {
                 let res = Box::new(res);
                 Ok(res)
             }
+
+            ChainObject::Ton(instance) => {
+                let derivation_path = TonInstance::generate(&None, input_index)?;
+                let res = TonKeyPair::generate_with_derivation(
+                    seed.to_vec(),
+                    &derivation_path,
+                    &instance.chain_code,
+                    instance.network,
+                )?;
+
+                Ok(Box::new(res))
+            }
+            ChainObject::Sui(i) => {
+                let derivation_path = SuiInstance::generate(&None, input_index)?;
+                let res = i.derive_with_derivation_path(seed.to_vec(), &derivation_path)?;
+                let res = Box::new(res);
+                Ok(res)
+            }
         }
     }
 
@@ -148,7 +181,6 @@ impl ChainObject {
         seed: &[u8],
         derivation_path: &str,
     ) -> Result<Box<dyn wallet_core::KeyPair<Error = crate::Error>>, crate::Error> {
-        // tracing::error!("[gen_keypair_with_derivation_path] derivation_path: {derivation_path}");
         match self {
             ChainObject::Eth(i) => {
                 let res = i.derive_with_derivation_path(seed.to_vec(), derivation_path)?;
@@ -185,6 +217,21 @@ impl ChainObject {
                 let res = Box::new(res);
                 Ok(res)
             }
+            ChainObject::Ton(instance) => {
+                let res = TonKeyPair::generate_with_derivation(
+                    seed.to_vec(),
+                    derivation_path,
+                    &instance.chain_code,
+                    instance.network,
+                )?;
+
+                Ok(Box::new(res))
+            }
+            ChainObject::Sui(i) => {
+                let res = i.derive_with_derivation_path(seed.to_vec(), derivation_path)?;
+                let res = Box::new(res);
+                Ok(res)
+            }
         }
     }
 
@@ -193,9 +240,9 @@ impl ChainObject {
     ) -> Result<
         Box<
             dyn wallet_core::address::GenAddress<
-                Address = crate::instance::Address,
-                Error = crate::Error,
-            >,
+                    Address = crate::instance::Address,
+                    Error = crate::Error,
+                >,
         >,
         crate::Error,
     > {
@@ -220,6 +267,8 @@ impl ChainObject {
                 address_type: i.address_type,
                 network: i.network,
             }),
+            ChainObject::Sui(_) => Box::new(crate::instance::sui::address::SuiGenAddress {}),
+            _ => panic!("not suer used"),
         })
     }
 }
@@ -248,18 +297,10 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
                 network,
             }),
             ChainCode::Bitcoin => {
-                let btc_address_type = match typ {
-                    AddressType::Btc(btc_address_type) => btc_address_type,
-                    AddressType::Other => {
-                        return Err(crate::Error::Types(wallet_types::Error::BtcNeedAddressType));
-                    }
-                    AddressType::Ltc(_btc_address_type) => {
-                        return Err(crate::Error::Types(wallet_types::Error::BtcNeedAddressType));
-                    }
-                    AddressType::Dog(_dog_address_type) => {
-                        return Err(crate::Error::Types(wallet_types::Error::DogNeedAddressType));
-                    }
+                let AddressType::Btc(btc_address_type) = typ else {
+                    return Err(crate::Error::Types(wallet_types::Error::BtcNeedAddressType));
                 };
+
                 ChainObject::Btc(crate::instance::btc::BitcoinInstance {
                     chain_code: value.to_owned(),
                     address_type: btc_address_type.to_owned(),
@@ -267,84 +308,72 @@ impl TryFrom<(&ChainCode, &AddressType, network::NetworkKind)> for ChainObject {
                 })
             }
             ChainCode::Litecoin => {
-                let ltc_address_type = match typ {
-                    AddressType::Ltc(ltc_address_type) => ltc_address_type,
-                    AddressType::Other => {
-                        return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
-                    }
-                    AddressType::Btc(_btc_address_type) => {
-                        return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
-                    }
-                    AddressType::Dog(_btc_address_type) => {
-                        return Err(crate::Error::Types(wallet_types::Error::DogNeedAddressType));
-                    }
+                let AddressType::Ltc(ltc) = typ else {
+                    return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
                 };
+
                 ChainObject::Ltc(crate::instance::ltc::LitecoinInstance {
                     chain_code: value.to_owned(),
-                    address_type: ltc_address_type.to_owned(),
+                    address_type: ltc.to_owned(),
                     network,
                 })
             }
             ChainCode::Dogcoin => {
-                let dog_address_type = match typ {
-                    AddressType::Dog(dog_address_type) => dog_address_type,
-                    AddressType::Other => {
-                        return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
-                    }
-                    AddressType::Btc(_btc_address_type) => {
-                        return Err(crate::Error::Types(wallet_types::Error::LtcNeedAddressType));
-                    }
-                    AddressType::Ltc(_btc_address_type) => {
-                        return Err(crate::Error::Types(wallet_types::Error::DogNeedAddressType));
-                    }
+                let AddressType::Dog(doge) = typ else {
+                    return Err(crate::Error::Types(wallet_types::Error::DogNeedAddressType));
                 };
+
                 ChainObject::Dog(crate::instance::dog::DogcoinInstance {
                     chain_code: value.to_owned(),
-                    address_type: dog_address_type.to_owned(),
+                    address_type: doge.to_owned(),
                     network,
                 })
-            } // ChainCode::Unknown => return Err(crate::Error::UnknownChainCode),
+            }
+            ChainCode::Ton => {
+                let AddressType::Ton(ton) = typ else {
+                    return Err(crate::Error::Types(wallet_types::Error::MissAddressType));
+                };
+
+                ChainObject::Ton(crate::instance::ton::TonInstance {
+                    chain_code: value.clone(),
+                    address_type: ton.to_owned(),
+                    network,
+                })
+            }
+            ChainCode::Sui => ChainObject::Sui(crate::instance::sui::SuiInstance {
+                chain_code: value.to_owned(),
+                network,
+            }),
         };
         Ok(res)
     }
 }
 
-// impl ChainCode {
-//     pub fn gen_instance(self) -> Result<ChainInstance, crate::Error> {}
-// }
+#[cfg(test)]
+mod test {
+    use super::ChainObject;
+    use wallet_core::xpriv;
+    use wallet_types::chain::{address::r#type::DOG_ADDRESS_TYPES, chain::ChainCode, network};
 
-// impl wallet_core::derive::Derive for ChainInstance {
-//     type Error = crate::Error;
-//     type Item = Box<dyn wallet_core::KeyPair<Error = crate::Error>>;
+    #[test]
+    fn test_gen() {
+        let phrase = "";
+        let password = "";
 
-//     fn derive(&self, seed: Vec<u8>, index: u32) -> Result<Self::Item, Self::Error> {
-//         match self {
-//             ChainInstance::Eth(instance) => {
-//                 let eth_keypair = instance.derive(seed, index)?;
-//                 Ok(eth_keypair)
-//             }
-//             ChainInstance::Trx(instance) => {
-//                 let trx_keypair = instance.derive(seed, index)?;
-//                 Ok(trx_keypair)
-//             }
-//         }
-//     }
-// }
+        let xpriv = xpriv::generate_master_key(1, phrase, password).unwrap();
+        let seed = xpriv.1;
 
-// impl ChainCode {
-//     pub fn gen_instance(
-//         self,
-//     ) -> Box<
-//         dyn wallet_core::derive::Derive<
-//             Item = Box<dyn wallet_core::KeyPair<Error = crate::Error>>,
-//             Error = crate::Error,
-//         >,
-//     > {
-//         match self {
-//             ChainCode::Eth => Box::new(crate::instance::eth::EthereumInstance {}),
-//             // ChainCode::Bnb => Box::new(crate::instance::btc::BitcoinInstance {}),
-//             // ChainCode::Btc => Box::new(crate::instance::btc::BitcoinInstance {}),
-//             ChainCode::Trx => Box::new(crate::instance::trx::TronInstance {}),
-//         }
-//     }
-// }
+        let code = ChainCode::Dogcoin;
+        let address_types = DOG_ADDRESS_TYPES.to_vec();
+        let network = network::NetworkKind::Testnet;
+
+        for address_type in address_types {
+            let instance: ChainObject = (&code, &address_type, network.into()).try_into().unwrap();
+            let keypair = instance
+                .gen_keypair_with_index_address_type(&seed, 0)
+                .unwrap();
+
+            println!("address {}", keypair.address())
+        }
+    }
+}
