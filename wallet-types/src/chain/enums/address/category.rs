@@ -10,6 +10,18 @@ pub enum AddressCategory {
     Ton(TonAddressType),
     Other,
 }
+impl AddressCategory {
+    // 展示分类下的名称
+    pub fn show_name(&self) -> &str {
+        match self {
+            AddressCategory::Btc(addr_type) => addr_type.as_ref(),
+            AddressCategory::Ltc(addr_type) => addr_type.as_ref(),
+            AddressCategory::Dog(addr_type) => addr_type.as_ref(),
+            AddressCategory::Ton(addr_type) => addr_type.as_ref(),
+            AddressCategory::Other => "",
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Copy)]
 pub enum BtcAddressCategory {
@@ -211,5 +223,12 @@ mod tests {
         let test: Option<String> = None;
         let test_serialized = serde_json::to_string(&test).unwrap();
         assert_eq!(test_serialized, "null");
+    }
+
+    #[test]
+    fn test_show_name() {
+        let btc_category = AddressCategory::Btc(BtcAddressCategory::Taproot);
+
+        println!("{}", btc_category.show_name());
     }
 }
