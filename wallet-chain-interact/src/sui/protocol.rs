@@ -40,7 +40,8 @@ impl EstimateFeeResp {
 
     // 费用浮动了0.1
     pub fn get_fee(&self) -> u64 {
-        self.gas_fee + (self.gas_fee as f64 * 0.1) as u64
+        // self.gas_fee + (self.gas_fee as f64 * 0.1) as u64
+        self.gas_fee
     }
 
     pub fn get_fee_f64(&self) -> f64 {
