@@ -1,6 +1,6 @@
 pub mod address;
-pub mod test;
-use test::{generate_sui_address_from_bytes, get_pub_key};
+pub mod derivation;
+use derivation::{generate_sui_address_from_bytes, get_pub_key};
 use wallet_core::{KeyPair, derive::Derive};
 use wallet_types::chain::{address::r#type::BtcAddressType, chain::ChainCode};
 
@@ -56,13 +56,13 @@ impl KeyPair for SuiKeyPair {
     where
         Self: Sized,
     {
-        let pri_key = test::slip0010_derive_ed25519(&seed, derivation_path)?;
+        let pri_key = derivation::slip0010_derive_ed25519(&seed, derivation_path)?;
         let private_key = hex::encode(pri_key);
 
-        let pub_key = test::get_pub_key(pri_key)?;
+        let pub_key = derivation::get_pub_key(pri_key)?;
         let pubkey = hex::encode(pub_key.as_bytes());
 
-        let address = test::generate_sui_address_from_bytes(pub_key.as_bytes());
+        let address = derivation::generate_sui_address_from_bytes(pub_key.as_bytes());
         Ok(Self {
             sui_family: chain_code.to_owned(),
             private_key,

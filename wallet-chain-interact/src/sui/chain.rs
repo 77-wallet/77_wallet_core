@@ -98,7 +98,8 @@ impl SuiChain {
             return Err(SuiError::GasError(result.effects.status().to_string()))?;
         }
 
-        let gas_used = result.effects.gas_cost_summary().net_gas_usage();
+        let gas_used = result.effects.gas_cost_summary().computation_cost
+            + result.effects.gas_cost_summary().storage_cost;
         let gas_used = if gas_used <= 0 {
             DEFAULT_GAS_BUDGET
         } else {

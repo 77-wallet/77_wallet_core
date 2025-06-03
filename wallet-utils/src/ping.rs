@@ -66,10 +66,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ping() -> Result<(), Box<dyn std::error::Error>> {
-        // let host = "www.baidu.com";
-        let host = "apprpc.safew.cc";
-        // let host = "https://apprpc.safew.cc/eth";
-        // let host = "rpc.88ai.fun";
+        let host = "www.baidu.com";
         ping(host).await?;
         Ok(())
     }

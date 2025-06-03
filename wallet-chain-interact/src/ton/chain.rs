@@ -9,7 +9,7 @@ use super::{
     },
     provider::Provider,
 };
-use crate::{QueryTransactionResult, ton::protocol::jettons::JettonMeta, types::ChainPrivateKey};
+use crate::{QueryTransactionResult, types::ChainPrivateKey};
 use alloy::primitives::U256;
 use tonlib_core::{
     cell::{BagOfCells, Cell},
@@ -41,7 +41,9 @@ impl TonChain {
                 .token_data::<JettonWalletResp>(&jetton_address.to_base64_url())
                 .await?;
 
-            Ok(U256::from(result.balance))
+            Ok(wallet_utils::unit::u256_from_str(
+                &result.balance.to_string(),
+            )?)
         } else {
             self.provider.balance(addr).await
         }
@@ -135,47 +137,33 @@ impl TonChain {
     pub async fn token_symbol(&self, token: &str) -> crate::Result<String> {
         let token_data = self.provider.token_data::<JettonMasterResp>(token).await?;
 
-        // 从meta uri 获取 symbol
-        let uri = token_data.jetton_content.data.uri;
-        let mete = self
-            .provider
-            .client
-            .client
-            .get(uri)
-            .send()
-            .await
-            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
-        let content = mete
-            .text()
-            .await
-            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
+        if let Some(symbol) = token_data.jetton_content.data.symbol {
+            Ok(symbol)
+        } else {
+            if let Some(uri) = token_data.jetton_content.data.uri {
+                let meta = self.provider.get_token_meta(&uri).await?;
 
-        let meta = wallet_utils::serde_func::serde_from_str::<JettonMeta>(&content)?;
-
-        Ok(meta.symbol)
+                Ok(meta.symbol)
+            } else {
+                Ok("".to_string())
+            }
+        }
     }
 
     pub async fn token_name(&self, token: &str) -> crate::Result<String> {
         let token_data = self.provider.token_data::<JettonMasterResp>(token).await?;
 
-        // 从meta uri 获取 symbol
-        let uri = token_data.jetton_content.data.uri;
-        let mete = self
-            .provider
-            .client
-            .client
-            .get(uri)
-            .send()
-            .await
-            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
-        let content = mete
-            .text()
-            .await
-            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
+        if let Some(name) = token_data.jetton_content.data.name {
+            Ok(name)
+        } else {
+            if let Some(uri) = token_data.jetton_content.data.uri {
+                let meta = self.provider.get_token_meta(&uri).await?;
 
-        let meta = wallet_utils::serde_func::serde_from_str::<JettonMeta>(&content)?;
-
-        Ok(meta.name)
+                Ok(meta.name)
+            } else {
+                Ok("".to_string())
+            }
+        }
     }
 
     pub async fn block_num(&self) -> crate::Result<u64> {

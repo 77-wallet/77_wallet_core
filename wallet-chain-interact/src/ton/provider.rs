@@ -9,6 +9,7 @@ use super::{
         account::{AccountTransactions, AddressInformation},
         block::{BlocksShards, ConsensusBlock, MasterChainInfo},
         common::{ConfigParams, RunGetMethodParams, RunGetMethodResp},
+        jettons::JettonMeta,
         transaction::{AddressId, EstimateFeeResp, RawTransaction, SendBocReturn},
     },
 };
@@ -262,5 +263,23 @@ impl Provider {
         //     .await?;
 
         Ok(res.result)
+    }
+
+    pub async fn get_token_meta(&self, uri: &str) -> crate::Result<JettonMeta> {
+        let mete = self
+            .client
+            .client
+            .get(uri)
+            .send()
+            .await
+            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
+        let content = mete
+            .text()
+            .await
+            .map_err(|e| wallet_utils::Error::Http(e.into()))?;
+
+        Ok(wallet_utils::serde_func::serde_from_str::<JettonMeta>(
+            &content,
+        )?)
     }
 }

@@ -42,13 +42,15 @@ pub struct JettonContent {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct JettonData {
-    pub uri: String,
+    pub uri: Option<String>,
     pub decimals: String,
+    pub name: Option<String>,
+    pub symbol: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize)]
 pub struct JettonWalletResp {
-    pub balance: u64,
+    pub balance: serde_json::Value,
     pub owner: String,
     pub jetton: String,
     pub jetton_wallet_code: String,
