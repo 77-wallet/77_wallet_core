@@ -237,10 +237,15 @@ fn parse_jetton_message(cell: &Cell) -> Result<JettonTransferMessage, TonError> 
 
     let amount = parser.load_coins()?;
     let destination = parser.load_address()?;
-    let response_destination = parser.load_address()?;
+    let response_destination = parser.load_msg_address()?;
     let custom_payload = parser.load_maybe_cell_ref()?;
     let forward_ton_amount = parser.load_coins()?;
     // parser.ensure_empty()?;
+
+    let response_destination = match TonAddress::from_msg_address(response_destination) {
+        Ok(addr) => addr,
+        Err(_e) => TonAddress::NULL,
+    };
 
     let forward_payload = EMPTY_ARC_CELL.clone();
 
@@ -267,6 +272,7 @@ mod test {
     fn test_paras() {
         let body = "te6cckEBAQEAWQAArQ+KfqUAAAAAAAAAKl6NSlEACAF0bn5pAXYSjoka3kALs7PgDfmJE2xXMvdXGoj1uF6AzwAujc/NIC7CUdEjW8gBdnZ8Ab8xIm2K5l7q41EetwvQGcID8KmiDT0=";
         // let body = "te6cckEBAQEAVwAAqg+KfqX76BmRXBNjPEO5rKAIAWInUylqBJQs4z7SJyZR1usrLYcUS+sgUWKN/ZuGxDv9AA10/ugcep4Gy3heOFSTD83/i7pMVVdLMYR4mRKWvHh/AgL/h0Rw";
+        // let body = "te6cckEBAQEAPQAAdQ+KfqUAAAAAAAAAAEE2/AiIAc2wbfbYvxmf/JZY19xuZ130zicwgbqJc2ku+J3CP6hmh3NZQAAAAAAQGxOnyw==";
 
         let bag = BagOfCells::parse_base64(&body)
             .map_err(TonError::CellBuild)
@@ -279,7 +285,8 @@ mod test {
             .map_err(TonError::CellBuild)
             .unwrap();
 
-        let msg = parse_jetton_message(&cell);
-        assert!(msg.is_ok());
+        let msg = parse_jetton_message(&cell).unwrap();
+        println!("{:#?}", msg);
+        // assert!(msg.is_ok());
     }
 }
