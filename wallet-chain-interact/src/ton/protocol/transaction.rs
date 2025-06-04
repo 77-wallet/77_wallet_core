@@ -1,4 +1,5 @@
 use crate::ton::{consts::TON_VALUE, errors::TonError};
+use num_bigint::BigUint;
 use serde::Deserialize;
 use tonlib_core::{
     TonAddress,
@@ -239,7 +240,13 @@ fn parse_jetton_message(cell: &Cell) -> Result<JettonTransferMessage, TonError> 
     let destination = parser.load_address()?;
     let response_destination = parser.load_msg_address()?;
     let custom_payload = parser.load_maybe_cell_ref()?;
-    let forward_ton_amount = parser.load_coins()?;
+
+    let forward_ton_amount = if parser.remaining_bits() > 0 {
+        parser.load_coins()?
+    } else {
+        BigUint::ZERO
+    };
+
     // parser.ensure_empty()?;
 
     let response_destination = match TonAddress::from_msg_address(response_destination) {
@@ -270,9 +277,10 @@ mod test {
 
     #[test]
     fn test_paras() {
-        let body = "te6cckEBAQEAWQAArQ+KfqUAAAAAAAAAKl6NSlEACAF0bn5pAXYSjoka3kALs7PgDfmJE2xXMvdXGoj1uF6AzwAujc/NIC7CUdEjW8gBdnZ8Ab8xIm2K5l7q41EetwvQGcID8KmiDT0=";
+        // let body = "te6cckEBAQEAWQAArQ+KfqUAAAAAAAAAKl6NSlEACAF0bn5pAXYSjoka3kALs7PgDfmJE2xXMvdXGoj1uF6AzwAujc/NIC7CUdEjW8gBdnZ8Ab8xIm2K5l7q41EetwvQGcID8KmiDT0=";
         // let body = "te6cckEBAQEAVwAAqg+KfqX76BmRXBNjPEO5rKAIAWInUylqBJQs4z7SJyZR1usrLYcUS+sgUWKN/ZuGxDv9AA10/ugcep4Gy3heOFSTD83/i7pMVVdLMYR4mRKWvHh/AgL/h0Rw";
         // let body = "te6cckEBAQEAPQAAdQ+KfqUAAAAAAAAAAEE2/AiIAc2wbfbYvxmf/JZY19xuZ130zicwgbqJc2ku+J3CP6hmh3NZQAAAAAAQGxOnyw==";
+        let body = "te6cckEBAQEAVgAApw+KfqUAAAAAAAAAAEHc1lAIAf/vjq3HmYxv5DjnWU5FxLoPNEo1hfK+abGs9NtQN5mnADoF7YZAob16c6uyn7OcXcCVTpSsw+UXgAWNsyV0BtUu0MWEoZc=";
 
         let bag = BagOfCells::parse_base64(&body)
             .map_err(TonError::CellBuild)
