@@ -2,9 +2,9 @@ use crate::ton::{consts::TON_VALUE, errors::TonError};
 use serde::Deserialize;
 use tonlib_core::{
     TonAddress,
-    cell::BagOfCells,
-    message::{JettonTransferMessage, TonMessage},
-    tlb_types::traits::TLBObject,
+    cell::{BagOfCells, Cell, EMPTY_ARC_CELL, EitherCellLayout},
+    message::{HasOpcode as _, JettonTransferMessage},
+    tlb_types::tlb::TLB as _,
 };
 pub trait GetAddress {
     fn get_address(&self, bounce: bool) -> String;
@@ -141,7 +141,8 @@ impl<T: std::fmt::Debug> RawMessage<T> {
                     .to_cell()
                     .map_err(TonError::CellBuild)?;
 
-                Ok(JettonTransferMessage::parse(&cell).map_err(TonError::TonMsg)?)
+                // Ok(JettonTransferMessage::parse(&cell).map_err(TonError::TonMsg)?)
+                Ok(parse_jetton_message(&cell)?)
             }
             MsgData::Text { text: _ } => {
                 Err(TonError::NotTokenParse("text raw_data ".to_string()))?
@@ -225,4 +226,60 @@ pub struct SourceFees {
 #[derive(Debug, Deserialize)]
 pub struct DestinationFees {
     // 如果 destination_fees 不为空，你可以根据实际字段结构补充此结构体
+}
+
+// 在某些提交的交易中 ref的标志位不是特别规范,忽略掉forward_payload
+fn parse_jetton_message(cell: &Cell) -> Result<JettonTransferMessage, TonError> {
+    let mut parser = cell.parser();
+
+    let opcode: u32 = parser.load_u32(32)?;
+    let query_id = parser.load_u64(64)?;
+
+    let amount = parser.load_coins()?;
+    let destination = parser.load_address()?;
+    let response_destination = parser.load_address()?;
+    let custom_payload = parser.load_maybe_cell_ref()?;
+    let forward_ton_amount = parser.load_coins()?;
+    // parser.ensure_empty()?;
+
+    let forward_payload = EMPTY_ARC_CELL.clone();
+
+    let result = JettonTransferMessage {
+        query_id,
+        amount,
+        destination,
+        response_destination,
+        custom_payload,
+        forward_ton_amount,
+        forward_payload,
+        forward_payload_layout: EitherCellLayout::Native,
+    };
+    result.verify_opcode(opcode)?;
+
+    Ok(result)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_paras() {
+        let body = "te6cckEBAQEAWQAArQ+KfqUAAAAAAAAAKl6NSlEACAF0bn5pAXYSjoka3kALs7PgDfmJE2xXMvdXGoj1uF6AzwAujc/NIC7CUdEjW8gBdnZ8Ab8xIm2K5l7q41EetwvQGcID8KmiDT0=";
+        // let body = "te6cckEBAQEAVwAAqg+KfqX76BmRXBNjPEO5rKAIAWInUylqBJQs4z7SJyZR1usrLYcUS+sgUWKN/ZuGxDv9AA10/ugcep4Gy3heOFSTD83/i7pMVVdLMYR4mRKWvHh/AgL/h0Rw";
+
+        let bag = BagOfCells::parse_base64(&body)
+            .map_err(TonError::CellBuild)
+            .unwrap();
+        let cell = bag
+            .single_root()
+            .map_err(TonError::CellBuild)
+            .unwrap()
+            .to_cell()
+            .map_err(TonError::CellBuild)
+            .unwrap();
+
+        let msg = parse_jetton_message(&cell);
+        assert!(msg.is_ok());
+    }
 }

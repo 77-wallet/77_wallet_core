@@ -5,7 +5,7 @@ use tonlib_core::{
     TonAddress,
     cell::{ArcCell, Cell, TonCellError},
     message::{TonMessage as _, TransferMessage},
-    tlb_types::traits::TLBObject as _,
+    tlb_types::tlb::TLB as _,
     wallet::{
         versioned::{DEFAULT_WALLET_ID, v4::WalletExtMsgBodyV4, v5::WalletExtMsgBodyV5},
         wallet_version::WalletVersion,

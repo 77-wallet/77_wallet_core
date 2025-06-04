@@ -13,7 +13,7 @@ use crate::{QueryTransactionResult, types::ChainPrivateKey};
 use alloy::primitives::U256;
 use tonlib_core::{
     cell::{BagOfCells, Cell},
-    tlb_types::traits::TLBObject,
+    tlb_types::tlb::TLB as _,
     wallet::{
         ton_wallet::TonWallet, version_helper::VersionHelper, versioned::DEFAULT_WALLET_ID,
         wallet_version::WalletVersion,
