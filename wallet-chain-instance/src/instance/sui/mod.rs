@@ -17,7 +17,7 @@ impl wallet_core::derive::GenDerivation for SuiInstance {
         input_index: i32,
     ) -> Result<String, crate::Error> {
         let index = wallet_utils::address::i32_index_to_unhardened_u32(input_index)?;
-        let path = crate::add_index(wallet_types::constant::SUI_DERIVATION_PATH, index, false);
+        let path = crate::add_index(wallet_types::constant::SUI_DERIVATION_PATH, index, true);
         Ok(path)
     }
 }
