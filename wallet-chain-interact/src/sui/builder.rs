@@ -92,9 +92,10 @@ impl SelectCoinHelper {
                 .map_err(|e| crate::sui::error::SuiError::MoveError(e.to_string()))?;
             // tracing::warn!("split gas coin");
 
-            Ok(vec![
-                builder.command(Command::SplitCoins(Argument::GasCoin, vec![pure_amount])),
-            ])
+            Ok(vec![builder.command(Command::SplitCoins(
+                Argument::GasCoin,
+                vec![pure_amount],
+            ))])
         } else {
             // tracing::warn!("select total with gas: {}", self.select_total_with_gas());
             // tracing::warn!("gas fee: {}", gas_fee + amount);

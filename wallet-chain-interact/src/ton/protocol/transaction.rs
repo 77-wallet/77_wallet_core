@@ -1,10 +1,11 @@
 use crate::ton::{consts::TON_VALUE, errors::TonError};
+use num_bigint::BigUint;
 use serde::Deserialize;
 use tonlib_core::{
     TonAddress,
-    cell::BagOfCells,
-    message::{JettonTransferMessage, TonMessage},
-    tlb_types::traits::TLBObject,
+    cell::{BagOfCells, Cell, EMPTY_ARC_CELL, EitherCellLayout},
+    message::{HasOpcode as _, JettonTransferMessage},
+    tlb_types::tlb::TLB as _,
 };
 pub trait GetAddress {
     fn get_address(&self, bounce: bool) -> String;
@@ -141,7 +142,8 @@ impl<T: std::fmt::Debug> RawMessage<T> {
                     .to_cell()
                     .map_err(TonError::CellBuild)?;
 
-                Ok(JettonTransferMessage::parse(&cell).map_err(TonError::TonMsg)?)
+                // Ok(JettonTransferMessage::parse(&cell).map_err(TonError::TonMsg)?)
+                Ok(parse_jetton_message(&cell)?)
             }
             MsgData::Text { text: _ } => {
                 Err(TonError::NotTokenParse("text raw_data ".to_string()))?
@@ -225,4 +227,74 @@ pub struct SourceFees {
 #[derive(Debug, Deserialize)]
 pub struct DestinationFees {
     // 如果 destination_fees 不为空，你可以根据实际字段结构补充此结构体
+}
+
+// 在某些提交的交易中 ref的标志位不是特别规范,忽略掉forward_payload
+fn parse_jetton_message(cell: &Cell) -> Result<JettonTransferMessage, TonError> {
+    let mut parser = cell.parser();
+
+    let opcode: u32 = parser.load_u32(32)?;
+    let query_id = parser.load_u64(64)?;
+
+    let amount = parser.load_coins()?;
+    let destination = parser.load_address()?;
+    let response_destination = parser.load_msg_address()?;
+    let custom_payload = parser.load_maybe_cell_ref()?;
+
+    let forward_ton_amount = if parser.remaining_bits() > 0 {
+        parser.load_coins()?
+    } else {
+        BigUint::ZERO
+    };
+
+    // parser.ensure_empty()?;
+
+    let response_destination = match TonAddress::from_msg_address(response_destination) {
+        Ok(addr) => addr,
+        Err(_e) => TonAddress::NULL,
+    };
+
+    let forward_payload = EMPTY_ARC_CELL.clone();
+
+    let result = JettonTransferMessage {
+        query_id,
+        amount,
+        destination,
+        response_destination,
+        custom_payload,
+        forward_ton_amount,
+        forward_payload,
+        forward_payload_layout: EitherCellLayout::Native,
+    };
+    result.verify_opcode(opcode)?;
+
+    Ok(result)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_paras() {
+        // let body = "te6cckEBAQEAWQAArQ+KfqUAAAAAAAAAKl6NSlEACAF0bn5pAXYSjoka3kALs7PgDfmJE2xXMvdXGoj1uF6AzwAujc/NIC7CUdEjW8gBdnZ8Ab8xIm2K5l7q41EetwvQGcID8KmiDT0=";
+        // let body = "te6cckEBAQEAVwAAqg+KfqX76BmRXBNjPEO5rKAIAWInUylqBJQs4z7SJyZR1usrLYcUS+sgUWKN/ZuGxDv9AA10/ugcep4Gy3heOFSTD83/i7pMVVdLMYR4mRKWvHh/AgL/h0Rw";
+        // let body = "te6cckEBAQEAPQAAdQ+KfqUAAAAAAAAAAEE2/AiIAc2wbfbYvxmf/JZY19xuZ130zicwgbqJc2ku+J3CP6hmh3NZQAAAAAAQGxOnyw==";
+        let body = "te6cckEBAQEAVgAApw+KfqUAAAAAAAAAAEHc1lAIAf/vjq3HmYxv5DjnWU5FxLoPNEo1hfK+abGs9NtQN5mnADoF7YZAob16c6uyn7OcXcCVTpSsw+UXgAWNsyV0BtUu0MWEoZc=";
+
+        let bag = BagOfCells::parse_base64(&body)
+            .map_err(TonError::CellBuild)
+            .unwrap();
+        let cell = bag
+            .single_root()
+            .map_err(TonError::CellBuild)
+            .unwrap()
+            .to_cell()
+            .map_err(TonError::CellBuild)
+            .unwrap();
+
+        let msg = parse_jetton_message(&cell).unwrap();
+        println!("{:#?}", msg);
+        // assert!(msg.is_ok());
+    }
 }
