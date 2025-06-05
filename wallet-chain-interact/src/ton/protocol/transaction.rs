@@ -122,10 +122,8 @@ impl<T: std::fmt::Debug> RawMessage<T> {
                     }
                 }
             }
-            MsgData::Text { text: _ } => {
-                // 具有评论的信息，认定为普通交易
-                Ok(TxTypes::Trans)
-            }
+            // 其他类型都暂时认定为普通的交易类型
+            _ => Ok(TxTypes::Trans),
         }
     }
 
@@ -145,9 +143,7 @@ impl<T: std::fmt::Debug> RawMessage<T> {
                 // Ok(JettonTransferMessage::parse(&cell).map_err(TonError::TonMsg)?)
                 Ok(parse_jetton_message(&cell)?)
             }
-            MsgData::Text { text: _ } => {
-                Err(TonError::NotTokenParse("text raw_data ".to_string()))?
-            }
+            _ => Err(TonError::NotTokenParse("text raw_data ".to_string()))?,
         }
     }
 
@@ -179,6 +175,10 @@ pub enum MsgData {
     Raw { body: String, init_state: String },
     #[serde(rename = "msg.dataText")]
     Text { text: String },
+    #[serde(rename = "msg.dataEncryptedText")]
+    EncryptedText { text: String },
+    #[serde(rename = "msg.dataDecryptedText")]
+    DecryptedText { text: String },
 }
 
 #[derive(Debug, Deserialize)]
