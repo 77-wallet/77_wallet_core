@@ -48,7 +48,7 @@ pub struct JettonData {
     pub symbol: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 pub struct JettonWalletResp {
     pub balance: serde_json::Value,
     pub owner: String,
