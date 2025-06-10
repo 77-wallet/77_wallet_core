@@ -7,13 +7,13 @@ pub struct ReqBuilder(pub RequestBuilder);
 
 impl ReqBuilder {
     pub fn json(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::info!("request params: {}", serde_json::to_string(&v).unwrap());
+        tracing::debug!("request params: {}", serde_json::to_string(&v).unwrap());
         self.0 = self.0.json(&v);
         self
     }
 
     pub fn query(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::info!("request params: {:?}", v);
+        tracing::debug!("request params: {:?}", v);
         self.0 = self.0.query(&v);
         self
     }
