@@ -132,14 +132,14 @@ pub fn parse_sui_type_tag(s: &str) -> Result<sui_types::TypeTag, crate::Error> {
     })
 }
 
-pub fn parse_sui_module_id(s: &str) -> Result<ModuleId, crate::Error> {
-    sui_types::parse_sui_module_id(s).map_err(|e| {
-        crate::Error::Parse(ParseError::AddressConvertFailed(format!(
-            "to_sui_address err:{}:address = {}",
-            e, s
-        )))
-    })
-}
+// pub fn parse_sui_module_id(s: &str) -> Result<ModuleId, crate::Error> {
+//     sui_types::parse_sui_module_id(s).map_err(|e| {
+//         crate::Error::Parse(ParseError::AddressConvertFailed(format!(
+//             "to_sui_address err:{}:address = {}",
+//             e, s
+//         )))
+//     })
+// }
 
 // pub fn parse_sui_struct_tag(s: &str) -> Result<sui_sdk::types::TypeTag, crate::Error> {
 //     Ok(sui_sdk::types::parse_sui_struct_tag(s)
