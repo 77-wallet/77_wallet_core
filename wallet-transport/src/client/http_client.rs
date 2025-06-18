@@ -66,7 +66,7 @@ impl HttpClient {
 
     pub fn get(&self, endpoint: &str) -> ReqBuilder {
         let url = format!("{}/{}", self.base_url, endpoint);
-        tracing::info!("request url = {}", url);
+        // tracing::info!("request url = {}", url);
         let build = self.client.get(url);
         ReqBuilder(build)
     }
@@ -104,8 +104,8 @@ impl HttpClient {
         T: serde::Serialize + std::fmt::Debug,
         R: serde::de::DeserializeOwned,
     {
-        tracing::info!("[req url] = {:?}", self.base_url);
-        tracing::info!("[req params] = {:?}", params);
+        // tracing::info!("[req url] = {:?}", self.base_url);
+        // tracing::info!("[req params] = {:?}", params);
 
         let build = self.client.post(&self.base_url).json(&params);
         let response = ReqBuilder(build).do_request().await?;

@@ -6,6 +6,7 @@ pub struct JsonRpcResult<T = String, E = JsonRpcError> {
     pub error: Option<E>,
 }
 
+// rpc 请求的error 信息
 #[derive(Debug, serde::Deserialize)]
 pub struct JsonRpcError {
     pub code: i64,
