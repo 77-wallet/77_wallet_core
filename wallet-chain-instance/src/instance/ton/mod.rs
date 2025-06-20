@@ -163,6 +163,8 @@ mod test {
         let xpriv = xpriv::generate_master_key(1, phrase, password).unwrap();
         let path = TonInstance::generate(&None, 0).unwrap();
 
+        println!("path: {path}");
+        let path = "m/44'/607'/0";
         let chain_code = ChainCode::Bitcoin;
         let keypair = TonKeyPair::generate_with_derivation(
             xpriv.1,

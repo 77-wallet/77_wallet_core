@@ -83,8 +83,9 @@ mod tests {
 
     #[test]
     fn test_official_vector() {
-        let mnemonic = "";
-        // "film crazy soon outside stand loop subway crumble thrive popular green nuclear struggle pistol arm wife phrase warfare march wheat nephew ask sunny firm"
+        let mnemonic =
+        // "";
+        "film crazy soon outside stand loop subway crumble thrive popular green nuclear struggle pistol arm wife phrase warfare march wheat nephew ask sunny firm";
         // 1. 生成 BIP-39 种子（空密码）
         let mnemonic =
             Mnemonic::<English>::new_from_phrase(mnemonic).expect("Invalid mnemonic phrase");
@@ -92,11 +93,11 @@ mod tests {
 
         // 2. 构造完整派生路径
         let path = format!(
-            "m/{}'/{}'/0'/0'/0'",        // 官方测试用例路径
-            BIP44_PURPOSE & !0x80000000, // 显示逻辑值 44'
-            SUI_COIN_TYPE & !0x80000000  // 显示逻辑值 784'
+            "m/{}'/{}'/0'/0'/2147483648", // 官方测试用例路径
+            BIP44_PURPOSE & !0x80000000,  // 显示逻辑值 44'
+            SUI_COIN_TYPE & !0x80000000   // 显示逻辑值 784'
         );
-
+        println!("path: {path}");
         let address = get_sui_address(&seed, &path).unwrap();
 
         println!("address: {}", address);
