@@ -36,6 +36,7 @@ impl ReqBuilder {
             // 尝试解析出 json response:: btc now node 返回的不标准。
             match res.text().await {
                 Ok(response) => {
+                    // tracing::info!("response = {}", response);
                     if let Ok(rs) = try_to_paras_json(&response) {
                         return Err(TransportError::NodeResponseError(NodeResponseError::new(
                             rs.0,

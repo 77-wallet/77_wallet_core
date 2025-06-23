@@ -31,38 +31,32 @@ impl Provider {
         Self { client }
     }
 
-    // async fn do_get<T, R>(&self, endpoint: &str, params: T) -> crate::Result<R>
-    // where
-    //     T: serde::Serialize + std::fmt::Debug,
-    //     R: serde::de::DeserializeOwned,
-    // {
-    //     let res = self
-    //         .client
-    //         .get_with_params::<T, TonResponse<R>>(endpoint, params)
-    //         .await?;
-
-    //     if !res.ok {
-    //         Err(TransportError::NodeResponseError(NodeResponseError::new(
-    //             res.code.unwrap_or_default(),
-    //             res.error,
-    //         )))?
-    //     } else {
-    //         Ok(res.result)
-    //     }
-    // }
-
-    pub async fn json_rpc<T, R>(&self, method: &str, params: T) -> crate::Result<R>
+    pub async fn json_rpc<T, R>(
+        &self,
+        method: &str,
+        params: T,
+    ) -> Result<R, wallet_transport::TransportError>
     where
         T: serde::Serialize + std::fmt::Debug,
         R: serde::de::DeserializeOwned,
     {
         let params = JsonRpcParams::default().method(method).params(params);
 
-        // let url =format!("{}/{}", self.client.base_url, "") ;
+        let result = self
+            .client
+            .invoke_request::<_, TonResponse<R>>(Some("jsonRPC"), params)
+            .await?;
 
-        // self.client.post(&url)
+        if !result.ok {
+            return Err(wallet_transport::TransportError::NodeResponseError(
+                wallet_transport::errors::NodeResponseError::new(
+                    result.code.unwrap_or(0),
+                    result.error,
+                ),
+            ));
+        }
 
-        Ok(self.client.invoke_request(params).await?)
+        Ok(result.result)
     }
 
     pub async fn balance(&self, addr: &str) -> crate::Result<U256> {
@@ -202,12 +196,16 @@ impl Provider {
     where
         T: serde::Serialize + std::fmt::Debug,
     {
+        // let res = self
+        //     .client
+        //     .post_request::<_, TonResponse<RunGetMethodResp>>("runGetMethod", params)
+        //     .await?;
+
         let res = self
-            .client
-            .post_request::<_, TonResponse<RunGetMethodResp>>("runGetMethod", params)
+            .json_rpc::<_, RunGetMethodResp>("runGetMethod", params)
             .await?;
 
-        Ok(res.result)
+        Ok(res)
     }
 
     pub async fn config_params(

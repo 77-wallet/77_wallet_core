@@ -1,8 +1,4 @@
-use crate::{
-    errors::{NodeResponseError, TransportError},
-    request_builder::ReqBuilder,
-    types::JsonRpcResult,
-};
+use crate::{errors::TransportError, request_builder::ReqBuilder};
 use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
 use std::{collections::HashMap, str::FromStr};
 
@@ -99,29 +95,28 @@ impl HttpClient {
     }
 
     // json rpc invoke_request
-    pub async fn invoke_request<T, R>(&self, params: T) -> Result<R, TransportError>
+    pub async fn invoke_request<T, R>(
+        &self,
+        uri: Option<&str>,
+        params: T,
+    ) -> Result<R, TransportError>
     where
         T: serde::Serialize + std::fmt::Debug,
         R: serde::de::DeserializeOwned,
     {
-        // tracing::info!("[req url] = {:?}", self.base_url);
+        let url = if let Some(uri) = uri {
+            format!("{}/{}", self.base_url, uri)
+        } else {
+            self.base_url.to_string()
+        };
+        // tracing::info!("[req url] = {:?}", url);
         // tracing::info!("[req params] = {:?}", params);
-
-        let build = self.client.post(&self.base_url).json(&params);
+        let build = self.client.post(&url).json(&params);
         let response = ReqBuilder(build).do_request().await?;
+        // tracing::info!("[res] = {}", response);
 
-        let rpc_result = wallet_utils::serde_func::serde_from_str::<JsonRpcResult<R>>(&response)?;
+        let rpc_result = wallet_utils::serde_func::serde_from_str::<R>(&response)?;
 
-        if let Some(err) = rpc_result.error {
-            return Err(TransportError::NodeResponseError(NodeResponseError::new(
-                err.code,
-                Some(err.message),
-            )));
-        }
-
-        match rpc_result.result {
-            Some(res) => Ok(res),
-            None => Err(TransportError::EmptyResult),
-        }
+        Ok(rpc_result)
     }
 }
