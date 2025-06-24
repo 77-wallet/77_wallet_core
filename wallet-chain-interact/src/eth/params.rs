@@ -14,6 +14,18 @@ impl FeeSetting {
         // let price = self.max_fee_per_gas;
         self.gas_limit * price
     }
+
+    pub fn new_with_price(price: U256) -> Self {
+        let priority_fee = U256::from(2_000_000_000u64);
+        let max_fee = price + priority_fee;
+
+        Self {
+            base_fee: price,
+            gas_limit: U256::from(21000),
+            max_priority_fee_per_gas: priority_fee,
+            max_fee_per_gas: max_fee,
+        }
+    }
 }
 
 #[derive(Debug)]

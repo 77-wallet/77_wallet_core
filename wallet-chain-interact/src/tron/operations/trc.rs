@@ -12,11 +12,11 @@ pub struct Deposit {
 }
 
 impl Deposit {
-    pub fn new(owner_address: &str, contract: &str, value: f64) -> Self {
+    pub fn new(owner_address: &str, contract: &str, value: alloy::primitives::U256) -> Self {
         Deposit {
             owner_address: owner_address.to_string(),
             contract: contract.to_string(),
-            value: (value * TRX_TO_SUN as f64) as u64,
+            value: value.to::<u64>(),
         }
     }
 }
@@ -51,12 +51,17 @@ pub struct Approve {
 }
 
 impl Approve {
-    pub fn new(owner_address: &str, to_address: &str, contract: &str, value: f64) -> Self {
+    pub fn new(
+        owner_address: &str,
+        to_address: &str,
+        contract: &str,
+        value: alloy::primitives::U256,
+    ) -> Self {
         Approve {
             owner_address: owner_address.to_string(),
             to_address: to_address.to_string(),
             contract: contract.to_string(),
-            value: (value * TRX_TO_SUN as f64) as u64,
+            value: value.to::<u64>(),
         }
     }
 }
