@@ -119,6 +119,11 @@ pub fn address_from_secret_key(prik: &str) -> Result<solana_sdk::pubkey::Pubkey,
 
 #[cfg(test)]
 mod tests {
+    use coins_bip39::{English, Mnemonic};
+
+    const SOL_COIN_TYPE: u32 = 501 | 0x80000000; // 784' 的硬化编码
+    const BIP44_PURPOSE: u32 = 44 | 0x80000000; // 44' 的硬化编码
+
     #[test]
     fn test_i32_as_u32() {
         // 测试正数转换
@@ -149,5 +154,42 @@ mod tests {
             negative_converted, res,
             "Negative i32 should convert to a large u32 value"
         );
+    }
+
+    #[test]
+    fn test_official_vector() {
+        let mnemonic =
+        // "";
+        "film crazy soon outside stand loop subway crumble thrive popular green nuclear struggle pistol arm wife phrase warfare march wheat nephew ask sunny firm";
+        // 1. 生成 BIP-39 种子（空密码）
+        let mnemonic =
+            Mnemonic::<English>::new_from_phrase(mnemonic).expect("Invalid mnemonic phrase");
+        let seed = mnemonic.to_seed(Some("")).unwrap(); // 注意：必须使用 Some("")
+
+        // 2. 构造完整派生路径
+        let path = format!(
+            "m/{}'/{}'/2147483647'/0",   // 官方测试用例路径
+            BIP44_PURPOSE & !0x80000000, // 显示逻辑值 44'
+            SOL_COIN_TYPE & !0x80000000  // 显示逻辑值 501'
+        );
+        println!("path: {path}");
+        let derivation = solana_sdk::derivation_path::DerivationPath::from_absolute_path_str(&path)
+            .map_err(|e| crate::Error::Keypair(crate::KeypairError::Solana(e.to_string())))
+            .unwrap();
+        let keypair =
+            solana_sdk::signature::keypair_from_seed_and_derivation_path(&seed, Some(derivation))
+                .map_err(|e| crate::Error::Keypair(crate::KeypairError::Solana(e.to_string())))
+                .unwrap();
+
+        use solana_sdk::signature::Signer as _;
+
+        let pubkey = keypair.pubkey().to_string();
+        println!("address: {}", pubkey);
+        // "suiprivkey1qr4w9sqf2dlq9uwpml6gtyr9mwhwlgyc40nnpf8uk5k9yuzt0q29vep62tu";
+        // assert_eq!(
+        //     address,
+        //     // "0xa2d14fad60c56049ecf75246a481934691214ce413e6a8ae2fe6834c173a6133"
+        //     "0x885f29a4f1b4d63822728a1b1811d0278c4e25f27d3754ddd387cd34f9482d0f"
+        // );
     }
 }

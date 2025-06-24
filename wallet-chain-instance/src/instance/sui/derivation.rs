@@ -8,12 +8,10 @@ const ED25519_FLAG: u8 = 0x00; // Ed25519 地址标识
 pub fn slip0010_derive_ed25519(seed: &[u8], path: &str) -> Result<[u8; 32], crate::Error> {
     // 初始化 HMAC
     let mut key = wallet_utils::parse_func::hmac_sha512(b"ed25519 seed", seed)?;
-    println!("[1] Initial HMAC: {}", hex::encode(key));
 
     // 处理路径段
     for segment in path.split('/').skip(1) {
         let index = parse_segment(segment)?;
-        println!("Processing segment: {} -> {}", segment, index);
 
         // 构造 HMAC 输入数据（严格 SLIP-0010）
         let mut data = Vec::new();
@@ -23,8 +21,6 @@ pub fn slip0010_derive_ed25519(seed: &[u8], path: &str) -> Result<[u8; 32], crat
 
         // 计算新密钥
         key = wallet_utils::parse_func::hmac_sha512(&key[32..], &data)?;
-        println!("   |__ Chain code: {}", hex::encode(&key[..32]));
-        println!("   |__ HMAC key:   {}", hex::encode(&key[32..]));
     }
     key[..32].try_into().map_err(|e| {
         crate::Error::Utils(wallet_utils::Error::Parse(
@@ -87,8 +83,9 @@ mod tests {
 
     #[test]
     fn test_official_vector() {
-        let mnemonic = "";
-        // "film crazy soon outside stand loop subway crumble thrive popular green nuclear struggle pistol arm wife phrase warfare march wheat nephew ask sunny firm"
+        let mnemonic =
+        // "";
+        "film crazy soon outside stand loop subway crumble thrive popular green nuclear struggle pistol arm wife phrase warfare march wheat nephew ask sunny firm";
         // 1. 生成 BIP-39 种子（空密码）
         let mnemonic =
             Mnemonic::<English>::new_from_phrase(mnemonic).expect("Invalid mnemonic phrase");
@@ -96,11 +93,11 @@ mod tests {
 
         // 2. 构造完整派生路径
         let path = format!(
-            "m/{}'/{}'/0'/0'/0'",        // 官方测试用例路径
-            BIP44_PURPOSE & !0x80000000, // 显示逻辑值 44'
-            SUI_COIN_TYPE & !0x80000000  // 显示逻辑值 784'
+            "m/{}'/{}'/0'/0'/2147483648", // 官方测试用例路径
+            BIP44_PURPOSE & !0x80000000,  // 显示逻辑值 44'
+            SUI_COIN_TYPE & !0x80000000   // 显示逻辑值 784'
         );
-
+        println!("path: {path}");
         let address = get_sui_address(&seed, &path).unwrap();
 
         println!("address: {}", address);

@@ -19,6 +19,10 @@ impl SelectCoinHelper {
         self.select_coins.iter().map(|c| c.balance).sum()
     }
 
+    pub fn gas_amount(&self) -> u64 {
+        self.gas_coin.iter().map(|c| c.balance).sum()
+    }
+
     // 选择代币和gas的总金额
     pub fn select_total_with_gas(&self) -> u64 {
         self.select_total_amount() + self.gas_coin.iter().map(|c| c.balance).sum::<u64>()
@@ -59,7 +63,8 @@ impl SelectCoinHelper {
             .filter(|c| !self.select_coins.contains(c))
             .collect::<Vec<Coin>>();
 
-        let mut sum = 0u64;
+        // 加上原来的gas
+        let mut sum = self.gas_amount();
         let mut gas_coin = vec![];
         for coin in unselect_coin {
             sum += coin.balance;

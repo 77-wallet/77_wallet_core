@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-pub struct JsonRpcPrams {}
+
 #[derive(Debug, serde::Serialize)]
 pub struct JsonRpcParams<T: Debug + serde::Serialize> {
     id: u64,

@@ -54,6 +54,37 @@ where
     Ok(Option::<bool>::deserialize(deserializer)?.unwrap_or(false))
 }
 
+pub fn deserialize_decimal_from_str<'de, D>(
+    deserializer: D,
+) -> Result<rust_decimal::Decimal, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use std::str::FromStr;
+    let s = String::deserialize(deserializer)?;
+    rust_decimal::Decimal::from_str(&s).map_err(serde::de::Error::custom)
+}
+
+pub fn deserialize_decimal_from_f64<'de, D>(
+    deserializer: D,
+) -> Result<rust_decimal::Decimal, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use rust_decimal::prelude::FromPrimitive;
+    let float_val = f64::deserialize(deserializer)?;
+    rust_decimal::Decimal::from_f64(float_val)
+        .ok_or_else(|| serde::de::Error::custom("Failed to convert f64 to Decimal"))
+}
+
+pub fn deserialize_empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt.filter(|s| !s.is_empty()))
+}
+
 pub fn serialize_lowercase<S>(value: &str, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,

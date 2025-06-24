@@ -36,14 +36,13 @@ impl TonChain {
             let jetton_address =
                 JettonWalletAddress::wallet_address(&t, addr, &self.provider).await?;
 
-            let result = self
+            let balance = self
                 .provider
                 .token_data::<JettonWalletResp>(&jetton_address.to_base64_url())
-                .await?;
+                .await
+                .map_or("0".to_string(), |result| result.balance.to_string());
 
-            Ok(wallet_utils::unit::u256_from_str(
-                &result.balance.to_string(),
-            )?)
+            Ok(wallet_utils::unit::u256_from_str(&balance)?)
         } else {
             self.provider.balance(addr).await
         }

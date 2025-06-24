@@ -7,13 +7,13 @@ pub struct ReqBuilder(pub RequestBuilder);
 
 impl ReqBuilder {
     pub fn json(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::info!("request params: {}", serde_json::to_string(&v).unwrap());
+        tracing::debug!("request params: {}", serde_json::to_string(&v).unwrap());
         self.0 = self.0.json(&v);
         self
     }
 
     pub fn query(mut self, v: impl Serialize + Debug) -> Self {
-        tracing::info!("request params: {:?}", v);
+        tracing::debug!("request params: {:?}", v);
         self.0 = self.0.query(&v);
         self
     }
@@ -36,7 +36,8 @@ impl ReqBuilder {
             // 尝试解析出 json response:: btc now node 返回的不标准。
             match res.text().await {
                 Ok(response) => {
-                    if let Ok(rs) = Self::try_to_paras_json(&response) {
+                    // tracing::info!("response = {}", response);
+                    if let Ok(rs) = try_to_paras_json(&response) {
                         return Err(TransportError::NodeResponseError(NodeResponseError::new(
                             rs.0,
                             Some(rs.1),
@@ -74,28 +75,26 @@ impl ReqBuilder {
         Ok(response)
     }
 
-    pub fn try_to_paras_json(res: &str) -> Result<(i64, String), crate::TransportError> {
-        if let Ok(reg) = regex::Regex::new(r#"\{.*\}"#) {
-            let res = reg.find(res).map(|m| m.as_str().to_string());
-            if let Some(res) = res {
-                let res = res.replace("\\\"", "\"");
-                let response = wallet_utils::serde_func::serde_from_str::<JsonRpcResult>(&res);
-
-                if let Ok(res) = response {
-                    if let Some(res) = res.error {
-                        return Ok((res.code, res.message));
-                    }
-                }
-            }
-        }
-        Err(crate::TransportError::EmptyResult)
-    }
-}
-
-impl ReqBuilder {
     // 普通请求
     pub async fn send<T: DeserializeOwned>(self) -> Result<T, crate::TransportError> {
         let res = self.do_request().await?;
         Ok(wallet_utils::serde_func::serde_from_str(&res)?)
     }
+}
+
+fn try_to_paras_json(res: &str) -> Result<(i64, String), crate::TransportError> {
+    if let Ok(reg) = regex::Regex::new(r#"\{.*\}"#) {
+        let res = reg.find(res).map(|m| m.as_str().to_string());
+        if let Some(res) = res {
+            let res = res.replace("\\\"", "\"");
+            let response = wallet_utils::serde_func::serde_from_str::<JsonRpcResult>(&res);
+
+            if let Ok(res) = response {
+                if let Some(res) = res.error {
+                    return Ok((res.code, res.message));
+                }
+            }
+        }
+    }
+    Err(crate::TransportError::EmptyResult)
 }

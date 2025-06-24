@@ -76,11 +76,8 @@ impl TransferOpt {
         let gas_fee = gas_budget.unwrap_or(0);
         let coin_type = self.get_coin_type();
 
-        // tracing::warn!("build gas fee: {}", gas_fee);
-
         // 处理gas_coin
         if helper.need_extra_coin_pay_gas(&coin_type, gas_fee, self.amount) {
-            // tracing::warn!("transfer main coin need extra coin");
             let gas_coin = helper
                 .select_gas_coin(gas_fee, provider, &self.from.to_string())
                 .await?;
@@ -89,10 +86,8 @@ impl TransferOpt {
 
         // 主币
         let trans_arg = if coin_type == SUI_NATIVE_COIN {
-            // tracing::warn!("transfer main coin");
             helper.build_main_coin_arg(&mut builder, self.amount, gas_fee)?
         } else {
-            // tracing::warn!("transfer token coin");
             helper.build_token_coin_arg(&mut builder, self.amount)?
         };
 
@@ -119,7 +114,6 @@ impl TransferOpt {
             .await?;
 
         let gas_payment = helper.gas_obj_ref();
-        // tracing::warn!("gas_obj: {:#?}", gas_payment);
 
         let tx_data = TransactionData::new_programmable(
             self.from,

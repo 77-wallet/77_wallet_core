@@ -186,7 +186,7 @@ impl KeyDerivationFunction for Argon2idKdf {
         argon2
             .hash_password_into(password, &self.params.salt, &mut output_key)
             .map_err(KeystoreError::Argon2)?;
-        tracing::info!("Argon2id KDF took {}ms", start.elapsed().as_millis());
+        tracing::debug!("Argon2id KDF took {}ms", start.elapsed().as_millis());
         Ok(output_key)
     }
 
