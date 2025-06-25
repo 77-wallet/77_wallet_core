@@ -117,7 +117,6 @@ sui-json-rpc-types =  { git = "https://github.com/mystenlabs/sui", package = "su
 shared-crypto =  { git = "https://github.com/mystenlabs/sui", package = "shared-crypto" }
 # move-core-types =  { git = "https://github.com/mystenlabs/sui", package = "move-core-types"}
 # move-core-types = "0.0.3"
-sui-crypto = "0.0.4"
 
 bitcoin = { version = "0.32.2", features = [
     "rand-std",
