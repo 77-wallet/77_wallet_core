@@ -115,7 +115,6 @@ impl SuiChain {
         private_key: ChainPrivateKey,
     ) -> crate::Result<String> {
         let tx_bytes = wallet_utils::serde_func::bcs_to_bytes(&tx_data)?;
-
         let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
         // 用 keypair 对 IntentMessage 进行签名
 
