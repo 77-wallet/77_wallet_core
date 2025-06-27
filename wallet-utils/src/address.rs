@@ -124,6 +124,7 @@ pub fn parse_sui_address(address: &str) -> Result<sui_types::base_types::SuiAddr
 }
 
 pub fn parse_sui_type_tag(s: &str) -> Result<sui_types::TypeTag, crate::Error> {
+    // sui_sdk_types::;
     sui_types::parse_sui_type_tag(s).map_err(|e| {
         crate::Error::Parse(ParseError::AddressConvertFailed(format!(
             "to_sui_address err:{}:address = {}",
@@ -152,16 +153,16 @@ pub fn parse_sui_type_tag(s: &str) -> Result<sui_types::TypeTag, crate::Error> {
 //         .into())
 // }
 
-pub fn parse_object_id_from_hex(
-    hex_string: &str,
-) -> Result<sui_types::base_types::ObjectID, crate::Error> {
-    sui_types::base_types::ObjectID::from_hex_literal(hex_string).map_err(|e| {
-        crate::Error::Parse(ParseError::AddressConvertFailed(format!(
-            "to_sui_address err:{}:address = {}",
-            e, hex_string
-        )))
-    })
-}
+// pub fn parse_object_id_from_hex(
+//     hex_string: &str,
+// ) -> Result<sui_types::base_types::ObjectID, crate::Error> {
+//     sui_types::base_types::ObjectID::from_hex_literal(hex_string).map_err(|e| {
+//         crate::Error::Parse(ParseError::AddressConvertFailed(format!(
+//             "to_sui_address err:{}:address = {}",
+//             e, hex_string
+//         )))
+//     })
+// }
 
 // pub const BIP32_HARDEN: u32 = 2147483648 (0x80000000)
 // pub const MAX: Self = 2147483647 (0x7FFFFFFF)
