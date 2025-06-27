@@ -243,6 +243,7 @@ impl Provider {
             ("workchain", workchain.to_string()),
             ("shard", shard.to_string()),
             ("seqno", seqno.to_string()),
+            ("count", 200.to_string()),
         ]);
 
         let res = self
