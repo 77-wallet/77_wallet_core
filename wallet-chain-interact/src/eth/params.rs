@@ -21,7 +21,7 @@ impl FeeSetting {
 
         Self {
             base_fee: price,
-            gas_limit: U256::from(21000),
+            gas_limit: U256::from(300000),
             max_priority_fee_per_gas: priority_fee,
             max_fee_per_gas: max_fee,
         }

@@ -240,7 +240,9 @@ impl Provider {
     }
 
     pub async fn gas_price(&self) -> crate::Result<U256> {
-        let params = JsonRpcParams::<String>::default().method("eth_gasPrice");
+        let params = JsonRpcParams::<Vec<String>>::default()
+            .method("eth_gasPrice")
+            .params(vec![]);
 
         let r = self.client.invoke_request::<_, String>(params).await?;
         Ok(unit::u256_from_str(&r)?)

@@ -174,6 +174,11 @@ impl<T> ConstantContract<T> {
         String::from_utf8(bytes).map_err(|e| crate::Error::Other(e.to_string()))
     }
 
+    pub fn parse_num(&self, num: &str) -> crate::Result<U256> {
+        let bytes = wallet_utils::hex_func::hex_decode(num)?;
+        U256::abi_decode(&bytes, false).map_err(|e| crate::Error::AbiParseError(e.to_string()))
+    }
+
     /// parse bool from abi code
     pub fn parse_bool(&self) -> crate::Result<bool> {
         if self.constant_result[0].len() != 64 {
