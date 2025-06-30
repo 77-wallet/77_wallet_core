@@ -1,6 +1,6 @@
 use super::consts::TRX_TO_SUN;
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct Resource {
     // user resource
     pub limit: i64,
@@ -41,7 +41,7 @@ impl Resource {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct ResourceConsumer {
     pub energy: Option<Resource>,
     pub bandwidth: Resource,
