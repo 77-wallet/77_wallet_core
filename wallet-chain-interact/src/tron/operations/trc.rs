@@ -90,3 +90,46 @@ impl TryFrom<Approve> for TriggerContractParameter {
         Ok(res)
     }
 }
+
+pub struct Allowance {
+    pub owner_address: String,
+    pub spender: String,
+    pub contract: String,
+}
+
+impl Allowance {
+    pub fn new(owner_address: &str, spender: &str, contract: &str) -> Self {
+        Allowance {
+            owner_address: owner_address.to_string(),
+            spender: spender.to_string(),
+            contract: contract.to_string(),
+        }
+    }
+}
+
+impl TryFrom<Allowance> for TriggerContractParameter {
+    type Error = crate::errors::Error;
+
+    fn try_from(value: Allowance) -> Result<Self, Self::Error> {
+        let contract_address: String = wallet_utils::address::bs58_addr_to_hex(&value.contract)?;
+        let owner_address = wallet_utils::address::bs58_addr_to_hex(&value.owner_address)?;
+        let spender = wallet_utils::address::bs58_addr_to_hex(&value.spender)?;
+
+        let function_selector = "allowance(address,address)";
+
+        let parameter = format!(
+            "{}{}",
+            abi_encode_address(&owner_address),
+            abi_encode_address(&spender)
+        );
+
+        let res = TriggerContractParameter::new(
+            &contract_address,
+            &owner_address,
+            function_selector,
+            parameter,
+        );
+
+        Ok(res)
+    }
+}

@@ -1,10 +1,12 @@
 // 封装erc20相关的操作
 use crate::{
-    eth::protocol::contract::{approveCall, depositCall},
+    eth::protocol::contract::{allowanceCall, approveCall, depositCall},
     types,
 };
 use alloy::{
-    network::TransactionBuilder as _, primitives, rpc::types::TransactionRequest,
+    network::TransactionBuilder as _,
+    primitives::{self, U256},
+    rpc::types::TransactionRequest,
     sol_types::SolCall as _,
 };
 use wallet_utils::address;
@@ -77,6 +79,41 @@ impl types::Transaction<TransactionRequest> for Deposit {
             .from(self.from)
             .to(self.contract)
             .value(self.amount)
+            .with_input(call.abi_encode()))
+    }
+}
+
+pub struct Allowance {
+    pub from: primitives::Address,
+    pub spender: primitives::Address,
+    pub contract: primitives::Address,
+}
+
+impl Allowance {
+    pub fn new(from: &str, contract: &str, spender: &str) -> crate::Result<Self> {
+        let from = address::parse_eth_address(from)?;
+        let spender = address::parse_eth_address(spender)?;
+        let contract = address::parse_eth_address(contract)?;
+
+        Ok(Self {
+            from,
+            spender,
+            contract,
+        })
+    }
+}
+
+impl types::Transaction<TransactionRequest> for Allowance {
+    fn build_transaction(&self) -> Result<TransactionRequest, crate::Error> {
+        let call = allowanceCall {
+            owner: self.from,
+            spender: self.spender,
+        };
+
+        Ok(TransactionRequest::default()
+            .from(self.from)
+            .to(self.contract)
+            .value(U256::ZERO)
             .with_input(call.abi_encode()))
     }
 }
