@@ -49,7 +49,10 @@ impl SuiChain {
         let opt = TransRespOpt::default();
         let tx = self.provider.query_tx_info(digest, opt).await?;
 
-        let transaction_time = tx.timestamp_ms.map(|c| c as u128).unwrap_or_default();
+        let transaction_time = tx
+            .timestamp_ms
+            .map(|c| c as u128 / 1000)
+            .unwrap_or_default();
         let transaction_fee = Self::extract_gas_used(&tx).unwrap_or_default();
         let status = Self::extract_status(&tx);
         let block_height = tx.checkpoint.map(|c| c as u128).unwrap_or_default();
