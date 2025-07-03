@@ -14,6 +14,7 @@ pub use crypto::*;
 pub mod address;
 pub use error::{Error, http::HttpError, parse::ParseError, serde::SerdeError};
 pub use log::{init_log, init_test_log};
+pub mod global_option;
 pub mod sign;
 pub mod unit;
 
