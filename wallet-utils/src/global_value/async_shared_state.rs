@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 /// 异步初始化 + 可选默认值 + 异步读写共享状态
 ///
 /// 支持：
-/// 
+///
 /// — 异步单次初始化（异步函数）
 ///
 /// — 默认值支持（同步默认值函数）
@@ -52,6 +52,15 @@ impl<T: Clone + Send + Sync + 'static> AsyncSharedState<T> {
         let arc = self.get_cell();
         let guard = arc.read().await;
         guard.clone()
+    }
+
+    /// 获取当前值，如果尚未初始化则返回错误
+    pub async fn get_or_error(&self) -> Result<T, crate::Error> {
+        let arc = self.get_cell();
+        let guard = arc.read().await;
+        guard.clone().ok_or(crate::Error::GlobalValue(
+            crate::error::global_value::GlobalValueError::ValueNotInit,
+        ))
     }
 
     /// 异步读取，若无值则返回默认值（同步默认函数）
