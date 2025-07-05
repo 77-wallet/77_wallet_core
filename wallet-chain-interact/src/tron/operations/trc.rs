@@ -1,8 +1,5 @@
 use super::contract::TriggerContractParameter;
-use crate::{
-    abi_encode_address, abi_encode_u256,
-    tron::consts::{self, TRX_TO_SUN},
-};
+use crate::{abi_encode_address, abi_encode_u256};
 
 pub struct Deposit {
     pub owner_address: String,
@@ -46,8 +43,7 @@ pub struct Approve {
     pub owner_address: String,
     pub to_address: String,
     pub contract: String,
-    // unit is sun
-    pub value: u64,
+    pub value: alloy::primitives::U256,
 }
 
 impl Approve {
@@ -61,7 +57,7 @@ impl Approve {
             owner_address: owner_address.to_string(),
             to_address: to_address.to_string(),
             contract: contract.to_string(),
-            value: value.to::<u64>(),
+            value,
         }
     }
 }
@@ -73,12 +69,14 @@ impl TryFrom<Approve> for TriggerContractParameter {
         let contract_address: String = wallet_utils::address::bs58_addr_to_hex(&value.contract)?;
         let owner_address = wallet_utils::address::bs58_addr_to_hex(&value.owner_address)?;
 
-        let amount =
-            wallet_utils::unit::convert_to_u256(&value.value.to_string(), consts::TRX_DECIMALS)?;
         let function_selector = "approve(address,uint256)";
 
         let to = wallet_utils::address::bs58_addr_to_hex(&value.to_address)?;
-        let parameter = format!("{}{}", abi_encode_address(&to), abi_encode_u256(amount));
+        let parameter = format!(
+            "{}{}",
+            abi_encode_address(&to),
+            abi_encode_u256(value.value)
+        );
 
         let res = TriggerContractParameter::new(
             &contract_address,
