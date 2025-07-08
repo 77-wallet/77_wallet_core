@@ -44,6 +44,8 @@ pub enum ParseError {
     TryFromSliceError(#[from] std::array::TryFromSliceError),
     #[error("InvalidLength: {0}")]
     InvalidLength(#[from] hmac::digest::crypto_common::InvalidLength),
+    #[error("Strum parse failed: {0}")]
+    StrumParseFailed(#[from] strum::ParseError),
 }
 
 impl ParseError {
@@ -58,19 +60,20 @@ impl ParseError {
             ParseError::ToFloat(_) => 6304,
             ParseError::HttpBodyToBytesFailed => 6309,
             ParseError::DecimalToI64Failed => 6310,
-            ParseError::DecimalToF64Failed => 6310,
-            ParseError::FromF64ToDecimalFailed => 6310,
-            ParseError::VecToArrayFailed => 6311,
-            ParseError::AddressError(_) => 6311,
-            ParseError::AddressConvertFailed(_) => 6311,
-            ParseError::Decimal(_) => 6311,
-            ParseError::Bech32Hrp(_) => 6311,
-            ParseError::CustomEnum(_) => 6311,
-            ParseError::UnitConvertFailed(_) => 6311,
-            ParseError::SolanaSignatureError(_) => 6311,
-            ParseError::Uri(_) => 6311,
-            ParseError::TryFromSliceError(_) => 6311,
-            ParseError::InvalidLength(_) => 6311,
+            ParseError::DecimalToF64Failed => 6311,
+            ParseError::FromF64ToDecimalFailed => 6312,
+            ParseError::VecToArrayFailed => 6313,
+            ParseError::AddressError(_) => 6314,
+            ParseError::AddressConvertFailed(_) => 6315,
+            ParseError::Decimal(_) => 6316,
+            ParseError::Bech32Hrp(_) => 6317,
+            ParseError::CustomEnum(_) => 6318,
+            ParseError::UnitConvertFailed(_) => 6319,
+            ParseError::SolanaSignatureError(_) => 6320,
+            ParseError::Uri(_) => 6321,
+            ParseError::TryFromSliceError(_) => 6322,
+            ParseError::InvalidLength(_) => 6323,
+            ParseError::StrumParseFailed(_) => 6324,
         }
     }
 }

@@ -169,6 +169,8 @@ ripemd160 = "0.9"
 
 tempfile = "3.15.0"
 
+strum = "0.26"
+
 [profile.dev]
 codegen-units = 4# litecoin = { git = "https://git.nexus58.com/pub/rust-litecoin.git", package = "bitcoin", branch = "ltc", features = [
 debug = true
