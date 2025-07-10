@@ -4,6 +4,7 @@ use crate::{
     tron::{Provider, params::ResourceConsumer},
 };
 use alloy::{primitives::U256, sol_types::SolValue as _};
+use wallet_utils::hex_func;
 
 // 包装调用合约请求
 pub struct WarpContract {
@@ -148,6 +149,7 @@ pub struct TriggerContractResult<T> {
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct TriggerResult {
     pub result: bool,
+    pub message: Option<String>,
 }
 
 // 类似eth_call
@@ -177,6 +179,17 @@ impl<T> ConstantContract<T> {
     pub fn parse_num(&self, num: &str) -> crate::Result<U256> {
         let bytes = wallet_utils::hex_func::hex_decode(num)?;
         U256::abi_decode(&bytes, false).map_err(|e| crate::Error::AbiParseError(e.to_string()))
+    }
+
+    pub fn is_success(&self) -> Result<(), crate::Error> {
+        if let Some(msg) = self.result.message.as_ref() {
+            let error_msg = hex_func::hex_to_utf8(msg)?;
+            let e =
+                crate::ContractValidationError::Other(format!("contract exec error:{}", error_msg));
+            return Err(crate::Error::ContractValidationError(e));
+        }
+
+        Ok(())
     }
 
     /// parse bool from abi code
