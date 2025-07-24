@@ -1,10 +1,8 @@
 use rand::{CryptoRng, RngCore};
 
-use crate::KdfAlgorithm;
+use crate::{KdfAlgorithm, crypto::EncryptedData};
 
-const DEFAULT_KEY_SIZE: usize = 32usize;
-
-use super::{engine::KeystoreEngine, factory::KdfFactory, file::KeystoreFile, json::KeystoreJson};
+use super::file::KeystoreFile;
 
 pub struct KeystoreBuilder<M, P: AsRef<std::path::Path>> {
     path: P,
@@ -61,15 +59,19 @@ where
         P: AsRef<std::path::Path>,
     {
         // let data_bytes = self.data.to_bytes()?;
-        let salt = crate::generate_random_bytes(&mut self.crypto_mode.rng, DEFAULT_KEY_SIZE);
-        let kdf = KdfFactory::create(&self.crypto_mode.algorithm, &salt)?;
-        let engine = KeystoreEngine::new(kdf);
+        let data = EncryptedData::encrypt(
+            &mut self.crypto_mode.rng,
+            &self.crypto_mode.data.as_ref(),
+            &self.password,
+            &self.crypto_mode.algorithm,
+        )?;
+        // let salt = crate::generate_random_bytes(&mut self.crypto_mode.rng, DEFAULT_KEY_SIZE);
+        // let kdf = KdfFactory::create(&self.crypto_mode.algorithm, &salt)?;
+        // let engine = KeystoreEngine::new(kdf);
 
         let file_path = self.path.as_ref().join(&self.crypto_mode.file_name);
-        let _keystore = KeystoreFile::new(file_path, engine).save(
-            &mut self.crypto_mode.rng,
-            &self.crypto_mode.data,
-            self.password.as_ref(),
+        KeystoreFile::new(file_path).save(
+            &data.encrypted, // &self.crypto_mode.data
         )?;
 
         Ok(())
@@ -96,11 +98,8 @@ where
 
     /// 解密处理
     fn process_decryption(&self, encrypted: &str) -> Result<RecoverableData, crate::Error> {
-        let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(encrypted)?;
-        let kdf = KdfFactory::create_from_file(&keystore)?;
-        let engine = KeystoreEngine::new(kdf);
-
-        let decrypted = engine.decrypt(self.password.as_ref(), keystore)?;
+        let decrypted = EncryptedData::decrypt(encrypted, self.password.as_ref())?;
+        // let decrypted = engine.decrypt(self.password.as_ref(), keystore)?;
         Ok(RecoverableData(decrypted))
     }
 }

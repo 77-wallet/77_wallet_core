@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::{
+use crate::kdf::{
     KdfParams, KeyDerivationFunction,
     argon2id::Argon2idKdf,
     pbkdf2::Pbkdf2Kdf,

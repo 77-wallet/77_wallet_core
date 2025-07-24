@@ -1,7 +1,7 @@
 use rand::{CryptoRng, Rng};
 use uuid::Uuid;
 
-use crate::crypto::KeyDerivationFunction;
+use crate::kdf::KeyDerivationFunction;
 
 use super::{
     cipher::SymmetricCipher,

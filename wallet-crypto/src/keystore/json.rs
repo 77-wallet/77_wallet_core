@@ -1,4 +1,4 @@
-use crate::{crypto::KdfParams, utils::HexBytes};
+use crate::{kdf::KdfParams, utils::HexBytes};
 
 use super::factory::KdfAlgorithm;
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,7 @@ pub struct CipherparamsJson {
 
 #[cfg(test)]
 mod tests {
-    use crate::crypto::{pbkdf2::Pbkdf2Params, scrypt_::ScryptParams};
+    use crate::kdf::{pbkdf2::Pbkdf2Params, scrypt_::ScryptParams};
 
     use super::*;
 

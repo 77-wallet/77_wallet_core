@@ -78,6 +78,6 @@ mod tests {
     #[test]
     fn test_log2() {
         let n = 8192;
-        println!("log_n: {}", crate::crypto::log2(n));
+        println!("log_n: {}", crate::kdf::log2(n));
     }
 }

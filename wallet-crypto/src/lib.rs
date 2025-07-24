@@ -1,6 +1,7 @@
 // #![feature(const_trait_impl, effects)]
 pub mod crypto;
 pub mod error;
+pub mod kdf;
 pub mod keystore;
 pub mod utils;
 pub mod wallet;
