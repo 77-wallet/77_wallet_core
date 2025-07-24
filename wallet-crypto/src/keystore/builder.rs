@@ -1,8 +1,14 @@
 use rand::{CryptoRng, RngCore};
 
-use crate::{KdfAlgorithm, crypto::EncryptedData};
+use crate::{
+    KdfAlgorithm, KeystoreJson,
+    crypto::CryptoService,
+    keystore::{engine::KdfCryptoEngine, factory::KdfFactory},
+};
 
 use super::file::KeystoreFile;
+
+const DEFAULT_KEY_SIZE: usize = 32usize;
 
 pub struct KeystoreBuilder<M, P: AsRef<std::path::Path>> {
     path: P,
@@ -59,11 +65,15 @@ where
         P: AsRef<std::path::Path>,
     {
         // let data_bytes = self.data.to_bytes()?;
-        let data = EncryptedData::encrypt(
+        let salt = crate::generate_random_bytes(&mut self.crypto_mode.rng, DEFAULT_KEY_SIZE);
+        let kdf = KdfFactory::create(&self.crypto_mode.algorithm, &salt)?;
+        let engine = KdfCryptoEngine::new(kdf);
+
+        let data = CryptoService::new(engine).encrypt_to_string(
             &mut self.crypto_mode.rng,
             &self.crypto_mode.data.as_ref(),
             &self.password,
-            &self.crypto_mode.algorithm,
+            // &self.crypto_mode.algorithm,
         )?;
         // let salt = crate::generate_random_bytes(&mut self.crypto_mode.rng, DEFAULT_KEY_SIZE);
         // let kdf = KdfFactory::create(&self.crypto_mode.algorithm, &salt)?;
@@ -71,7 +81,7 @@ where
 
         let file_path = self.path.as_ref().join(&self.crypto_mode.file_name);
         KeystoreFile::new(file_path).save(
-            &data.encrypted, // &self.crypto_mode.data
+            &data, // &self.crypto_mode.data
         )?;
 
         Ok(())
@@ -98,7 +108,12 @@ where
 
     /// 解密处理
     fn process_decryption(&self, encrypted: &str) -> Result<RecoverableData, crate::Error> {
-        let decrypted = EncryptedData::decrypt(encrypted, self.password.as_ref())?;
+        let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(encrypted)?;
+        let kdf = KdfFactory::create_from_file(&keystore)?;
+        let engine = KdfCryptoEngine::new(kdf);
+
+        let decrypted =
+            CryptoService::new(engine).decrypt_from_string(self.password.as_ref(), encrypted)?;
         // let decrypted = engine.decrypt(self.password.as_ref(), keystore)?;
         Ok(RecoverableData(decrypted))
     }
@@ -111,10 +126,6 @@ impl RecoverableData {
     pub fn into_string(self) -> Result<String, crate::Error> {
         Ok(wallet_utils::conversion::vec_to_string(&self.0)?)
     }
-
-    // pub fn serde_to_string(self) -> Result<String, crate::Error> {
-    //     Ok(wallet_utils::serde_func::(&self.0)?)
-    // }
 
     pub fn inner(self) -> Vec<u8> {
         self.0

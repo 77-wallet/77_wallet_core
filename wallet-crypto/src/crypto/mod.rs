@@ -1,38 +1,34 @@
-use crate::{
-    KdfAlgorithm, KeystoreJson,
-    keystore::{engine::KeystoreEngine, factory::KdfFactory},
-};
-const DEFAULT_KEY_SIZE: usize = 32usize;
+pub(crate) mod engine;
+use rand::{CryptoRng, Rng};
 
-pub struct EncryptedData {
-    pub encrypted: String,
-    // pub salt: Vec<u8>,
-    // pub algorithm: KdfAlgorithm,
+use crate::crypto::engine::CryptoEngine;
+
+pub struct CryptoService<E: CryptoEngine> {
+    engine: E,
 }
 
-impl EncryptedData {
-    pub fn encrypt<R: rand::Rng + rand::CryptoRng>(
+impl<E: CryptoEngine> CryptoService<E> {
+    pub fn new(engine: E) -> Self {
+        Self { engine }
+    }
+    pub fn encrypt_to_string<R: Rng + CryptoRng>(
+        &self,
         rng: &mut R,
-        plaintext: &[u8],
+        data: &[u8],
         password: &[u8],
-        algorithm: &KdfAlgorithm,
-    ) -> Result<Self, crate::Error> {
-        let salt = crate::generate_random_bytes(rng, DEFAULT_KEY_SIZE);
-        let kdf = KdfFactory::create(algorithm, &salt)?;
-        let engine = KeystoreEngine::new(kdf);
-        let encrypted = engine.encrypt(rng, &plaintext, password)?;
-        let contents = wallet_utils::serde_func::serde_to_string(&encrypted)?;
-        Ok(Self {
-            encrypted: contents,
-            // salt,
-            // algorithm: algorithm.clone(),
-        })
+    ) -> Result<String, crate::Error>
+    where
+        E::Data: serde::Serialize,
+    {
+        let encrypted = self.engine.encrypt(rng, &data, password)?;
+        Ok(wallet_utils::serde_func::serde_to_string(&encrypted)?)
     }
 
-    pub fn decrypt(encrypted: &str, password: &[u8]) -> Result<Vec<u8>, crate::Error> {
-        let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(encrypted)?;
-        let kdf = KdfFactory::create_from_file(&keystore)?;
-        let engine = KeystoreEngine::new(kdf);
-        engine.decrypt(password, keystore)
+    pub fn decrypt_from_string(&self, password: &[u8], input: &str) -> Result<Vec<u8>, crate::Error>
+    where
+        E::Data: for<'de> serde::Deserialize<'de>,
+    {
+        let encrypted: E::Data = wallet_utils::serde_func::serde_from_str(input)?;
+        self.engine.decrypt(password, encrypted)
     }
 }
