@@ -1,0 +1,133 @@
+use super::contract::TriggerContractParameter;
+use crate::{abi_encode_address, abi_encode_u256};
+
+pub struct Deposit {
+    pub owner_address: String,
+    pub contract: String,
+    // unit is sun
+    pub value: u64,
+}
+
+impl Deposit {
+    pub fn new(owner_address: &str, contract: &str, value: alloy::primitives::U256) -> Self {
+        Deposit {
+            owner_address: owner_address.to_string(),
+            contract: contract.to_string(),
+            value: value.to::<u64>(),
+        }
+    }
+}
+
+impl TryFrom<Deposit> for TriggerContractParameter {
+    type Error = crate::errors::Error;
+
+    fn try_from(value: Deposit) -> Result<Self, Self::Error> {
+        let contract_address = wallet_utils::address::bs58_addr_to_hex(&value.contract)?;
+        let owner_address = wallet_utils::address::bs58_addr_to_hex(&value.owner_address)?;
+
+        let function_selector = "deposit()";
+
+        let mut res = TriggerContractParameter::new(
+            &contract_address,
+            &owner_address,
+            function_selector,
+            "".to_string(),
+        );
+        res.call_value = Some(value.value);
+
+        Ok(res)
+    }
+}
+
+pub struct Approve {
+    pub owner_address: String,
+    pub to_address: String,
+    pub contract: String,
+    pub value: alloy::primitives::U256,
+}
+
+impl Approve {
+    pub fn new(
+        owner_address: &str,
+        to_address: &str,
+        contract: &str,
+        value: alloy::primitives::U256,
+    ) -> Self {
+        Approve {
+            owner_address: owner_address.to_string(),
+            to_address: to_address.to_string(),
+            contract: contract.to_string(),
+            value,
+        }
+    }
+}
+
+impl TryFrom<Approve> for TriggerContractParameter {
+    type Error = crate::errors::Error;
+
+    fn try_from(value: Approve) -> Result<Self, Self::Error> {
+        let contract_address: String = wallet_utils::address::bs58_addr_to_hex(&value.contract)?;
+        let owner_address = wallet_utils::address::bs58_addr_to_hex(&value.owner_address)?;
+
+        let function_selector = "approve(address,uint256)";
+
+        let to = wallet_utils::address::bs58_addr_to_hex(&value.to_address)?;
+        let parameter = format!(
+            "{}{}",
+            abi_encode_address(&to),
+            abi_encode_u256(value.value)
+        );
+
+        let res = TriggerContractParameter::new(
+            &contract_address,
+            &owner_address,
+            function_selector,
+            parameter,
+        );
+
+        Ok(res)
+    }
+}
+
+pub struct Allowance {
+    pub owner_address: String,
+    pub spender: String,
+    pub contract: String,
+}
+
+impl Allowance {
+    pub fn new(owner_address: &str, spender: &str, contract: &str) -> Self {
+        Allowance {
+            owner_address: owner_address.to_string(),
+            spender: spender.to_string(),
+            contract: contract.to_string(),
+        }
+    }
+}
+
+impl TryFrom<Allowance> for TriggerContractParameter {
+    type Error = crate::errors::Error;
+
+    fn try_from(value: Allowance) -> Result<Self, Self::Error> {
+        let contract_address: String = wallet_utils::address::bs58_addr_to_hex(&value.contract)?;
+        let owner_address = wallet_utils::address::bs58_addr_to_hex(&value.owner_address)?;
+        let spender = wallet_utils::address::bs58_addr_to_hex(&value.spender)?;
+
+        let function_selector = "allowance(address,address)";
+
+        let parameter = format!(
+            "{}{}",
+            abi_encode_address(&owner_address),
+            abi_encode_address(&spender)
+        );
+
+        let res = TriggerContractParameter::new(
+            &contract_address,
+            &owner_address,
+            function_selector,
+            parameter,
+        );
+
+        Ok(res)
+    }
+}

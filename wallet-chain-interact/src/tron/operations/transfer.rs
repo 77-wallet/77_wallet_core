@@ -195,6 +195,8 @@ pub struct ContractTransferResp {
     pub data: String,
     pub owner_address: String,
     pub contract_address: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_value: Option<u64>,
 }
 
 /// trigger smart contract

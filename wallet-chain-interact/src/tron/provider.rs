@@ -106,7 +106,11 @@ impl Provider {
     }
 
     // 合约相关的调用、匹配成功和失败的情况
-    async fn do_contract_request<T, R>(&self, endpoint: &str, params: Option<T>) -> crate::Result<R>
+    pub async fn do_contract_request<T, R>(
+        &self,
+        endpoint: &str,
+        params: Option<T>,
+    ) -> crate::Result<R>
     where
         T: serde::Serialize + Debug,
         R: serde::de::DeserializeOwned,

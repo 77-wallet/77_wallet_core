@@ -10,6 +10,7 @@ pub mod multisig;
 pub mod permissions;
 pub mod stake;
 pub mod transfer;
+pub mod trc;
 
 #[async_trait]
 pub trait TronTxOperation<T> {
