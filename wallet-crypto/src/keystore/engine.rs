@@ -1,13 +1,15 @@
 use rand::{CryptoRng, Rng};
 use uuid::Uuid;
 
-use crate::{crypto::engine::CryptoEngine, kdf::KeyDerivationFunction};
-
-use super::{
-    cipher::SymmetricCipher,
-    json::{CipherparamsJson, CryptoJson, KeystoreJson},
-    mac::MacCalculator,
+use crate::{
+    crypto::{
+        encrypted_json::encrypted::{CipherparamsJson, CryptoJson, EncryptedJson},
+        engine::CryptoEngine,
+    },
+    kdf::KeyDerivationFunction,
 };
+
+use super::{cipher::SymmetricCipher, mac::MacCalculator};
 
 const DEFAULT_CIPHER: &str = "aes-128-ctr";
 const DEFAULT_IV_SIZE: usize = 16usize;
@@ -18,7 +20,7 @@ pub struct KdfCryptoEngine {
 }
 
 impl CryptoEngine for KdfCryptoEngine {
-    type Data = KeystoreJson;
+    type Data = EncryptedJson;
 
     fn encrypt<T: AsRef<[u8]>, R: Rng + CryptoRng>(
         &self,
@@ -37,7 +39,7 @@ impl CryptoEngine for KdfCryptoEngine {
 
         let id = Uuid::new_v4();
 
-        Ok(KeystoreJson {
+        Ok(EncryptedJson {
             crypto: CryptoJson {
                 cipher: String::from(DEFAULT_CIPHER),
                 cipherparams: CipherparamsJson { iv: iv.into() },

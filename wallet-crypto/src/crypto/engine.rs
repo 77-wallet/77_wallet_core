@@ -10,5 +10,5 @@ pub trait CryptoEngine {
         password: &[u8],
     ) -> Result<Self::Data, crate::Error>;
 
-    fn decrypt(&self, password: &[u8], keystore: Self::Data) -> Result<Vec<u8>, crate::Error>;
+    fn decrypt(&self, password: &[u8], data: Self::Data) -> Result<Vec<u8>, crate::Error>;
 }

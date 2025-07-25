@@ -1,14 +1,12 @@
 use rand::{CryptoRng, RngCore};
 
 use crate::{
-    KdfAlgorithm, KeystoreJson,
-    crypto::CryptoService,
-    keystore::{engine::KdfCryptoEngine, factory::KdfFactory},
+    EncryptedJson, KdfAlgorithm,
+    crypto::encrypted_json::cryptor::{EncryptedJsonDecryptor, EncryptedJsonGenerator},
+    keystore::generator::{KeystoreJsonDecryptor, KeystoreJsonGenerator},
 };
 
 use super::file::KeystoreFile;
-
-const DEFAULT_KEY_SIZE: usize = 32usize;
 
 pub struct KeystoreBuilder<M, P: AsRef<std::path::Path>> {
     path: P,
@@ -16,7 +14,7 @@ pub struct KeystoreBuilder<M, P: AsRef<std::path::Path>> {
     crypto_mode: M,
 }
 
-pub struct EncryptMode<R, D> {
+pub struct EncryptMode<R: Clone, D> {
     rng: R,
     algorithm: KdfAlgorithm,
     file_name: String,
@@ -27,7 +25,7 @@ pub struct DecryptMode {}
 
 impl<R, D, P> KeystoreBuilder<EncryptMode<R, D>, P>
 where
-    R: RngCore + CryptoRng,
+    R: RngCore + CryptoRng + Clone,
     D: AsRef<[u8]>,
     P: AsRef<std::path::Path>,
 {
@@ -52,39 +50,25 @@ where
     }
 
     pub fn save(mut self) -> Result<(), crate::Error> {
-        self.process_encryption()?;
-        // let file_name = self.generate_filename()?; // 生成唯一文件名
-        // std::fs::write(self.path.join(&file_name), encrypted)?;
+        let data = self.process_encryption()?;
+        let data = wallet_utils::serde_func::serde_to_string(&data)?;
+
+        let file_path = self.path.as_ref().join(&self.crypto_mode.file_name);
+        KeystoreFile::new(file_path).save(&data)?;
         Ok(())
     }
 
-    fn process_encryption(&mut self) -> Result<(), crate::Error>
+    fn process_encryption(&mut self) -> Result<EncryptedJson, crate::Error>
     where
         D: AsRef<[u8]>,
         R: rand::Rng + rand::CryptoRng,
         P: AsRef<std::path::Path>,
     {
-        // let data_bytes = self.data.to_bytes()?;
-        let salt = crate::generate_random_bytes(&mut self.crypto_mode.rng, DEFAULT_KEY_SIZE);
-        let kdf = KdfFactory::create(&self.crypto_mode.algorithm, &salt)?;
-        let engine = KdfCryptoEngine::new(kdf);
-
-        let data = CryptoService::new(engine).encrypt_to_string(
-            &mut self.crypto_mode.rng,
-            &self.crypto_mode.data.as_ref(),
-            &self.password,
-            // &self.crypto_mode.algorithm,
-        )?;
-        // let salt = crate::generate_random_bytes(&mut self.crypto_mode.rng, DEFAULT_KEY_SIZE);
-        // let kdf = KdfFactory::create(&self.crypto_mode.algorithm, &salt)?;
-        // let engine = KeystoreEngine::new(kdf);
-
-        let file_path = self.path.as_ref().join(&self.crypto_mode.file_name);
-        KeystoreFile::new(file_path).save(
-            &data, // &self.crypto_mode.data
-        )?;
-
-        Ok(())
+        KeystoreJsonGenerator::new(
+            self.crypto_mode.rng.clone(),
+            self.crypto_mode.algorithm.clone(),
+        )
+        .generate(&self.password, &self.crypto_mode.data.as_ref())
     }
 }
 
@@ -108,13 +92,7 @@ where
 
     /// 解密处理
     fn process_decryption(&self, encrypted: &str) -> Result<RecoverableData, crate::Error> {
-        let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(encrypted)?;
-        let kdf = KdfFactory::create_from_file(&keystore)?;
-        let engine = KdfCryptoEngine::new(kdf);
-
-        let decrypted =
-            CryptoService::new(engine).decrypt_from_string(self.password.as_ref(), encrypted)?;
-        // let decrypted = engine.decrypt(self.password.as_ref(), keystore)?;
+        let decrypted = KeystoreJsonDecryptor.decrypt(&self.password, encrypted)?;
         Ok(RecoverableData(decrypted))
     }
 }

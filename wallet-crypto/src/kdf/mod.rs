@@ -3,6 +3,7 @@
 //! [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition).
 
 pub mod argon2id;
+pub mod factory;
 pub mod pbkdf2;
 pub mod scrypt_;
 
@@ -67,10 +68,13 @@ pub(crate) fn log2(mut n: u32) -> u32 {
 #[cfg(test)]
 mod test {
 
-    use crate::keystore::{
-        cipher::{self, SymmetricCipher as _},
-        json::{CipherparamsJson, CryptoJson, KeystoreJson},
-        mac::{self, MacCalculator as _},
+    use crate::{
+        crypto::encrypted_json::encrypted::{CipherparamsJson, CryptoJson, EncryptedJson},
+        kdf::factory::KdfFactory,
+        keystore::{
+            cipher::{self, SymmetricCipher as _},
+            mac::{self, MacCalculator as _},
+        },
     };
     use rand::{CryptoRng, Rng};
     use scrypt::scrypt;
@@ -79,7 +83,7 @@ mod test {
 
     use std::{fs::File, io::Write, path::Path};
 
-    use crate::{error::crypto::KeystoreError, keystore::factory::KdfFactory};
+    use crate::error::crypto::KeystoreError;
 
     const DEFAULT_CIPHER: &str = "aes-128-ctr";
     const DEFAULT_KEY_SIZE: usize = 32usize;
@@ -103,7 +107,7 @@ mod test {
         data: B,
         password: S,
         name: Option<&str>,
-        algorithm: crate::keystore::factory::KdfAlgorithm,
+        algorithm: KdfAlgorithm,
     ) -> Result<String, crate::Error>
     where
         P: AsRef<Path>,
@@ -135,7 +139,7 @@ mod test {
         };
 
         // Construct and serialize the encrypted JSON keystore.
-        let keystore = KeystoreJson {
+        let keystore = EncryptedJson {
             id,
             version: 3,
             crypto: CryptoJson {
@@ -196,7 +200,7 @@ mod test {
         // Read the file contents as string and deserialize it.
         let mut contents = String::new();
         wallet_utils::file_func::read(&mut contents, path)?;
-        let keystore: KeystoreJson = wallet_utils::serde_func::serde_from_str(&contents)?;
+        let keystore: EncryptedJson = wallet_utils::serde_func::serde_from_str(&contents)?;
         // Derive the key.
 
         let strategy: Box<dyn KeyDerivationFunction> = match &keystore.crypto.kdfparams {

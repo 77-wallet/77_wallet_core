@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use crate::kdf::{
-    KdfParams, KeyDerivationFunction,
-    argon2id::Argon2idKdf,
-    pbkdf2::Pbkdf2Kdf,
-    scrypt_::{ScryptKdf, ScryptParams},
+use crate::{
+    crypto::encrypted_json::encrypted::EncryptedJson,
+    kdf::{
+        KdfParams, KeyDerivationFunction,
+        argon2id::Argon2idKdf,
+        pbkdf2::Pbkdf2Kdf,
+        scrypt_::{ScryptKdf, ScryptParams},
+    },
 };
-
-use super::json::KeystoreJson;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -40,8 +41,8 @@ impl KdfFactory {
         }
     }
 
-    pub fn create_from_file(
-        keystore: &KeystoreJson,
+    pub fn create_from_encrypted_data(
+        keystore: &EncryptedJson,
     ) -> Result<Box<dyn KeyDerivationFunction>, crate::Error> {
         let kdf: Box<dyn KeyDerivationFunction> = match &keystore.crypto.kdfparams {
             KdfParams::Pbkdf2(p) => Box::new(Pbkdf2Kdf::new(p.to_owned())),
