@@ -14,8 +14,10 @@ pub use crypto::encrypted_json::encrypted::EncryptedJson;
 
 pub type KeystoreJson = crypto::encrypted_json::encrypted::EncryptedJson;
 
+pub use crypto::encrypted_json::cryptor::EncryptedJsonGenerator;
 pub use kdf::factory::KdfAlgorithm;
 pub use keystore::builder::{KeystoreBuilder, RecoverableData};
+pub use keystore::generator::KeystoreJsonGenerator;
 // pub use wallet_tree::wallet_tree::WalletTreeStrategy;
 
 fn generate_random_bytes<R: rand::Rng + rand::CryptoRng>(rng: &mut R, len: usize) -> Vec<u8> {
