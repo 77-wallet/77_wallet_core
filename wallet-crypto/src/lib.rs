@@ -14,7 +14,7 @@ pub use crypto::encrypted_json::encrypted::EncryptedJson;
 
 pub type KeystoreJson = crypto::encrypted_json::encrypted::EncryptedJson;
 
-pub use crypto::encrypted_json::cryptor::EncryptedJsonGenerator;
+pub use crypto::encrypted_json::cryptor::{EncryptedJsonDecryptor, EncryptedJsonGenerator};
 pub use kdf::factory::KdfAlgorithm;
 pub use keystore::builder::{KeystoreBuilder, RecoverableData};
 pub use keystore::generator::{KeystoreJsonDecryptor, KeystoreJsonGenerator};
