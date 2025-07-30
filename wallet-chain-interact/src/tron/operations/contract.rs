@@ -1,7 +1,7 @@
 use super::{RawTransactionParams, TronTransactionResponse, transfer::ContractTransferResp};
 use crate::{
     abi_encode_address,
-    tron::{Provider, params::ResourceConsumer},
+    tron::{Provider, consts::TRX_VALUE, params::ResourceConsumer},
 };
 use alloy::{primitives::U256, sol_types::SolValue as _};
 use wallet_utils::hex_func;
@@ -42,6 +42,24 @@ impl WarpContract {
         let fee_limit = Some(fee_limit + (fee_limit * 20 / 100));
 
         self.params.fee_limit = fee_limit;
+
+        let result = provider
+            .do_contract_request::<_, TriggerContractResult<ContractTransferResp>>(
+                "wallet/triggersmartcontract",
+                Some(&self.params),
+            )
+            .await?;
+
+        Ok(RawTransactionParams::from(result.transaction))
+    }
+
+    // 和 trigger_smart_contract 一样只是固定fee_limit
+    pub async fn trigger_with_fee(
+        &mut self,
+        provider: &Provider,
+        fee_limit: i64,
+    ) -> crate::Result<RawTransactionParams> {
+        self.params.fee_limit = Some(fee_limit * TRX_VALUE);
 
         let result = provider
             .do_contract_request::<_, TriggerContractResult<ContractTransferResp>>(
