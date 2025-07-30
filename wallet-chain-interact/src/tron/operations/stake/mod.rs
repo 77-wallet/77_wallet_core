@@ -19,6 +19,15 @@ pub enum ResourceType {
     BANDWIDTH,
 }
 
+impl std::fmt::Display for ResourceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResourceType::ENERGY => write!(f, "ENERGY"),
+            ResourceType::BANDWIDTH => write!(f, "BANDWIDTH"),
+        }
+    }
+}
+
 impl ResourceType {
     pub fn to_i8(&self) -> i8 {
         match self {
