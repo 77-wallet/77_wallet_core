@@ -1,4 +1,5 @@
 pub mod crypto;
+pub mod global_value;
 pub mod http;
 pub mod parse;
 pub mod ping;
@@ -29,6 +30,8 @@ pub enum Error {
     AddressIndexOverflowOccured,
     #[error("Icmp error: `{0}`")]
     Icmp(#[from] ping::IcmpError),
+    #[error("Global value error: `{0}`")]
+    GlobalValue(#[from] global_value::GlobalValueError),
 }
 
 impl Error {

@@ -30,14 +30,6 @@ mod test {
         let (key, _) =
             wallet_core::xpriv::generate_master_key(language, &phrase, password).unwrap();
 
-        // let i: i32 = -1221;
-        // let index = if i < 0 {
-        //     i.strict_add_unsigned(coins_bip32::BIP32_HARDEN) as u32
-        // } else {
-        //     i as u32
-        // };
-        // println!("index: {index}");
-        // let index = 0;
         let path = "m/44h/195h/0h/0/0";
 
         let derive = key.derive_path(path).unwrap();
@@ -53,5 +45,6 @@ mod test {
         )
         .unwrap();
         println!("address: {address:?}");
+        println!("private_key {}", hex::encode(private_key.serialize()));
     }
 }

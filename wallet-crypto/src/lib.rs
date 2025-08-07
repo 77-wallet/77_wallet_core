@@ -1,6 +1,7 @@
 // #![feature(const_trait_impl, effects)]
 pub mod crypto;
 pub mod error;
+pub mod kdf;
 pub mod keystore;
 pub mod utils;
 pub mod wallet;
@@ -9,9 +10,14 @@ pub use crate::error::Error;
 // pub use service::Keystore;
 
 pub use alloy::primitives::Address;
+pub use crypto::encrypted_json::encrypted::EncryptedJson;
+
+pub type KeystoreJson = crypto::encrypted_json::encrypted::EncryptedJson;
+
+pub use crypto::encrypted_json::cryptor::{EncryptedJsonDecryptor, EncryptedJsonGenerator};
+pub use kdf::factory::KdfAlgorithm;
 pub use keystore::builder::{KeystoreBuilder, RecoverableData};
-pub use keystore::factory::KdfAlgorithm;
-pub use keystore::json::KeystoreJson;
+pub use keystore::generator::{KeystoreJsonDecryptor, KeystoreJsonGenerator};
 // pub use wallet_tree::wallet_tree::WalletTreeStrategy;
 
 fn generate_random_bytes<R: rand::Rng + rand::CryptoRng>(rng: &mut R, len: usize) -> Vec<u8> {

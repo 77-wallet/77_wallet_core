@@ -8,6 +8,9 @@ sol!(
     function symbol() public view returns (string);
     function name() public view returns (string);
     function isBlackListed(address from) public view returns (bool);
+    function deposit() public payable;
+    function approve(address spender, uint256 amount) public returns (bool);
+    function allowance(address owner, address spender) public view returns (uint256);
 
     function createProxyWithNonce(address _singleton, bytes memory initializer, uint256 saltNonce) public returns (address proxy);
 
@@ -53,30 +56,3 @@ sol!(
 
     function proxyCreationCode() public pure returns (bytes memory);
 );
-
-// // eth多签的内部交易数据结构
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct MultisigTxInternal {
-//     pub internal: String,
-//     pub hash_message: String,
-// }
-
-// // TODO 封装util bincode ;
-// impl MultisigTxInternal {
-//     pub fn new(internal: String, hash_message: String) -> Self {
-//         Self {
-//             internal,
-//             hash_message,
-//         }
-//     }
-//     pub fn to_string(&self) -> crate::Result<String> {
-//         let bytes = bincode::serialize(&self).unwrap();
-//         Ok(hex::encode(bytes))
-//     }
-
-//     pub fn from_str(data: &str) -> crate::Result<Self> {
-//         let bytes = wallet_utils::hex_func::hex_decode(data)?;
-//         let res = bincode::deserialize::<MultisigTxInternal>(&bytes).unwrap();
-//         Ok(res)
-//     }
-// }

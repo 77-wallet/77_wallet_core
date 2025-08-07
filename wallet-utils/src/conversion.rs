@@ -22,3 +22,21 @@ pub fn decimal_from_f64(val: f64) -> Result<Decimal, crate::Error> {
         crate::ParseError::FromF64ToDecimalFailed,
     ))
 }
+
+pub fn decimal_from_str(val: &str) -> Result<Decimal, crate::Error> {
+    val.parse::<Decimal>()
+        .map_err(|e| crate::Error::Parse(e.into()))
+}
+
+#[cfg(test)]
+mod test {
+    use crate::parse_func::decimal_from_str;
+
+    #[test]
+    fn test_decimal_from_str() {
+        let val = "0.78";
+
+        let res = decimal_from_str(&val).unwrap();
+        println!("res = {res}");
+    }
+}

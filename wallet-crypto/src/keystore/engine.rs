@@ -1,33 +1,33 @@
 use rand::{CryptoRng, Rng};
 use uuid::Uuid;
 
-use crate::crypto::KeyDerivationFunction;
-
-use super::{
-    cipher::SymmetricCipher,
-    json::{CipherparamsJson, CryptoJson, KeystoreJson},
-    mac::MacCalculator,
+use crate::{
+    crypto::{
+        encrypted_json::encrypted::{CipherparamsJson, CryptoJson, EncryptedJson},
+        engine::CryptoEngine,
+    },
+    kdf::KeyDerivationFunction,
 };
+
+use super::{cipher::SymmetricCipher, mac::MacCalculator};
 
 const DEFAULT_CIPHER: &str = "aes-128-ctr";
 const DEFAULT_IV_SIZE: usize = 16usize;
 
 /// 核心加密层（不涉及文件操作）
-pub struct KeystoreEngine {
+pub struct KdfCryptoEngine {
     kdf: Box<dyn KeyDerivationFunction>,
 }
 
-impl KeystoreEngine {
-    pub fn new(kdf: Box<dyn KeyDerivationFunction>) -> Self {
-        Self { kdf }
-    }
+impl CryptoEngine for KdfCryptoEngine {
+    type Data = EncryptedJson;
 
-    pub fn encrypt<T: AsRef<[u8]>, R: Rng + CryptoRng>(
+    fn encrypt<T: AsRef<[u8]>, R: Rng + CryptoRng>(
         &self,
         rng: &mut R,
         data: &T,
         password: &[u8],
-    ) -> Result<KeystoreJson, crate::Error> {
+    ) -> Result<Self::Data, crate::Error> {
         let iv = crate::generate_random_bytes(rng, DEFAULT_IV_SIZE);
 
         let key = self.kdf.derive_key(password)?;
@@ -39,7 +39,7 @@ impl KeystoreEngine {
 
         let id = Uuid::new_v4();
 
-        Ok(KeystoreJson {
+        Ok(EncryptedJson {
             crypto: CryptoJson {
                 cipher: String::from(DEFAULT_CIPHER),
                 cipherparams: CipherparamsJson { iv: iv.into() },
@@ -53,11 +53,7 @@ impl KeystoreEngine {
         })
     }
 
-    pub fn decrypt(
-        &self,
-        password: &[u8],
-        keystore: KeystoreJson,
-    ) -> Result<Vec<u8>, crate::Error> {
+    fn decrypt(&self, password: &[u8], keystore: Self::Data) -> Result<Vec<u8>, crate::Error> {
         let key = self.kdf.derive_key(password)?;
         let derived_mac = super::mac::Keccak256Mac.compute(&key, &keystore.crypto.ciphertext);
 
@@ -72,5 +68,11 @@ impl KeystoreEngine {
             &mut data,
         )?;
         Ok(data.0)
+    }
+}
+
+impl KdfCryptoEngine {
+    pub fn new(kdf: Box<dyn KeyDerivationFunction>) -> Self {
+        Self { kdf }
     }
 }

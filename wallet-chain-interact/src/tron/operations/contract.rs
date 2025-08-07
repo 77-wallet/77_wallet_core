@@ -1,6 +1,76 @@
-use super::TronTransactionResponse;
-use crate::abi_encode_address;
+use super::{RawTransactionParams, TronTransactionResponse, transfer::ContractTransferResp};
+use crate::{
+    abi_encode_address,
+    tron::{Provider, consts::TRX_VALUE, params::ResourceConsumer},
+};
 use alloy::{primitives::U256, sol_types::SolValue as _};
+use wallet_utils::hex_func;
+
+// 包装调用合约请求
+pub struct WarpContract {
+    pub params: TriggerContractParameter,
+}
+
+impl WarpContract {
+    pub fn new<P>(params: P) -> Result<Self, crate::errors::Error>
+    where
+        P: TryInto<TriggerContractParameter, Error = crate::Error>,
+    {
+        let params: Result<TriggerContractParameter, crate::Error> = params.try_into();
+
+        Ok(Self { params: params? })
+    }
+
+    // only constant smart contract used to get contract information or estimate energy
+    pub async fn trigger_constant_contract(
+        &self,
+        provider: &Provider,
+    ) -> crate::Result<ConstantContract<ContractTransferResp>> {
+        let result = provider
+            .do_contract_request::<_, _>("wallet/triggerconstantcontract", Some(&self.params))
+            .await?;
+        Ok(result)
+    }
+
+    // build contract transaction
+    pub async fn trigger_smart_contract(
+        &mut self,
+        provider: &Provider,
+        consumer: &ResourceConsumer,
+    ) -> crate::Result<RawTransactionParams> {
+        let fee_limit = consumer.fee_limit();
+        let fee_limit = Some(fee_limit + (fee_limit * 20 / 100));
+
+        self.params.fee_limit = fee_limit;
+
+        let result = provider
+            .do_contract_request::<_, TriggerContractResult<ContractTransferResp>>(
+                "wallet/triggersmartcontract",
+                Some(&self.params),
+            )
+            .await?;
+
+        Ok(RawTransactionParams::from(result.transaction))
+    }
+
+    // 和 trigger_smart_contract 一样只是固定fee_limit
+    pub async fn trigger_with_fee(
+        &mut self,
+        provider: &Provider,
+        fee_limit: i64,
+    ) -> crate::Result<RawTransactionParams> {
+        self.params.fee_limit = Some(fee_limit * TRX_VALUE);
+
+        let result = provider
+            .do_contract_request::<_, TriggerContractResult<ContractTransferResp>>(
+                "wallet/triggersmartcontract",
+                Some(&self.params),
+            )
+            .await?;
+
+        Ok(RawTransactionParams::from(result.transaction))
+    }
+}
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct TriggerContractParameter {
@@ -97,6 +167,7 @@ pub struct TriggerContractResult<T> {
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct TriggerResult {
     pub result: bool,
+    pub message: Option<String>,
 }
 
 // 类似eth_call
@@ -121,6 +192,22 @@ impl<T> ConstantContract<T> {
     pub fn parse_string(&self) -> crate::Result<String> {
         let bytes = wallet_utils::hex_func::hex_decode(&self.constant_result[0])?;
         String::from_utf8(bytes).map_err(|e| crate::Error::Other(e.to_string()))
+    }
+
+    pub fn parse_num(&self, num: &str) -> crate::Result<U256> {
+        let bytes = wallet_utils::hex_func::hex_decode(num)?;
+        U256::abi_decode(&bytes, false).map_err(|e| crate::Error::AbiParseError(e.to_string()))
+    }
+
+    pub fn is_success(&self) -> Result<(), crate::Error> {
+        if let Some(msg) = self.result.message.as_ref() {
+            let error_msg = hex_func::hex_to_utf8(msg)?;
+            let e =
+                crate::ContractValidationError::Other(format!("contract exec error:{}", error_msg));
+            return Err(crate::Error::ContractValidationError(e));
+        }
+
+        Ok(())
     }
 
     /// parse bool from abi code

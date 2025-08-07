@@ -1,13 +1,12 @@
-use crate::{crypto::KdfParams, utils::HexBytes};
+use crate::{KdfAlgorithm, kdf::KdfParams, utils::HexBytes};
 
-use super::factory::KdfAlgorithm;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
 /// This struct represents the deserialized form of an encrypted JSON keystore based on the
 /// [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition).
-pub struct KeystoreJson {
+pub struct EncryptedJson {
     pub crypto: CryptoJson,
     pub id: Uuid,
     pub version: u8,
@@ -32,7 +31,7 @@ pub struct CipherparamsJson {
 
 #[cfg(test)]
 mod tests {
-    use crate::crypto::{pbkdf2::Pbkdf2Params, scrypt_::ScryptParams};
+    use crate::kdf::{pbkdf2::Pbkdf2Params, scrypt_::ScryptParams};
 
     use super::*;
 
@@ -58,7 +57,7 @@ mod tests {
             "id" : "3198bc9c-6672-5ab3-d995-4942343ae5b6",
             "version" : 3
         }"#;
-        let keystore: KeystoreJson = serde_json::from_str(data).unwrap();
+        let keystore: EncryptedJson = serde_json::from_str(data).unwrap();
         assert_eq!(keystore.version, 3);
         assert_eq!(
             keystore.id,
@@ -117,7 +116,7 @@ mod tests {
             "id" : "3198bc9c-6672-5ab3-d995-4942343ae5b6",
             "version" : 3
         }"#;
-        let keystore: KeystoreJson = serde_json::from_str(data).unwrap();
+        let keystore: EncryptedJson = serde_json::from_str(data).unwrap();
         assert_eq!(keystore.version, 3);
         assert_eq!(
             keystore.id,
