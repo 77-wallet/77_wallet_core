@@ -1,6 +1,6 @@
 // 封装erc20相关的操作
 use crate::{
-    eth::protocol::contract::{allowanceCall, approveCall, depositCall},
+    eth::protocol::contract::{allowanceCall, approveCall, depositCall, withdrawCall},
     types,
 };
 use alloy::{
@@ -79,6 +79,38 @@ impl types::Transaction<TransactionRequest> for Deposit {
             .from(self.from)
             .to(self.contract)
             .value(self.amount)
+            .with_input(call.abi_encode()))
+    }
+}
+
+pub struct Withdraw {
+    pub from: primitives::Address,
+    pub amount: primitives::U256,
+    pub contract: primitives::Address,
+}
+
+impl Withdraw {
+    pub fn new(from: &str, contract: &str, amount: alloy::primitives::U256) -> crate::Result<Self> {
+        let from = address::parse_eth_address(from)?;
+        let contract = address::parse_eth_address(contract)?;
+
+        Ok(Self {
+            from,
+            amount,
+            contract,
+        })
+    }
+}
+
+impl types::Transaction<TransactionRequest> for Withdraw {
+    fn build_transaction(&self) -> Result<TransactionRequest, crate::Error> {
+        let call = withdrawCall {
+            amount: self.amount,
+        };
+
+        Ok(TransactionRequest::default()
+            .from(self.from)
+            .to(self.contract)
             .with_input(call.abi_encode()))
     }
 }
