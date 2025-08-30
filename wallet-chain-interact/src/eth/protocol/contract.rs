@@ -12,6 +12,8 @@ sol!(
     function approve(address spender, uint256 amount) public returns (bool);
     function allowance(address owner, address spender) public view returns (uint256);
 
+    function withdraw(uint256 amount) public;
+
     function createProxyWithNonce(address _singleton, bytes memory initializer, uint256 saltNonce) public returns (address proxy);
 
     function setup(

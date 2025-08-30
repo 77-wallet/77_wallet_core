@@ -16,7 +16,7 @@ impl FeeSetting {
     }
 
     pub fn new_with_price(price: U256) -> Self {
-        let priority_fee = U256::from(2_000_000_000u64);
+        let priority_fee = U256::from(5_00_000_000u64);
         let max_fee = price + priority_fee;
 
         Self {
