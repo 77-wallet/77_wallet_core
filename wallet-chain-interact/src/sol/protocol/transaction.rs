@@ -159,7 +159,6 @@ pub struct TxInstruction {
     pub accounts: Vec<i32>,
     pub data: String,
     pub program_id_index: i32,
-    pub stack_height: Option<String>,
 }
 
 impl TxInstruction {
