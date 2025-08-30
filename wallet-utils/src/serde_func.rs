@@ -6,9 +6,21 @@ pub fn serde_to_string<T: ?Sized + serde::Serialize>(value: &T) -> Result<String
 
 pub fn serde_from_str<T: serde::de::DeserializeOwned>(value: &str) -> Result<T, crate::Error> {
     serde_json::from_str::<T>(value).map_err(|e| {
+        // 太长进行截断
+        const MAX_LEN: usize = 300;
+        let shown = if value.len() > MAX_LEN {
+            format!(
+                "{}... [truncated, total_len={}]",
+                &value[..MAX_LEN],
+                value.len()
+            )
+        } else {
+            value.to_string()
+        };
+
         crate::Error::Serde(crate::error::serde::SerdeError::Deserialize(format!(
             "error = {} value = {}",
-            e, value
+            e, shown
         )))
     })
 }
